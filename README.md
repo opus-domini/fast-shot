@@ -1,9 +1,10 @@
 <div style="text-align: center;">
     <h1>Fast Shot</h1>
     <p>A Fluent Go REST Client Library</p>
-    <p>         
+    <p>
         <a href="https://goreportcard.com/report/opus-domini/fast-shot"><img src="https://goreportcard.com/badge/opus-domini/fast-shot" alt="Go Report Badge"></a>
         <a href="https://godoc.org/github.com/opus-domini/fast-shot"><img src="https://godoc.org/github.com/opus-domini/fast-shot?status.svg" alt="Go Doc Badge"></a>    
+        <a href="https://github.com/opus-domini/fast-shot/actions/workflows/coverage.yml"><img src="https://github.com/opus-domini/fast-shot/actions/workflows/coverage.yml/badge.svg" alt="Converage Actions Badge"></a>
         <a href="https://codecov.io/gh/opus-domini/fast-shot"><img src="https://codecov.io/gh/opus-domini/fast-shot/graph/badge.svg?token=C80QDL5W7T" alt="Codecov Badge"/></a>        
         <a href="https://github.com/opus-domini/fast-shot/blob/main/LICENSE"><img src="https://img.shields.io/github/license/opus-domini/fast-shot.svg" alt="License Badge"></a>
     </p>
