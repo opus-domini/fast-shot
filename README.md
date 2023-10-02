@@ -1,8 +1,8 @@
-<div>
+<div style="text-align: center">
     <h1 style="text-align: center">Fast Shot</h1>
     <p style="text-align: center">A Fluent Go REST Client Library</p>    
 </div>
-<div>
+<div style="text-align: center">
     <p style="text-align: center">         
         <a href="https://goreportcard.com/report/opus-domini/fast-shot"><img src="https://goreportcard.com/badge/opus-domini/fast-shot" alt="Go Report Badge"></a>
         <a href="https://godoc.org/github.com/opus-domini/fast-shot"><img src="https://godoc.org/github.com/opus-domini/fast-shot?status.svg" alt="Go Doc Badge"></a>    
@@ -46,7 +46,7 @@ package main
 
 import (
     "fmt"
-	fastshot "github.com/opus-domini/fast-shot"
+    fastshot "github.com/opus-domini/fast-shot"
 )
 
 func main() {
