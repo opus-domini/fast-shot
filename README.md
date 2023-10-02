@@ -1,4 +1,15 @@
-# Fast Shot: A Fluent Go REST Client Library
+<div>
+    <h1 style="text-align: center">Fast Shot</h1>
+    <p style="text-align: center">A Fluent Go REST Client Library</p>    
+</div>
+<div>
+    <p style="text-align: center">         
+        <a href="https://goreportcard.com/report/opus-domini/fast-shot"><img src="https://goreportcard.com/badge/opus-domini/fast-shot" alt="Go Report Card"></a>
+        <a href="https://godoc.org/github.com/opus-domini/fast-shot"><img src="https://godoc.org/github.com/opus-domini/fast-shot?status.svg" alt="Go Doc Card"></a>    
+        <a href="https://codecov.io/gh/opus-domini/fast-shot/branch/master"><img src="https://codecov.io/gh/opus-domini/fast-shot/branch/master/graph/badge.svg" alt="Code Coverage"></a> 
+        <a href="https://github.com/opus-domini/fast-shot/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+    </p>
+</div>
 
 Fast Shot is a robust, feature-rich, and highly configurable HTTP client for Go. Crafted with modern Go practices in mind, it offers a fluent, chainable API that allows for clean, idiomatic code.
 
