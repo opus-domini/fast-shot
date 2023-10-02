@@ -67,5 +67,8 @@ func (r *Response) Is5xxServerError() bool {
 }
 
 func (r *Response) IsError() bool {
+	if r.RawResponse == nil {
+		return false
+	}
 	return r.Is4xxClientError() || r.Is5xxServerError()
 }
