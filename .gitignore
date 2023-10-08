@@ -13,14 +13,13 @@
 !*.go
 !go.sum
 !go.mod
-!Makefile
 
 !README.md
 !LICENSE
 
 !/.github/**/*
 
-# !Makefile
+!Makefile
 
 # ...even if they are in subdirectories
 !*/
