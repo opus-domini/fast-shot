@@ -13,11 +13,12 @@ import (
 )
 
 type Request struct {
-	client      *Client
 	ctx         context.Context
+	client      *Client
+	httpHeader  *http.Header
+	httpCookies []*http.Cookie
 	method      string
 	path        string
-	headers     http.Header
 	queryParams url.Values
 	body        io.Reader
 	validations []error
@@ -25,11 +26,12 @@ type Request struct {
 
 func newRequest(client *Client, method, path string) *Request {
 	return &Request{
-		client:      client,
 		ctx:         context.Background(),
+		client:      client,
+		httpHeader:  &http.Header{},
+		httpCookies: []*http.Cookie{},
 		method:      method,
 		path:        path,
-		headers:     http.Header{},
 		queryParams: url.Values{},
 	}
 }
@@ -40,7 +42,7 @@ func (r *Request) SetContext(ctx context.Context) *Request {
 }
 
 func (r *Request) SetHeader(key, value string) *Request {
-	r.headers.Set(key, value)
+	r.httpHeader.Set(key, value)
 	return r
 }
 
@@ -145,16 +147,16 @@ func (r *Request) Send() (Response, error) {
 		return Response{}, err
 	}
 
-	// Add cookies
+	// Add httpCookies
 	for _, cookie := range r.client.httpCookies {
 		req.AddCookie(cookie)
 	}
 
-	// Clone and attach client headers
+	// Clone and attach client httpHeader
 	req.Header = http.Header.Clone(*r.client.httpHeader)
 
 	// Add Request Headers
-	for key, values := range r.headers {
+	for key, values := range *r.httpHeader {
 		for _, value := range values {
 			req.Header.Add(key, value)
 		}

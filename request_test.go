@@ -29,7 +29,7 @@ func TestRequest_SetHeader(t *testing.T) {
 	req := client.GET("/test").
 		SetHeader("key", "value")
 	// Assert
-	if req.headers == nil || req.headers.Get("key") != "value" {
+	if req.httpHeader == nil || req.httpHeader.Get("key") != "value" {
 		t.Errorf("SetHeader not set correctly")
 	}
 }
@@ -41,7 +41,7 @@ func TestRequest_SetHeaders(t *testing.T) {
 	req := client.GET("/test").
 		SetHeaders(map[string]string{"key": "value"})
 	// Assert
-	if req.headers == nil || req.headers.Get("Key") != "value" {
+	if req.httpHeader == nil || req.httpHeader.Get("Key") != "value" {
 		t.Errorf("SetHeaders not set correctly")
 	}
 }

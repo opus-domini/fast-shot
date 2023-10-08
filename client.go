@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Client encapsulates HTTP client, headers, cookies, and baseURL.
+// Client encapsulates HTTP client, HTTP Header, HTTP Cookies, and baseURL.
 type Client struct {
 	httpClient  *http.Client
 	httpHeader  *http.Header
@@ -24,12 +24,12 @@ type ClientAuthBuilder struct {
 	parentBuilder *ClientBuilder
 }
 
-// ClientHeaderBuilder allows for setting custom headers.
+// ClientHeaderBuilder allows for setting custom HTTP Header.
 type ClientHeaderBuilder struct {
 	parentBuilder *ClientBuilder
 }
 
-// ClientCookieBuilder allows for setting custom cookies.
+// ClientCookieBuilder allows for setting custom HTTP Cookies.
 type ClientCookieBuilder struct {
 	parentBuilder *ClientBuilder
 }
@@ -85,7 +85,7 @@ func (b *ClientAuthBuilder) End() *ClientBuilder {
 	return b.parentBuilder
 }
 
-// Header returns a new ClientHeaderBuilder for setting custom headers.
+// Header returns a new ClientHeaderBuilder for setting custom HTTP Header.
 func (b *ClientBuilder) Header() *ClientHeaderBuilder {
 	return &ClientHeaderBuilder{parentBuilder: b}
 }
@@ -125,7 +125,7 @@ func (b *ClientHeaderBuilder) End() *ClientBuilder {
 	return b.parentBuilder
 }
 
-// Cookie returns a new ClientCookieBuilder for setting custom cookies.
+// Cookie returns a new ClientCookieBuilder for setting custom HTTP Cookies.
 func (b *ClientBuilder) Cookie() *ClientCookieBuilder {
 	return &ClientCookieBuilder{parentBuilder: b}
 }
