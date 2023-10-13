@@ -10,18 +10,29 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
+)
+
+const (
+	ErrMsgValidation       = "invalid request attributes"
+	ErrMsgCreateRequest    = "failed to create request"
+	ErrMsgMarshalJSON      = "failed to marshal JSON"
+	ErrMsgParseQueryString = "failed to parse query string"
+	ErrMsgParseURL         = "failed to parse URL"
 )
 
 type Request struct {
-	ctx         context.Context
-	client      *Client
-	httpHeader  *http.Header
-	httpCookies []*http.Cookie
-	method      string
-	path        string
-	queryParams url.Values
-	body        io.Reader
-	validations []error
+	ctx           context.Context
+	client        *Client
+	httpHeader    *http.Header
+	httpCookies   []*http.Cookie
+	method        string
+	path          string
+	queryParams   url.Values
+	body          io.Reader
+	validations   []error
+	retries       int
+	retryInterval time.Duration
 }
 
 func newRequest(client *Client, method, path string) *Request {
@@ -53,6 +64,11 @@ func (r *Request) SetHeaders(headers map[string]string) *Request {
 	return r
 }
 
+func (r *Request) AddCookie(cookie *http.Cookie) *Request {
+	r.httpCookies = append(r.httpCookies, cookie)
+	return r
+}
+
 func (r *Request) AddQueryParam(param, value string) *Request {
 	r.queryParams.Add(param, value)
 	return r
@@ -74,7 +90,7 @@ func (r *Request) SetQueryString(query string) *Request {
 	// Parse query string
 	queryParams, err := url.ParseQuery(strings.TrimSpace(query))
 	if err != nil {
-		r.validations = append(r.validations, fmt.Errorf("failed to parse query string: %w", err))
+		r.validations = append(r.validations, errors.Join(errors.New(ErrMsgParseQueryString), err))
 		return r
 	}
 	// Set query params
@@ -83,6 +99,12 @@ func (r *Request) SetQueryString(query string) *Request {
 			r.AddQueryParam(param, value)
 		}
 	}
+	return r
+}
+
+func (r *Request) SetRetry(retries int, retryInterval time.Duration) *Request {
+	r.retries = retries
+	r.retryInterval = retryInterval
 	return r
 }
 
@@ -95,7 +117,7 @@ func (r *Request) BodyJSON(obj interface{}) *Request {
 	// Marshal JSON
 	bodyBytes, err := json.Marshal(obj)
 	if err != nil {
-		r.validations = append(r.validations, fmt.Errorf("failed to marshal JSON: %w", err))
+		r.validations = append(r.validations, errors.Join(errors.New(ErrMsgMarshalJSON), err))
 		return r
 	}
 	// Set body
@@ -107,7 +129,7 @@ func (r *Request) createFullURL() (*url.URL, error) {
 	// Parse base URL and path
 	fullURL, err := url.Parse(r.client.baseURL + r.path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse URL: %w", err)
+		return nil, errors.Join(errors.New(ErrMsgParseURL), err)
 	}
 
 	// Add query params
@@ -122,48 +144,72 @@ func (r *Request) createFullURL() (*url.URL, error) {
 	return fullURL, nil
 }
 
-func (r *Request) validate() error {
-	if len(r.validations) > 0 {
-		return errors.Join(r.validations...)
-	}
-	return nil
-}
-
-func (r *Request) Send() (Response, error) {
-	// Check for validation errors
-	if err := r.validate(); err != nil {
-		return Response{}, err
-	}
-
+func (r *Request) createHTTPRequest() (*http.Request, error) {
 	// Create full URL
 	fullURL, err := r.createFullURL()
 	if err != nil {
-		return Response{}, err
+		return nil, err
 	}
 
-	// Create request
-	req, err := http.NewRequestWithContext(r.ctx, r.method, fullURL.String(), r.body)
+	// Create Http Request with context
+	request, err := http.NewRequestWithContext(r.ctx, r.method, fullURL.String(), r.body)
 	if err != nil {
-		return Response{}, err
+		return nil, err
 	}
 
-	// Add httpCookies
+	// Add client httpCookies
 	for _, cookie := range r.client.httpCookies {
-		req.AddCookie(cookie)
+		request.AddCookie(cookie)
+	}
+
+	// Add request httpCookies
+	for _, cookie := range r.httpCookies {
+		request.AddCookie(cookie)
 	}
 
 	// Clone and attach client httpHeader
-	req.Header = http.Header.Clone(*r.client.httpHeader)
+	request.Header = http.Header.Clone(*r.client.httpHeader)
 
 	// Add Request Headers
 	for key, values := range *r.httpHeader {
 		for _, value := range values {
-			req.Header.Add(key, value)
+			request.Header.Add(key, value)
 		}
 	}
 
-	// Execute request
-	response, err := r.client.httpClient.Do(req)
+	return request, nil
+}
 
-	return Response{Request: r, RawResponse: response}, nil
+func (r *Request) Send() (Response, error) {
+	// Check for validation errors
+	if err := errors.Join(r.validations...); err != nil {
+		return Response{}, errors.Join(errors.New(ErrMsgValidation), err)
+	}
+
+	// Create request
+	req, err := r.createHTTPRequest()
+	if err != nil {
+		return Response{}, errors.Join(errors.New(ErrMsgCreateRequest), err)
+	}
+
+	var response *http.Response
+	var errAttempts []error
+
+	for i := 0; i <= r.retries; i++ {
+		// Execute request
+		response, err = r.client.httpClient.Do(req)
+		// Check for errors
+		resp := Response{Request: r, RawResponse: response}
+		if err == nil && !resp.IsError() {
+			return resp, nil
+		}
+		// Append error
+		errAttempts = append(errAttempts, fmt.Errorf("attempt %d: %w", i+1, err))
+		// Delay before retry (if applicable)
+		if i < r.retries {
+			time.Sleep(r.retryInterval)
+		}
+	}
+
+	return Response{Request: r, RawResponse: response}, fmt.Errorf("request failed after %d attempts: %w", r.retries+1, errors.Join(errAttempts...))
 }

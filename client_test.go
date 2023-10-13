@@ -2,7 +2,9 @@ package fastshot
 
 import (
 	"encoding/base64"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -247,13 +249,53 @@ func TestClientConfigBuilder_SetCustomTransport(t *testing.T) {
 
 func TestClientConfigBuilder_SetFollowRedirects(t *testing.T) {
 	// Arrange
-	builder := NewClient("https://example.com")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/redirect" {
+			http.Redirect(w, r, "/target", http.StatusFound) // StatusFound 302
+			return
+		}
+		_, _ = w.Write([]byte("OK"))
+	}))
+	defer server.Close()
+
+	tests := []struct {
+		name            string
+		followRedirects bool
+		wantFinalURL    string
+	}{
+		{
+			name:            "Follow Redirects",
+			followRedirects: true,
+			wantFinalURL:    server.URL + "/target",
+		},
+		{
+			name:            "Do Not Follow Redirects",
+			followRedirects: false,
+			wantFinalURL:    server.URL + "/redirect",
+		},
+	}
+
 	// Act
-	configBuilder := builder.Config()
-	configBuilder.SetFollowRedirects(false)
-	// Assert
-	if builder.client.httpClient.CheckRedirect == nil {
-		t.Errorf("CheckRedirect not set correctly")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := NewClient(server.URL).
+				Config().SetFollowRedirects(tt.followRedirects).End().
+				Build()
+
+			resp, err := client.GET("/redirect").Send()
+			if err != nil {
+				t.Fatalf("Failed: %v", err)
+			}
+
+			defer func(Body io.ReadCloser) {
+				_ = Body.Close()
+			}(resp.RawBody())
+
+			// Assert
+			if resp.RawResponse.Request.URL.String() != tt.wantFinalURL {
+				t.Errorf("Final URL = %v, want %v", resp.RawResponse.Request.URL, tt.wantFinalURL)
+			}
+		})
 	}
 }
 
