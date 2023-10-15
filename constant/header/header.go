@@ -1,5 +1,6 @@
 package header
 
+// noinspection GoUnusedConst
 const (
 	Accept                        = "Accept"
 	AcceptCharset                 = "Accept-Charset"
