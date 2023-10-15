@@ -1,6 +1,7 @@
 package fastshot
 
 import (
+	"github.com/opus-domini/fast-shot/constant/method"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,15 +20,17 @@ func TestClientMethods(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		methodFunc func(string) *Request
+		methodFunc func(string) *RequestBuilder
 	}{
-		{http.MethodGet, client.GET},
-		{http.MethodPost, client.POST},
-		{http.MethodPut, client.PUT},
-		{http.MethodDelete, client.DELETE},
-		{http.MethodPatch, client.PATCH},
-		{http.MethodHead, client.HEAD},
-		{http.MethodOptions, client.OPTIONS},
+		{method.CONNECT, client.CONNECT},
+		{method.DELETE, client.DELETE},
+		{method.GET, client.GET},
+		{method.HEAD, client.HEAD},
+		{method.OPTIONS, client.OPTIONS},
+		{method.PATCH, client.PATCH},
+		{method.POST, client.POST},
+		{method.PUT, client.PUT},
+		{method.TRACE, client.TRACE},
 	}
 
 	for _, tt := range tests {

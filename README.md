@@ -47,28 +47,23 @@ package main
 import (
     "fmt"
     fastshot "github.com/opus-domini/fast-shot"
+    "github.com/opus-domini/fast-shot/constant/header"
 )
 
 func main() {
     client := fastshot.NewClient("https://api.example.com").
-        Auth().
-            BearerToken("your_token_here").
-        End().        
+        Auth().BearerToken("your_token_here").
         Build()
 
     payload := map[string]interface{}{
         "key1": "value1",
         "key2": "value2",
     }
-	
+
     response, err := client.POST("/endpoint").
-        BodyJSON(payload).
+        Header().Accept("application/json").
+        Body().AsJSON(payload).
         Send()
-	
-    if err != nil {
-        fmt.Println("Error: ", err)
-        return
-    }
 	
     // Process response...
 }
@@ -82,9 +77,9 @@ Easily chain multiple settings in a single line:
 
 ```go 
 client := fastshot.NewClient("https://api.example.com").
-    Auth().BearerToken("your-bearer-token").End().
-    Header().Add("My-Header", "My-Value").End().
-    Config().SetTimeout(time.Second * 30).End().
+    Auth().BearerToken("your-bearer-token").
+    Header().Add("My-Header", "My-Value").
+    Config().SetTimeout(time.Second * 30).
     Build()
 ```
 
@@ -94,10 +89,10 @@ Fast Shot supports various types of authentication:
 
 ```go
 // Bearer Token
-builder.Auth().BearerToken("your-bearer-token").End()
+builder.Auth().BearerToken("your-bearer-token").
 
 // Basic Authentication
-builder.Auth().BasicAuth("username", "password").End()
+builder.Auth().BasicAuth("username", "password").
 ```
 
 ### Custom Headers and Cookies
@@ -105,18 +100,21 @@ builder.Auth().BasicAuth("username", "password").End()
 Add your own headers and cookies effortlessly:
 
 ```go 
-// Add Custom Headers
-builder.
-    Header().
-        Add("Custom-Header-1", "value").
-        Add("Custom-Header-2", "value").
-    End()
+// Add Custom Header
+builder.Header().
+    Add("header", "value")
+
+// Add Multiple Custom Headers
+builder.Header().
+    AddAll(map[string]string{
+        "key1": "value1",
+        "key2": "value2",
+        "key3": "value3",
+    })
+	
 
 // Add Custom Cookie
-builder.
-    Cookie().
-        Add(&http.Cookie{Name: "session_id", Value: "id"}).
-    End()
+builder.Cookie().Add(&http.Cookie{Name: "session_id", Value: "id"})
 ```
 
 ### Advanced Configurations
