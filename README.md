@@ -82,6 +82,15 @@ client := fastshot.NewClient("https://api.example.com").
     Config().SetTimeout(time.Second * 30).
     Build()
 ```
+### Retry Mechanism
+
+Handle transient failures, enhancing the reliability of your HTTP requests:
+
+```go 
+client.POST("/resource").
+    Retry().Set(2, time.Second * 2).
+    Send()
+```
 
 ### Authentication
 
@@ -89,10 +98,13 @@ Fast Shot supports various types of authentication:
 
 ```go
 // Bearer Token
-builder.Auth().BearerToken("your-bearer-token").
+builder.Auth().BearerToken("your-bearer-token")
 
 // Basic Authentication
-builder.Auth().BasicAuth("username", "password").
+builder.Auth().BasicAuth("username", "password")
+
+// Custom Authentication
+builder.Auth().Set("custom-authentication-header")
 ```
 
 ### Custom Headers and Cookies
@@ -111,10 +123,10 @@ builder.Header().
         "key2": "value2",
         "key3": "value3",
     })
-	
 
 // Add Custom Cookie
-builder.Cookie().Add(&http.Cookie{Name: "session_id", Value: "id"})
+builder.Cookie().
+    Add(&http.Cookie{Name: "session_id", Value: "id"})
 ```
 
 ### Advanced Configurations
@@ -123,10 +135,16 @@ Control every aspect of the HTTP client:
 
 ```go
 // Set Timeout
-builder.Config().SetTimeout(time.Second * 30).End()
+builder.Config().
+    SetTimeout(time.Second * 30)
 
-// Custom Transport
-builder.Config().SetCustomTransport(myCustomTransport).End()
+// Set Follow Redirect
+builder.Config().
+    SetFollowRedirects(false)
+
+// Set Custom Transport
+builder.Config()
+    .SetCustomTransport(myCustomTransport)
 ````
 
 ## Contributing 🤝
