@@ -143,8 +143,8 @@ builder.Config().
     SetFollowRedirects(false)
 
 // Set Custom Transport
-builder.Config()
-    .SetCustomTransport(myCustomTransport)
+builder.Config().
+    SetCustomTransport(myCustomTransport)
 ````
 
 ## Contributing 🤝
