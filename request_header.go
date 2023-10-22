@@ -4,6 +4,9 @@ import (
 	"github.com/opus-domini/fast-shot/constant/header"
 )
 
+// Header is the interface that wraps the basic methods for setting custom HTTP Header.
+var _ Header[RequestBuilder] = (*RequestHeaderBuilder)(nil)
+
 // RequestHeaderBuilder is a builder for setting custom HTTP Header.
 type RequestHeaderBuilder struct {
 	parentBuilder *RequestBuilder

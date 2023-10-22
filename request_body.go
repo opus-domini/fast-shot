@@ -8,12 +8,15 @@ import (
 	"io"
 )
 
-// RequestBodyBuilder serves as the main entry point for configuring Body.
+// RequestBody is the interface that wraps the basic methods for setting custom HTTP Body's.
+var _ RequestBody[RequestBuilder] = (*RequestBodyBuilder)(nil)
+
+// RequestBodyBuilder serves as the main entry point for configuring RequestBody.
 type RequestBodyBuilder struct {
 	parentBuilder *RequestBuilder
 }
 
-// Body returns a new RequestBodyBuilder for setting custom HTTP Bodys.
+// Body returns a new RequestBodyBuilder for setting custom HTTP Body's.
 func (b *RequestBuilder) Body() *RequestBodyBuilder {
 	return &RequestBodyBuilder{parentBuilder: b}
 }

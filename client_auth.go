@@ -5,6 +5,9 @@ import (
 	"github.com/opus-domini/fast-shot/constant/header"
 )
 
+// ClientAuth is the interface that wraps the basic methods for setting authentication configurations.
+var _ ClientAuth[ClientBuilder] = (*ClientAuthBuilder)(nil)
+
 // ClientAuthBuilder allows for setting authentication configurations.
 type ClientAuthBuilder struct {
 	parentBuilder *ClientBuilder

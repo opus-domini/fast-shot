@@ -5,12 +5,15 @@ import (
 	"time"
 )
 
+// ClientConfig is the interface that wraps the basic methods for setting HTTP Client configuration.
+var _ ClientConfig[ClientBuilder] = (*ClientConfigBuilder)(nil)
+
 // ClientConfigBuilder allows for setting other client configurations.
 type ClientConfigBuilder struct {
 	parentBuilder *ClientBuilder
 }
 
-// Config returns a new ClientConfigBuilder for setting custom client configurations.
+// ClientConfig returns a new ClientConfigBuilder for setting custom client configurations.
 func (b *ClientBuilder) Config() *ClientConfigBuilder {
 	return &ClientConfigBuilder{parentBuilder: b}
 }

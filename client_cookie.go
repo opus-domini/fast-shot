@@ -4,6 +4,9 @@ import (
 	"net/http"
 )
 
+// Cookie is the interface that wraps the basic methods for setting HTTP Cookies.
+var _ Cookie[ClientBuilder] = (*ClientCookieBuilder)(nil)
+
 // ClientCookieBuilder allows for setting custom HTTP Cookies.
 type ClientCookieBuilder struct {
 	parentBuilder *ClientBuilder
