@@ -13,7 +13,7 @@ type ClientConfigBuilder struct {
 	parentBuilder *ClientBuilder
 }
 
-// ClientConfig returns a new ClientConfigBuilder for setting custom client configurations.
+// Config returns a new ClientConfigBuilder for setting custom client configurations.
 func (b *ClientBuilder) Config() *ClientConfigBuilder {
 	return &ClientConfigBuilder{parentBuilder: b}
 }

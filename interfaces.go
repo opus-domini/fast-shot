@@ -23,8 +23,8 @@ type Cookie[T any] interface {
 	Add(cookie *http.Cookie) *T
 }
 
-// ClientAuth is the interface that wraps the basic methods for setting HTTP Authentication.
-type ClientAuth[T any] interface {
+// Auth is the interface that wraps the basic methods for setting HTTP Authentication.
+type Auth[T any] interface {
 	Set(value string) *T
 	BearerToken(token string) *T
 	BasicAuth(username, password string) *T
