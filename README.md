@@ -47,7 +47,7 @@ package main
 import (
     "fmt"
     fastshot "github.com/opus-domini/fast-shot"
-    "github.com/opus-domini/fast-shot/constant/header"
+    "github.com/opus-domini/fast-shot/constant/mime"
 )
 
 func main() {
@@ -61,7 +61,7 @@ func main() {
     }
 
     response, err := client.POST("/endpoint").
-        Header().Accept("application/json").
+        Header().Accept(mime.JSON).
         Body().AsJSON(payload).
         Send()
 	
