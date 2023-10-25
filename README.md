@@ -39,7 +39,7 @@ go get github.com/opus-domini/fast-shot
 
 ## Quick Start 🚀
 
-Here's how you can make a simple GET request using Fast Shot:
+Here's how you can make a simple POST using Fast Shot:
 
 ```go
 package main
