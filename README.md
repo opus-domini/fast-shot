@@ -1,5 +1,6 @@
+![Logo fast-shot](docs/assets/images/logo.png)
 <div style="text-align: center;">
-    <h1>Fast Shot</h1>
+    <hr />
     <p>A Fluent Go REST Client Library</p>
     <p>
         <a href="https://goreportcard.com/report/opus-domini/fast-shot"><img src="https://goreportcard.com/badge/opus-domini/fast-shot" alt="Go Report Badge"></a>
