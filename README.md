@@ -61,7 +61,7 @@ func main() {
     }
 
     response, err := client.POST("/endpoint").
-        Header().Accept(mime.JSON).
+        Header().AddAccept(mime.JSON).
         Body().AsJSON(payload).
         Send()
 	
