@@ -1,4 +1,4 @@
-<div style="text-align: center;">
+<div align="center">
     <img src="docs/assets/images/logo.png" alt="Logo fast-shot" width="320"/>
     <hr />
     <p>A Fluent Go REST Client Library</p>
