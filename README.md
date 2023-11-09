@@ -146,6 +146,10 @@ builder.Config().
 // Set Custom Transport
 builder.Config().
     SetCustomTransport(myCustomTransport)
+
+// Set Proxy
+builder.Config().
+    SetProxy("http://my-proxy-server:port")
 ````
 
 ## Contributing 🤝
