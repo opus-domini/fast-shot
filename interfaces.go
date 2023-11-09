@@ -32,9 +32,10 @@ type Auth[T any] interface {
 
 // ClientConfig is the interface that wraps the basic methods for setting HTTP Client configuration.
 type ClientConfig[T any] interface {
+	SetCustomTransport(transport http.RoundTripper) *T
 	SetTimeout(duration time.Duration) *T
 	SetFollowRedirects(follow bool) *T
-	SetCustomTransport(transport http.RoundTripper) *T
+	SetProxy(proxyURL string) *T
 }
 
 // RequestContext is the interface that wraps the basic methods for setting HTTP RequestContext.

@@ -98,10 +98,37 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 	return request, nil
 }
 
+func (b *RequestBuilder) executeWithRetry(req *http.Request) (Response, error) {
+	var errExecution error
+	var errAttempts []error
+	var response *http.Response
+	for i := 0; i <= b.request.retries; i++ {
+		// Execute request
+		response, errExecution = b.request.client.httpClient.Do(req)
+		// Check for errors
+		resp := Response{Request: b.request, RawResponse: response}
+		if errExecution == nil && !resp.IsError() {
+			return resp, nil
+		}
+		// Append error
+		errAttempts = append(errAttempts, fmt.Errorf("attempt %d: %w", i+1, errExecution))
+		// Delay before retry (if applicable)
+		if i < b.request.retries {
+			time.Sleep(b.request.retryInterval)
+		}
+	}
+	return Response{Request: b.request, RawResponse: response}, fmt.Errorf("request failed after %d attempts: %w", b.request.retries+1, errors.Join(errAttempts...))
+}
+
 func (b *RequestBuilder) Send() (Response, error) {
-	// Check for validation errors
+	// Check for client validation errors
+	if err := errors.Join(b.request.client.validations...); err != nil {
+		return Response{}, errors.Join(errors.New(constant.ErrMsgClientValidation), err)
+	}
+
+	// Check for request validation errors
 	if err := errors.Join(b.request.validations...); err != nil {
-		return Response{}, errors.Join(errors.New(constant.ErrMsgValidation), err)
+		return Response{}, errors.Join(errors.New(constant.ErrMsgRequestValidation), err)
 	}
 
 	// Create request
@@ -110,24 +137,6 @@ func (b *RequestBuilder) Send() (Response, error) {
 		return Response{}, errors.Join(errors.New(constant.ErrMsgCreateRequest), err)
 	}
 
-	var response *http.Response
-	var errAttempts []error
-
-	for i := 0; i <= b.request.retries; i++ {
-		// Execute request
-		response, err = b.request.client.httpClient.Do(req)
-		// Check for errors
-		resp := Response{Request: b.request, RawResponse: response}
-		if err == nil && !resp.IsError() {
-			return resp, nil
-		}
-		// Append error
-		errAttempts = append(errAttempts, fmt.Errorf("attempt %d: %w", i+1, err))
-		// Delay before retry (if applicable)
-		if i < b.request.retries {
-			time.Sleep(b.request.retryInterval)
-		}
-	}
-
-	return Response{Request: b.request, RawResponse: response}, fmt.Errorf("request failed after %d attempts: %w", b.request.retries+1, errors.Join(errAttempts...))
+	// Execute the request with retry logic
+	return b.executeWithRetry(req)
 }

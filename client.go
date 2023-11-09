@@ -10,6 +10,7 @@ type Client struct {
 	httpHeader  *http.Header
 	httpCookies []*http.Cookie
 	baseURL     string
+	validations []error
 }
 
 // ClientBuilder serves as the main entry point for configuring HTTP clients.

@@ -135,6 +135,7 @@ func TestRequest_Send(t *testing.T) {
 
 	tests := []struct {
 		name           string
+		client         *Client
 		configure      func(client *Client) *RequestBuilder
 		expectedResult map[string]string
 		expectedError  string
@@ -147,12 +148,22 @@ func TestRequest_Send(t *testing.T) {
 			expectedResult: map[string]string{"message": "Success!"},
 		},
 		{
+			name: "Client Proxy URL Parser Error",
+			client: NewClient("https://example.com").
+				Config().SetProxy(":%^:").
+				Build(),
+			configure: func(client *Client) *RequestBuilder {
+				return client.GET("/test")
+			},
+			expectedError: constant.ErrMsgClientValidation,
+		},
+		{
 			name: "JSON Marshalling Error",
 			configure: func(client *Client) *RequestBuilder {
 				invalidObject := func() {}
 				return client.GET("/test").Body().AsJSON(invalidObject)
 			},
-			expectedError: constant.ErrMsgValidation,
+			expectedError: constant.ErrMsgRequestValidation,
 		},
 		{
 			name: "URL Error",
@@ -165,8 +176,11 @@ func TestRequest_Send(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := DefaultClient(server.URL)
-			req := tt.configure(client)
+			if tt.client == nil {
+				tt.client = DefaultClient(server.URL)
+			}
+
+			req := tt.configure(tt.client)
 
 			resp, err := req.Send()
 			if err != nil && tt.expectedError == "" {

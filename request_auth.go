@@ -14,25 +14,25 @@ type RequestAuthBuilder struct {
 }
 
 // Auth returns a new ClientAuthBuilder for setting authentication options.
-func (r *RequestBuilder) Auth() *RequestAuthBuilder {
-	return &RequestAuthBuilder{parentBuilder: r}
+func (b *RequestBuilder) Auth() *RequestAuthBuilder {
+	return &RequestAuthBuilder{parentBuilder: b}
 }
 
 // Set sets the Authorization header for custom authentication.
-func (r *RequestAuthBuilder) Set(value string) *RequestBuilder {
-	r.parentBuilder.request.httpHeader.Set(header.Authorization, value)
-	return r.parentBuilder
+func (b *RequestAuthBuilder) Set(value string) *RequestBuilder {
+	b.parentBuilder.request.httpHeader.Set(header.Authorization, value)
+	return b.parentBuilder
 }
 
 // BearerToken sets the Authorization header for Bearer token authentication.
-func (r *RequestAuthBuilder) BearerToken(token string) *RequestBuilder {
-	r.Set("Bearer " + token)
-	return r.parentBuilder
+func (b *RequestAuthBuilder) BearerToken(token string) *RequestBuilder {
+	b.Set("Bearer " + token)
+	return b.parentBuilder
 }
 
 // BasicAuth sets the Authorization header for Basic authentication.
-func (r *RequestAuthBuilder) BasicAuth(username, password string) *RequestBuilder {
+func (b *RequestAuthBuilder) BasicAuth(username, password string) *RequestBuilder {
 	encoded := base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
-	r.Set("Basic " + encoded)
-	return r.parentBuilder
+	b.Set("Basic " + encoded)
+	return b.parentBuilder
 }

@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -78,5 +79,48 @@ func TestClientConfigBuilder_SetCustomTransport(t *testing.T) {
 	// Assert
 	if builder.client.httpClient.Transport == nil {
 		t.Errorf("Transport not set correctly")
+	}
+}
+
+func TestClientConfigBuilder_SetProxy(t *testing.T) {
+	// Arrange
+	builder := NewClient("https://example.com")
+	// Act
+	builder.Config().SetProxy("http://localhost:8080")
+	// Assert
+	if builder.client.httpClient.Transport == nil {
+		t.Errorf("Transport not set correctly")
+	}
+}
+
+func TestClientConfigBuilder_SetProxy_WithCustomTransport(t *testing.T) {
+	// Arrange
+	builder := NewClient("https://example.com")
+	// Act
+	builder.Config().SetCustomTransport(
+		&http.Transport{
+			Proxy: http.ProxyURL(&url.URL{
+				Scheme: "http",
+				Host:   "localhost:9090",
+			}),
+		}).
+		Config().SetProxy("http://localhost:8080")
+	// Assert
+	if builder.client.httpClient.Transport == nil {
+		t.Errorf("Transport not set correctly")
+	}
+}
+
+func TestClientConfigBuilder_SetProxy_WithProxyURLParserError(t *testing.T) {
+	// Arrange
+	builder := NewClient("https://example.com")
+	// Act
+	builder.Config().SetProxy(":%^:")
+	// Assert
+	if builder.client.httpClient.Transport != nil {
+		t.Errorf("Transport should not be set")
+	}
+	if len(builder.client.validations) != 1 {
+		t.Errorf("Validation for proxy URL parser error not set correctly")
 	}
 }
