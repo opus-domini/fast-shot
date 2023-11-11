@@ -98,17 +98,23 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 	return request, nil
 }
 
+func (b *RequestBuilder) execute(req *http.Request) (Response, error) {
+	// Execute request
+	response, err := b.request.client.httpClient.Do(req)
+
+	return Response{Request: b.request, RawResponse: response}, err
+}
+
 func (b *RequestBuilder) executeWithRetry(req *http.Request) (Response, error) {
 	var errExecution error
 	var errAttempts []error
-	var response *http.Response
+	var response Response
 	for i := 0; i <= b.request.retries; i++ {
 		// Execute request
-		response, errExecution = b.request.client.httpClient.Do(req)
+		response, errExecution = b.execute(req)
 		// Check for errors
-		resp := Response{Request: b.request, RawResponse: response}
-		if errExecution == nil && !resp.IsError() {
-			return resp, nil
+		if errExecution == nil && !response.IsError() {
+			return response, nil
 		}
 		// Append error
 		errAttempts = append(errAttempts, fmt.Errorf("attempt %d: %w", i+1, errExecution))
@@ -117,7 +123,7 @@ func (b *RequestBuilder) executeWithRetry(req *http.Request) (Response, error) {
 			time.Sleep(b.request.retryInterval)
 		}
 	}
-	return Response{Request: b.request, RawResponse: response}, fmt.Errorf("request failed after %d attempts: %w", b.request.retries+1, errors.Join(errAttempts...))
+	return response, fmt.Errorf("request failed after %d attempts: %w", b.request.retries+1, errors.Join(errAttempts...))
 }
 
 func (b *RequestBuilder) Send() (Response, error) {
@@ -137,6 +143,11 @@ func (b *RequestBuilder) Send() (Response, error) {
 		return Response{}, errors.Join(errors.New(constant.ErrMsgCreateRequest), err)
 	}
 
-	// Execute the request with retry logic
-	return b.executeWithRetry(req)
+	// Check if retries are enabled
+	if b.request.retries > 1 {
+		return b.executeWithRetry(req)
+	}
+
+	// Execute the request
+	return b.execute(req)
 }
