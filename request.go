@@ -123,7 +123,7 @@ func (b *RequestBuilder) executeWithRetry(req *http.Request) (Response, error) {
 			time.Sleep(b.request.retryInterval)
 		}
 	}
-	return response, fmt.Errorf("request failed after %d attempts: %w", b.request.retries+1, errors.Join(errAttempts...))
+	return response, fmt.Errorf("request failed after %d attempts: %w", b.request.retries, errors.Join(errAttempts...))
 }
 
 func (b *RequestBuilder) Send() (Response, error) {
