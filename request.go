@@ -109,7 +109,7 @@ func (b *RequestBuilder) executeWithRetry(req *http.Request) (Response, error) {
 	var errExecution error
 	var errAttempts []error
 	var response Response
-	for i := 0; i <= b.request.retries; i++ {
+	for i := 0; i < b.request.retries; i++ {
 		// Execute request
 		response, errExecution = b.execute(req)
 		// Check for errors
