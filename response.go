@@ -1,6 +1,7 @@
 package fastshot
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -22,6 +23,13 @@ func (r *Response) StatusCode() int {
 		return 0
 	}
 	return r.RawResponse.StatusCode
+}
+
+func (r *Response) StatusText() string {
+	if r.RawResponse == nil {
+		return ""
+	}
+	return fmt.Sprintf("[%d] %s", r.RawResponse.StatusCode, http.StatusText(r.RawResponse.StatusCode))
 }
 
 func (r *Response) RawBody() io.ReadCloser {

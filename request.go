@@ -113,8 +113,11 @@ func (b *RequestBuilder) executeWithRetry(req *http.Request) (Response, error) {
 		// Execute request
 		response, errExecution = b.execute(req)
 		// Check for errors
-		if errExecution == nil && !response.IsError() {
-			return response, nil
+		if errExecution == nil {
+			if !response.IsError() {
+				return response, nil
+			}
+			errExecution = errors.New(response.StatusText())
 		}
 		// Append error
 		errAttempts = append(errAttempts, fmt.Errorf("attempt %d: %w", i+1, errExecution))

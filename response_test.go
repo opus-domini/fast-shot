@@ -139,6 +139,32 @@ func TestResponse_Status(t *testing.T) {
 	}
 }
 
+func TestResponse_StatusText(t *testing.T) {
+	// Test case when RawResponse is nil
+	r := &Response{}
+	if r.StatusText() != "" {
+		t.Errorf("Status Text should return empty string when RawResponse is nil")
+	}
+
+	// Test case when status is 200
+	r = makeResponseFromServer(200)
+	if r.StatusText() != "[200] OK" {
+		t.Errorf("Status failed for status 200")
+	}
+
+	// Test case when status is 200
+	r = makeResponseFromServer(400)
+	if r.StatusText() != "[400] Bad Request" {
+		t.Errorf("Status failed for status 400")
+	}
+
+	// Test case when status is 200
+	r = makeResponseFromServer(500)
+	if r.StatusText() != "[500] Internal Server Error" {
+		t.Errorf("Status failed for status 500")
+	}
+}
+
 func TestResponse_RawBody(t *testing.T) {
 	// Test case when RawResponse is nil
 	r := &Response{}
