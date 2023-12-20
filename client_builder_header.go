@@ -4,22 +4,22 @@ import (
 	"github.com/opus-domini/fast-shot/constant/header"
 )
 
-// Header is the interface that wraps the basic methods for setting custom HTTP Header.
-var _ Header[ClientBuilder] = (*ClientHeaderBuilder)(nil)
+// BuilderHeader is the interface that wraps the basic methods for setting custom HTTP BuilderHeader.
+var _ BuilderHeader[ClientBuilder] = (*ClientHeaderBuilder)(nil)
 
-// ClientHeaderBuilder allows for setting custom HTTP Header.
+// ClientHeaderBuilder allows for setting custom HTTP BuilderHeader.
 type ClientHeaderBuilder struct {
 	parentBuilder *ClientBuilder
 }
 
-// Header returns a new ClientHeaderBuilder for setting custom HTTP Header.
+// BuilderHeader returns a new ClientHeaderBuilder for setting custom HTTP BuilderHeader.
 func (b *ClientBuilder) Header() *ClientHeaderBuilder {
 	return &ClientHeaderBuilder{parentBuilder: b}
 }
 
 // Add adds a custom header to the HTTP client. If header already exists, it will be appended.
 func (b *ClientHeaderBuilder) Add(key, value string) *ClientBuilder {
-	b.parentBuilder.client.httpHeader.Add(key, value)
+	b.parentBuilder.client.HttpHeader().Add(key, value)
 	return b.parentBuilder
 }
 
@@ -33,7 +33,7 @@ func (b *ClientHeaderBuilder) AddAll(headers map[string]string) *ClientBuilder {
 
 // Set sets a custom header to the HTTP client. If header already exists, it will be overwritten.
 func (b *ClientHeaderBuilder) Set(key, value string) *ClientBuilder {
-	b.parentBuilder.client.httpHeader.Set(key, value)
+	b.parentBuilder.client.HttpHeader().Set(key, value)
 	return b.parentBuilder
 }
 

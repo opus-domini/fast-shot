@@ -93,6 +93,22 @@ client.POST("/resource").
     Send()
 ```
 
+### Out-of-the-Box Support for Client Load Balancing
+
+Effortlessly manage multiple endpoints:
+
+```go
+client := fastshot.NewClientLoadBalancer([]string{
+    "https://api1.example.com",
+    "https://api2.example.com",
+    "https://api3.example.com",
+    }).
+    Config().SetTimeout(time.Second * 10).
+    Build()
+```
+
+This feature allows you to distribute network traffic across several servers, enhancing the performance and reliability of your applications.
+
 ### Authentication
 
 Fast Shot supports various types of authentication:

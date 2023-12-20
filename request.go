@@ -13,7 +13,7 @@ import (
 
 type Request struct {
 	ctx           context.Context
-	client        *Client
+	client        ClientConfig
 	httpHeader    *http.Header
 	httpCookies   []*http.Cookie
 	method        string
@@ -29,7 +29,7 @@ type RequestBuilder struct {
 	request *Request
 }
 
-func newRequest(client *Client, method, path string) *RequestBuilder {
+func newRequest(client ClientConfig, method, path string) *RequestBuilder {
 	return &RequestBuilder{
 		request: &Request{
 			ctx:         context.Background(),
@@ -43,12 +43,9 @@ func newRequest(client *Client, method, path string) *RequestBuilder {
 	}
 }
 
-func (b *RequestBuilder) createFullURL() (*url.URL, error) {
+func (b *RequestBuilder) createFullURL() *url.URL {
 	// Parse base URL and path
-	fullURL, err := url.Parse(b.request.client.baseURL + b.request.path)
-	if err != nil {
-		return nil, errors.Join(errors.New(constant.ErrMsgParseURL), err)
-	}
+	fullURL := b.request.client.BaseURL().JoinPath(b.request.path)
 
 	// Add query params
 	query := fullURL.Query()
@@ -59,15 +56,12 @@ func (b *RequestBuilder) createFullURL() (*url.URL, error) {
 	}
 	fullURL.RawQuery = query.Encode()
 
-	return fullURL, nil
+	return fullURL
 }
 
 func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 	// Create full URL
-	fullURL, err := b.createFullURL()
-	if err != nil {
-		return nil, err
-	}
+	fullURL := b.createFullURL()
 
 	// Create Http Request with context
 	request, err := http.NewRequestWithContext(b.request.ctx, b.request.method, fullURL.String(), b.request.body)
@@ -76,7 +70,7 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 	}
 
 	// Add client httpCookies
-	for _, cookie := range b.request.client.httpCookies {
+	for _, cookie := range b.request.client.HttpCookies() {
 		request.AddCookie(cookie)
 	}
 
@@ -86,7 +80,7 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 	}
 
 	// Clone and attach client httpHeader
-	request.Header = http.Header.Clone(*b.request.client.httpHeader)
+	request.Header = http.Header.Clone(*b.request.client.HttpHeader())
 
 	// Add Request Headers
 	for key, values := range *b.request.httpHeader {
@@ -100,7 +94,7 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 
 func (b *RequestBuilder) execute(req *http.Request) (Response, error) {
 	// Execute request
-	response, err := b.request.client.httpClient.Do(req)
+	response, err := b.request.client.HttpClient().Do(req)
 
 	return Response{Request: b.request, RawResponse: response}, err
 }
@@ -131,7 +125,7 @@ func (b *RequestBuilder) executeWithRetry(req *http.Request) (Response, error) {
 
 func (b *RequestBuilder) Send() (Response, error) {
 	// Check for client validation errors
-	if err := errors.Join(b.request.client.validations...); err != nil {
+	if err := errors.Join(b.request.client.Validations()...); err != nil {
 		return Response{}, errors.Join(errors.New(constant.ErrMsgClientValidation), err)
 	}
 

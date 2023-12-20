@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-// RequestRetry is the interface that wraps the basic methods for setting Request retries.
-var _ RequestRetry[RequestBuilder] = (*RequestRetryBuilder)(nil)
+// BuilderRequestRetry is the interface that wraps the basic methods for setting Request retries.
+var _ BuilderRequestRetry[RequestBuilder] = (*RequestRetryBuilder)(nil)
 
 // RequestRetryBuilder serves as the main entry point for configuring Request retries.
 type RequestRetryBuilder struct {

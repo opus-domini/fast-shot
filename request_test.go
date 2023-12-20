@@ -3,6 +3,7 @@ package fastshot
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/opus-domini/fast-shot/constant"
 	"io"
 	"net/http"
@@ -10,18 +11,6 @@ import (
 	"strings"
 	"testing"
 )
-
-func TestRequest_createFullURL_Error(t *testing.T) {
-	// Arrange
-	client := DefaultClient(":%^:")
-	r := client.GET("/path")
-	// Act
-	_, err := r.createFullURL()
-	// Assert
-	if err == nil {
-		t.Errorf("createFullURL did not return an error for invalid baseURL")
-	}
-}
 
 func TestRequest_createFullURL_WithQueryParams(t *testing.T) {
 	// Arrange
@@ -34,14 +23,9 @@ func TestRequest_createFullURL_WithQueryParams(t *testing.T) {
 		})
 
 	// Act
-	fullURL, err := r.createFullURL()
+	fullURL := r.createFullURL()
 
 	// Assert
-	if err != nil {
-		t.Errorf("createFullURL returned an error: %v", err)
-		return
-	}
-
 	expectedURL := "https://example.com/path?key1=value1&key2=value2"
 	if fullURL.String() != expectedURL {
 		t.Errorf("createFullURL returned wrong URL, got: %s, want: %s", fullURL, expectedURL)
@@ -66,20 +50,11 @@ func TestRequest_createHTTPRequest(t *testing.T) {
 			expectedErrMsg: "",
 		},
 		{
-			name:           "Error Parsing URL",
-			clientBaseURL:  ":%^:",
-			requestPath:    "/test",
-			ctx:            context.Background(),
-			expectError:    true,
-			expectedErrMsg: constant.ErrMsgParseURL,
-		},
-		{
-			name:           "Error Creating HTTP Request",
-			clientBaseURL:  "https://example.com",
-			requestPath:    " ",
-			ctx:            context.Background(),
-			expectError:    true,
-			expectedErrMsg: constant.ErrMsgParseURL,
+			name:          "Creating HTTP Request with space in path",
+			clientBaseURL: "https://example.com",
+			requestPath:   " ",
+			ctx:           context.Background(),
+			expectError:   false,
 		},
 
 		{
@@ -121,6 +96,7 @@ func TestRequest_createHTTPRequest(t *testing.T) {
 	}
 }
 
+// noins
 func TestRequest_Send(t *testing.T) {
 	// Arrange
 	server := httptest.NewServer(
@@ -135,42 +111,45 @@ func TestRequest_Send(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		client         *Client
-		configure      func(client *Client) *RequestBuilder
+		client         ClientHttpMethods
+		configure      func(client ClientHttpMethods) *RequestBuilder
 		expectedResult map[string]string
 		expectedError  string
 	}{
 		{
 			name: "Successful Request",
-			configure: func(client *Client) *RequestBuilder {
+			configure: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test")
 			},
 			expectedResult: map[string]string{"message": "Success!"},
 		},
 		{
-			name: "Client Proxy URL Parser Error",
+			name: "ClientConfig Proxy URL Parser Error",
 			client: NewClient("https://example.com").
 				Config().SetProxy(":%^:").
 				Build(),
-			configure: func(client *Client) *RequestBuilder {
+			configure: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test")
 			},
 			expectedError: constant.ErrMsgClientValidation,
 		},
 		{
+			name:   "Request set with nil Context",
+			client: NewClient("https://example.com").Build(),
+			configure: func(client ClientHttpMethods) *RequestBuilder {
+				//nolint:staticcheck
+				return client.GET("/test").
+					Context().Set(nil)
+			},
+			expectedError: constant.ErrMsgCreateRequest,
+		},
+		{
 			name: "JSON Marshalling Error",
-			configure: func(client *Client) *RequestBuilder {
+			configure: func(client ClientHttpMethods) *RequestBuilder {
 				invalidObject := func() {}
 				return client.GET("/test").Body().AsJSON(invalidObject)
 			},
 			expectedError: constant.ErrMsgRequestValidation,
-		},
-		{
-			name: "URL Error",
-			configure: func(client *Client) *RequestBuilder {
-				return client.GET("%ˆ&ˆ")
-			},
-			expectedError: constant.ErrMsgParseURL,
 		},
 	}
 
@@ -212,5 +191,57 @@ func TestRequest_Send(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestRequest_WithLoadBalancer(t *testing.T) {
+	// Arrange
+	server1 := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("Server 1"))
+		}))
+	defer server1.Close()
+
+	server2 := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("Server 2"))
+		}))
+	defer server2.Close()
+
+	client := NewClientLoadBalancer([]string{server1.URL, server2.URL}).Build()
+
+	// Act
+	numRequests := 10
+	responses := make([]string, numRequests)
+	for i := 0; i < numRequests; i++ {
+		resp, err := client.GET("/test").Send()
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+			return
+		}
+
+		//defer func(Body io.ReadCloser) {
+		//	_ = Body.Close()
+		//}(resp.RawBody())
+
+		body, _ := io.ReadAll(resp.RawBody())
+
+		// Close the response body at the end of each iteration
+		err = resp.RawBody().Close()
+		if err != nil {
+			t.Errorf("error closing the response body: %v", err)
+		}
+
+		responses[i] = string(body)
+	}
+
+	// Assert
+	for i, response := range responses {
+		expectedServer := fmt.Sprintf("Server %d", (i%2)+1)
+		if response != expectedServer {
+			t.Errorf("unexpected response for request %d: got %v, want %v", i+1, response, expectedServer)
+		}
 	}
 }

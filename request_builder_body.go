@@ -8,10 +8,10 @@ import (
 	"io"
 )
 
-// RequestBody is the interface that wraps the basic methods for setting custom HTTP Body's.
-var _ RequestBody[RequestBuilder] = (*RequestBodyBuilder)(nil)
+// BuilderRequestBody is the interface that wraps the basic methods for setting custom HTTP Body's.
+var _ BuilderRequestBody[RequestBuilder] = (*RequestBodyBuilder)(nil)
 
-// RequestBodyBuilder serves as the main entry point for configuring RequestBody.
+// RequestBodyBuilder serves as the main entry point for configuring BuilderRequestBody.
 type RequestBodyBuilder struct {
 	parentBuilder *RequestBuilder
 }
