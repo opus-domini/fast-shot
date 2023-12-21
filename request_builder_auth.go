@@ -5,15 +5,15 @@ import (
 	"github.com/opus-domini/fast-shot/constant/header"
 )
 
-// Auth is the interface that wraps the basic methods for setting authentication configurations.
-var _ Auth[RequestBuilder] = (*RequestAuthBuilder)(nil)
+// BuilderAuth is the interface that wraps the basic methods for setting authentication configurations.
+var _ BuilderAuth[RequestBuilder] = (*RequestAuthBuilder)(nil)
 
 // RequestAuthBuilder allows for setting authentication configurations.
 type RequestAuthBuilder struct {
 	parentBuilder *RequestBuilder
 }
 
-// Auth returns a new ClientAuthBuilder for setting authentication options.
+// BuilderAuth returns a new ClientAuthBuilder for setting authentication options.
 func (b *RequestBuilder) Auth() *RequestAuthBuilder {
 	return &RequestAuthBuilder{parentBuilder: b}
 }

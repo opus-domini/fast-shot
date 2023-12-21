@@ -27,7 +27,7 @@ func TestRequestAuthBuilder_BasicAuth(t *testing.T) {
 	expected := "Basic " + base64.StdEncoding.EncodeToString([]byte("username:password"))
 	if builder.request.httpHeader.Get("Authorization") != expected {
 		t.Errorf(
-			"Header not set correctly, got: %s, want: %s",
+			"BuilderHeader not set correctly, got: %s, want: %s",
 			builder.request.httpHeader.Get("Authorization"),
 			expected,
 		)
@@ -43,7 +43,7 @@ func TestRequestAuthBuilder_BearerToken(t *testing.T) {
 	// Assert
 	if builder.request.httpHeader.Get("Authorization") != "Bearer token" {
 		t.Errorf(
-			"Header not set correctly, got: %s, want: %s",
+			"BuilderHeader not set correctly, got: %s, want: %s",
 			builder.request.httpHeader.Get("Authorization"),
 			"Bearer token",
 		)

@@ -5,22 +5,22 @@ import (
 	"github.com/opus-domini/fast-shot/constant/header"
 )
 
-// Auth is the interface that wraps the basic methods for setting authentication configurations.
-var _ Auth[ClientBuilder] = (*ClientAuthBuilder)(nil)
+// BuilderAuth is the interface that wraps the basic methods for setting authentication configurations.
+var _ BuilderAuth[ClientBuilder] = (*ClientAuthBuilder)(nil)
 
 // ClientAuthBuilder allows for setting authentication configurations.
 type ClientAuthBuilder struct {
 	parentBuilder *ClientBuilder
 }
 
-// Auth returns a new ClientAuthBuilder for setting authentication options.
+// Auth BuilderAuth returns a new ClientAuthBuilder for setting authentication options.
 func (b *ClientBuilder) Auth() *ClientAuthBuilder {
 	return &ClientAuthBuilder{parentBuilder: b}
 }
 
 // Set sets the Authorization header for custom authentication.
 func (b *ClientAuthBuilder) Set(value string) *ClientBuilder {
-	b.parentBuilder.client.httpHeader.Set(header.Authorization, value)
+	b.parentBuilder.client.HttpHeader().Set(header.Authorization, value)
 	return b.parentBuilder
 }
 

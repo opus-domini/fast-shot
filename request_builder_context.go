@@ -4,8 +4,8 @@ import (
 	"context"
 )
 
-// RequestContext is the interface that wraps the basic methods for setting custom HTTP Context.
-var _ RequestContext[RequestBuilder] = (*RequestContextBuilder)(nil)
+// BuilderRequestContext is the interface that wraps the basic methods for setting custom HTTP Context.
+var _ BuilderRequestContext[RequestBuilder] = (*RequestContextBuilder)(nil)
 
 // RequestContextBuilder serves as the main entry point for configuring Request Context.
 type RequestContextBuilder struct {

@@ -1,41 +1,91 @@
 package fastshot
 
 import (
+	"errors"
+	"fmt"
+	"github.com/opus-domini/fast-shot/constant"
 	"net/http"
+	"net/url"
 )
-
-// Client encapsulates HTTP client, HTTP Header, HTTP Cookies, and baseURL.
-type Client struct {
-	httpClient  *http.Client
-	httpHeader  *http.Header
-	httpCookies []*http.Cookie
-	baseURL     string
-	validations []error
-}
 
 // ClientBuilder serves as the main entry point for configuring HTTP clients.
 type ClientBuilder struct {
-	client *Client
+	client Client
 }
 
 // NewClient initializes a new ClientBuilder with a given baseURL.
 func NewClient(baseURL string) *ClientBuilder {
+	var validations []error
+
+	if baseURL == "" {
+		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
+	}
+
+	parsedURL, err := url.Parse(baseURL)
+	if err != nil {
+		validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
+	}
+
 	return &ClientBuilder{
-		client: &Client{
+		client: &ClientConfigBase{
 			httpClient:  &http.Client{},
 			httpHeader:  &http.Header{},
 			httpCookies: []*http.Cookie{},
-			baseURL:     baseURL,
+			validations: validations,
+			ConfigBaseURL: &DefaultBaseURL{
+				baseURL: parsedURL,
+			},
 		},
 	}
 }
 
-// DefaultClient initializes a new default Client with a given baseURL.
-func DefaultClient(baseURL string) *Client {
+// NewClientLoadBalancer initializes a new ClientBuilder with a given baseURLs.
+func NewClientLoadBalancer(baseURLs []string) *ClientBuilder {
+	var validations []error
+
+	var parsedURLs []*url.URL
+	for index, baseURL := range baseURLs {
+		if baseURL == "" {
+			validations = append(validations, fmt.Errorf("base URL %d: %s", index, constant.ErrMsgEmptyBaseURL))
+			continue
+		}
+
+		parsedURL, err := url.Parse(baseURL)
+		if err != nil {
+			validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
+		}
+		parsedURLs = append(parsedURLs, parsedURL)
+	}
+
+	if len(parsedURLs) == 0 {
+		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
+	}
+
+	return &ClientBuilder{
+		client: &ClientConfigBase{
+			httpClient:  &http.Client{},
+			httpHeader:  &http.Header{},
+			httpCookies: []*http.Cookie{},
+			validations: validations,
+			ConfigBaseURL: &BalancedBaseURL{
+				baseURLs:       parsedURLs,
+				currentBaseURL: 0,
+			},
+		},
+	}
+}
+
+// DefaultClient initializes a new default ClientConfig with a given baseURL.
+func DefaultClient(baseURL string) ClientHttpMethods {
 	return NewClient(baseURL).Build()
 }
 
-// Build finalizes the ClientBuilder configurations and returns a new Client.
-func (b *ClientBuilder) Build() *Client {
+// DefaultClientLoadBalancer initializes a new default ClientConfig with a given baseURLs.
+func DefaultClientLoadBalancer(baseURLs []string) ClientHttpMethods {
+	return NewClientLoadBalancer(baseURLs).Build()
+}
+
+// Build finalizes the ClientBuilder configurations and returns a new ClientConfig.
+func (b *ClientBuilder) Build() ClientHttpMethods {
 	return b.client
 }

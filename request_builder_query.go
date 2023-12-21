@@ -7,10 +7,10 @@ import (
 	"strings"
 )
 
-// RequestQuery is the interface that wraps the basic methods for setting query parameters.
-var _ RequestQuery[RequestBuilder] = (*RequestQueryBuilder)(nil)
+// BuilderRequestQuery is the interface that wraps the basic methods for setting query parameters.
+var _ BuilderRequestQuery[RequestBuilder] = (*RequestQueryBuilder)(nil)
 
-// RequestQueryBuilder serves as the main entry point for configuring RequestQuery.
+// RequestQueryBuilder serves as the main entry point for configuring BuilderRequestQuery.
 type RequestQueryBuilder struct {
 	parentBuilder *RequestBuilder
 }

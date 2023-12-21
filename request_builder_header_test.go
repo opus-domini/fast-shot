@@ -14,7 +14,7 @@ func TestRequestHeaderBuilder_Add(t *testing.T) {
 		Header().Add("key", "value2")
 	// Assert
 	if !strings.Contains(requestBuilder.request.httpHeader.Get("key"), "value") {
-		t.Errorf("Header not set correctly")
+		t.Errorf("BuilderHeader not set correctly")
 	}
 }
 
@@ -26,7 +26,7 @@ func TestRequestHeaderBuilder_AddAll(t *testing.T) {
 		Header().AddAll(map[string]string{"key1": "value1", "key2": "value2"})
 	// Assert
 	if !strings.Contains(requestBuilder.request.httpHeader.Get("key2"), "value2") {
-		t.Errorf("Header not set correctly")
+		t.Errorf("BuilderHeader not set correctly")
 	}
 }
 
@@ -40,7 +40,7 @@ func TestRequestHeaderBuilder_Set(t *testing.T) {
 
 	// Assert
 	if requestBuilder.request.httpHeader.Get("key") != "value2" {
-		t.Errorf("Header not set correctly")
+		t.Errorf("BuilderHeader not set correctly")
 	}
 }
 
@@ -52,7 +52,7 @@ func TestRequestHeaderBuilder_SetAll(t *testing.T) {
 		Header().SetAll(map[string]string{"key1": "value1", "key2": "value2"})
 	// Assert
 	if !strings.Contains(requestBuilder.request.httpHeader.Get("key2"), "value2") {
-		t.Errorf("Header not set correctly")
+		t.Errorf("BuilderHeader not set correctly")
 	}
 }
 
@@ -74,7 +74,7 @@ func TestRequestHeaderBuilder_AddAccept(t *testing.T) {
 		}
 	}
 	if !valueFound {
-		t.Errorf("Header not set correctly")
+		t.Errorf("BuilderHeader not set correctly")
 	}
 }
 
@@ -97,7 +97,7 @@ func TestRequestHeaderBuilder_AddUserAgent(t *testing.T) {
 		}
 	}
 	if !valueFound {
-		t.Errorf("Header not set correctly")
+		t.Errorf("BuilderHeader not set correctly")
 	}
 }
 
@@ -119,6 +119,6 @@ func TestRequestHeaderBuilder_AddContentType(t *testing.T) {
 		}
 	}
 	if !valueFound {
-		t.Errorf("Header not set correctly")
+		t.Errorf("BuilderHeader not set correctly")
 	}
 }
