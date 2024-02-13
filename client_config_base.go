@@ -1,16 +1,17 @@
 package fastshot
 
 import (
-	"github.com/opus-domini/fast-shot/constant/method"
 	"net/http"
 	"net/url"
 	"sync/atomic"
+
+	"github.com/opus-domini/fast-shot/constant/method"
 )
 
 type (
 	// ClientConfigBase serves as the main entry point for configuring HTTP clients.
 	ClientConfigBase struct {
-		httpClient  *http.Client
+		httpClient  RawClient
 		httpHeader  *http.Header
 		httpCookies []*http.Cookie
 		validations []error
@@ -43,7 +44,7 @@ func (c *BalancedBaseURL) BaseURL() *url.URL {
 }
 
 // HttpClient for ClientConfigBase returns the HTTP client.
-func (c *ClientConfigBase) HttpClient() *http.Client {
+func (c *ClientConfigBase) HttpClient() RawClient {
 	return c.httpClient
 }
 

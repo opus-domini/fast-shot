@@ -8,13 +8,23 @@ import (
 	"time"
 )
 
+// RawClient defines an interface for low level HTTP clients
+type RawClient interface {
+	Do(*http.Request) (*http.Response, error)
+	SetTransport(http.RoundTripper)
+	Transport() http.RoundTripper
+	SetTimeout(time.Duration)
+	Timeout() time.Duration
+	SetCheckRedirect(func(*http.Request, []*http.Request) error)
+}
+
 type Client interface {
 	ClientConfig
 	ClientHttpMethods
 }
 
 type ClientConfig interface {
-	HttpClient() *http.Client
+	HttpClient() RawClient
 	HttpHeader() *http.Header
 	SetHttpCookie(cookie *http.Cookie)
 	HttpCookies() []*http.Cookie

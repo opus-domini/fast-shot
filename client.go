@@ -3,9 +3,10 @@ package fastshot
 import (
 	"errors"
 	"fmt"
-	"github.com/opus-domini/fast-shot/constant"
 	"net/http"
 	"net/url"
+
+	"github.com/opus-domini/fast-shot/constant"
 )
 
 // ClientBuilder serves as the main entry point for configuring HTTP clients.
@@ -28,7 +29,7 @@ func NewClient(baseURL string) *ClientBuilder {
 
 	return &ClientBuilder{
 		client: &ClientConfigBase{
-			httpClient:  &http.Client{},
+			httpClient:  NewHTTPClient(&http.Client{}),
 			httpHeader:  &http.Header{},
 			httpCookies: []*http.Cookie{},
 			validations: validations,
@@ -63,7 +64,7 @@ func NewClientLoadBalancer(baseURLs []string) *ClientBuilder {
 
 	return &ClientBuilder{
 		client: &ClientConfigBase{
-			httpClient:  &http.Client{},
+			httpClient:  NewHTTPClient(&http.Client{}),
 			httpHeader:  &http.Header{},
 			httpCookies: []*http.Cookie{},
 			validations: validations,

@@ -2,10 +2,11 @@ package fastshot
 
 import (
 	"errors"
-	"github.com/opus-domini/fast-shot/constant"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/opus-domini/fast-shot/constant"
 )
 
 // BuilderHttpClientConfig is the interface that wraps the basic methods for setting HTTP ClientConfig configuration.
@@ -23,22 +24,24 @@ func (b *ClientBuilder) Config() *ClientConfigBuilder {
 
 // SetCustomTransport sets custom transport for the HTTP client.
 func (b *ClientConfigBuilder) SetCustomTransport(transport http.RoundTripper) *ClientBuilder {
-	b.parentBuilder.client.HttpClient().Transport = transport
+	b.parentBuilder.client.HttpClient().SetTransport(transport)
 	return b.parentBuilder
 }
 
 // SetTimeout sets the timeout for the HTTP client.
 func (b *ClientConfigBuilder) SetTimeout(duration time.Duration) *ClientBuilder {
-	b.parentBuilder.client.HttpClient().Timeout = duration
+	b.parentBuilder.client.HttpClient().SetTimeout(duration)
 	return b.parentBuilder
 }
 
 // SetFollowRedirects controls whether the HTTP client should follow redirects.
 func (b *ClientConfigBuilder) SetFollowRedirects(follow bool) *ClientBuilder {
 	if !follow {
-		b.parentBuilder.client.HttpClient().CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		}
+		b.parentBuilder.client.HttpClient().SetCheckRedirect(
+			func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		)
 	}
 	return b.parentBuilder
 }
@@ -51,12 +54,12 @@ func (b *ClientConfigBuilder) SetProxy(proxyURL string) *ClientBuilder {
 		return b.parentBuilder
 	}
 
-	if transport, ok := b.parentBuilder.client.HttpClient().Transport.(*http.Transport); ok {
+	if transport, ok := b.parentBuilder.client.HttpClient().Transport().(*http.Transport); ok {
 		transport.Proxy = http.ProxyURL(parsedURL)
 	} else {
-		b.parentBuilder.client.HttpClient().Transport = &http.Transport{
+		b.parentBuilder.client.HttpClient().SetTransport(&http.Transport{
 			Proxy: http.ProxyURL(parsedURL),
-		}
+		})
 	}
 
 	return b.parentBuilder
