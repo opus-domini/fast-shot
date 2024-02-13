@@ -48,6 +48,11 @@ func (c *ClientConfigBase) HttpClient() RawClient {
 	return c.httpClient
 }
 
+// SetHttpClient for ClientConfigBase sets the RawClient.
+func (c *ClientConfigBase) SetHttpClient(client RawClient) {
+	c.httpClient = client
+}
+
 // HttpHeader for ClientConfigBase returns the HTTP header.
 func (c *ClientConfigBase) HttpHeader() *http.Header {
 	return c.httpHeader

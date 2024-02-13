@@ -64,3 +64,9 @@ func (b *ClientConfigBuilder) SetProxy(proxyURL string) *ClientBuilder {
 
 	return b.parentBuilder
 }
+
+// SetRawClient sets the underlying raw client
+func (b *ClientConfigBuilder) SetRawClient(client RawClient) *ClientBuilder {
+	b.parentBuilder.client.SetHttpClient(client)
+	return b.parentBuilder
+}

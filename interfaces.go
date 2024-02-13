@@ -25,6 +25,7 @@ type Client interface {
 
 type ClientConfig interface {
 	HttpClient() RawClient
+	SetHttpClient(client RawClient)
 	HttpHeader() *http.Header
 	SetHttpCookie(cookie *http.Cookie)
 	HttpCookies() []*http.Cookie
