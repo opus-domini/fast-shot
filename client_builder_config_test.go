@@ -8,13 +8,24 @@ import (
 	"testing"
 )
 
+func TestClientConfigBuilder_SetCustomHttpClient(t *testing.T) {
+	// Arrange
+	builder := NewClient("https://example.com")
+	// Act
+	builder.Config().SetCustomHttpClient(&DefaultHttpClient{})
+	// Assert
+	if builder.client.HttpClient() == nil {
+		t.Errorf("Custom HTTP client not set correctly")
+	}
+}
+
 func TestClientConfigBuilder_SetTimeout(t *testing.T) {
 	// Arrange
 	builder := NewClient("https://example.com")
 	// Act
 	builder.Config().SetTimeout(1)
 	// Assert
-	if builder.client.HttpClient().Timeout != 1 {
+	if builder.client.HttpClient().Timeout() != 1 {
 		t.Errorf("Timeout not set correctly")
 	}
 }
@@ -77,7 +88,7 @@ func TestClientConfigBuilder_SetCustomTransport(t *testing.T) {
 	// Act
 	builder.Config().SetCustomTransport(&http.Transport{})
 	// Assert
-	if builder.client.HttpClient().Transport == nil {
+	if builder.client.HttpClient().Transport() == nil {
 		t.Errorf("Transport not set correctly")
 	}
 }
@@ -88,7 +99,7 @@ func TestClientConfigBuilder_SetProxy(t *testing.T) {
 	// Act
 	builder.Config().SetProxy("http://localhost:8080")
 	// Assert
-	if builder.client.HttpClient().Transport == nil {
+	if builder.client.HttpClient().Transport() == nil {
 		t.Errorf("Transport not set correctly")
 	}
 }
@@ -106,7 +117,7 @@ func TestClientConfigBuilder_SetProxy_WithCustomTransport(t *testing.T) {
 		}).
 		Config().SetProxy("http://localhost:8080")
 	// Assert
-	if builder.client.HttpClient().Transport == nil {
+	if builder.client.HttpClient().Transport() == nil {
 		t.Errorf("Transport not set correctly")
 	}
 }
@@ -117,7 +128,7 @@ func TestClientConfigBuilder_SetProxy_WithProxyURLParserError(t *testing.T) {
 	// Act
 	builder.Config().SetProxy(":%^:")
 	// Assert
-	if builder.client.HttpClient().Transport != nil {
+	if builder.client.HttpClient().Transport() != nil {
 		t.Errorf("Transport should not be set")
 	}
 	if len(builder.client.Validations()) != 1 {

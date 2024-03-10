@@ -1,20 +1,27 @@
 package fastshot
 
 import (
-	"github.com/opus-domini/fast-shot/constant/method"
 	"net/http"
 	"net/url"
 	"sync/atomic"
+	"time"
+
+	"github.com/opus-domini/fast-shot/constant/method"
 )
 
 type (
 	// ClientConfigBase serves as the main entry point for configuring HTTP clients.
 	ClientConfigBase struct {
-		httpClient  *http.Client
+		httpClient  HttpClientComponent
 		httpHeader  *http.Header
 		httpCookies []*http.Cookie
 		validations []error
 		ConfigBaseURL
+	}
+
+	// DefaultHttpClient implements HttpClientComponent interface and provides a default HTTP client.
+	DefaultHttpClient struct {
+		client *http.Client
 	}
 
 	// DefaultBaseURL implements ConfigBaseURL interface and provides a single base URL.
@@ -28,6 +35,36 @@ type (
 		currentBaseURL uint32
 	}
 )
+
+// Do will execute the *http.Client Do method
+func (c *DefaultHttpClient) Do(req *http.Request) (*http.Response, error) {
+	return c.client.Do(req)
+}
+
+// SetTransport sets the Transport field on the underlying http.Client type
+func (c *DefaultHttpClient) SetTransport(transport http.RoundTripper) {
+	c.client.Transport = transport
+}
+
+// Transport will return the underlying transport type
+func (c *DefaultHttpClient) Transport() http.RoundTripper {
+	return c.client.Transport
+}
+
+// SetTimeout sets the Timeout field on the underlying http.Client type
+func (c *DefaultHttpClient) SetTimeout(duration time.Duration) {
+	c.client.Timeout = duration
+}
+
+// Timeout will return the underlying timeout value
+func (c *DefaultHttpClient) Timeout() time.Duration {
+	return c.client.Timeout
+}
+
+// SetCheckRedirect sets the CheckRedirect field on the underlying http.Client type
+func (c *DefaultHttpClient) SetCheckRedirect(f func(*http.Request, []*http.Request) error) {
+	c.client.CheckRedirect = f
+}
 
 // BaseURL for DefaultBaseURL returns the base URL.
 func (c *DefaultBaseURL) BaseURL() *url.URL {
@@ -43,8 +80,13 @@ func (c *BalancedBaseURL) BaseURL() *url.URL {
 }
 
 // HttpClient for ClientConfigBase returns the HTTP client.
-func (c *ClientConfigBase) HttpClient() *http.Client {
+func (c *ClientConfigBase) HttpClient() HttpClientComponent {
 	return c.httpClient
+}
+
+// SetHttpClient for ClientConfigBase sets the HttpClientComponent.
+func (c *ClientConfigBase) SetHttpClient(httpClient HttpClientComponent) {
+	c.httpClient = httpClient
 }
 
 // HttpHeader for ClientConfigBase returns the HTTP header.
