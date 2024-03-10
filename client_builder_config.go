@@ -22,6 +22,12 @@ func (b *ClientBuilder) Config() *ClientConfigBuilder {
 	return &ClientConfigBuilder{parentBuilder: b}
 }
 
+// SetCustomHttpClient sets the underlying raw client
+func (b *ClientConfigBuilder) SetCustomHttpClient(httpClient HttpClientComponent) *ClientBuilder {
+	b.parentBuilder.client.SetHttpClient(httpClient)
+	return b.parentBuilder
+}
+
 // SetCustomTransport sets custom transport for the HTTP client.
 func (b *ClientConfigBuilder) SetCustomTransport(transport http.RoundTripper) *ClientBuilder {
 	b.parentBuilder.client.HttpClient().SetTransport(transport)
@@ -62,11 +68,5 @@ func (b *ClientConfigBuilder) SetProxy(proxyURL string) *ClientBuilder {
 		})
 	}
 
-	return b.parentBuilder
-}
-
-// SetRawClient sets the underlying raw client
-func (b *ClientConfigBuilder) SetRawClient(client RawClient) *ClientBuilder {
-	b.parentBuilder.client.SetHttpClient(client)
 	return b.parentBuilder
 }

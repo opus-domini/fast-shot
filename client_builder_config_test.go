@@ -8,6 +8,17 @@ import (
 	"testing"
 )
 
+func TestClientConfigBuilder_SetCustomHttpClient(t *testing.T) {
+	// Arrange
+	builder := NewClient("https://example.com")
+	// Act
+	builder.Config().SetCustomHttpClient(&DefaultHttpClient{})
+	// Assert
+	if builder.client.HttpClient() == nil {
+		t.Errorf("Custom HTTP client not set correctly")
+	}
+}
+
 func TestClientConfigBuilder_SetTimeout(t *testing.T) {
 	// Arrange
 	builder := NewClient("https://example.com")

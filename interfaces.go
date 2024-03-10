@@ -8,30 +8,33 @@ import (
 	"time"
 )
 
-// RawClient defines an interface for low level HTTP clients
-type RawClient interface {
-	Do(*http.Request) (*http.Response, error)
-	SetTransport(http.RoundTripper)
-	Transport() http.RoundTripper
-	SetTimeout(time.Duration)
-	Timeout() time.Duration
-	SetCheckRedirect(func(*http.Request, []*http.Request) error)
-}
-
 type Client interface {
 	ClientConfig
 	ClientHttpMethods
 }
 
 type ClientConfig interface {
-	HttpClient() RawClient
-	SetHttpClient(client RawClient)
+	ConfigHttpClient
 	HttpHeader() *http.Header
 	SetHttpCookie(cookie *http.Cookie)
 	HttpCookies() []*http.Cookie
 	SetValidation(validation error)
 	Validations() []error
 	ConfigBaseURL
+}
+
+type ConfigHttpClient interface {
+	SetHttpClient(httpClient HttpClientComponent)
+	HttpClient() HttpClientComponent
+}
+
+type HttpClientComponent interface {
+	Do(*http.Request) (*http.Response, error)
+	SetTransport(http.RoundTripper)
+	Transport() http.RoundTripper
+	SetTimeout(time.Duration)
+	Timeout() time.Duration
+	SetCheckRedirect(func(*http.Request, []*http.Request) error)
 }
 
 type ConfigBaseURL interface {
@@ -75,6 +78,7 @@ type BuilderAuth[T any] interface {
 
 // BuilderHttpClientConfig is the interface that wraps the basic methods for setting HTTP ClientConfig configuration.
 type BuilderHttpClientConfig[T any] interface {
+	SetCustomHttpClient(httpClient HttpClientComponent) *T
 	SetCustomTransport(transport http.RoundTripper) *T
 	SetTimeout(duration time.Duration) *T
 	SetFollowRedirects(follow bool) *T

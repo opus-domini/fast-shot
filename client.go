@@ -29,7 +29,9 @@ func NewClient(baseURL string) *ClientBuilder {
 
 	return &ClientBuilder{
 		client: &ClientConfigBase{
-			httpClient:  NewHTTPClient(&http.Client{}),
+			httpClient: &DefaultHttpClient{
+				client: &http.Client{},
+			},
 			httpHeader:  &http.Header{},
 			httpCookies: []*http.Cookie{},
 			validations: validations,
@@ -64,7 +66,9 @@ func NewClientLoadBalancer(baseURLs []string) *ClientBuilder {
 
 	return &ClientBuilder{
 		client: &ClientConfigBase{
-			httpClient:  NewHTTPClient(&http.Client{}),
+			httpClient: &DefaultHttpClient{
+				client: &http.Client{},
+			},
 			httpHeader:  &http.Header{},
 			httpCookies: []*http.Cookie{},
 			validations: validations,
