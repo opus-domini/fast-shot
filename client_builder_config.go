@@ -42,13 +42,7 @@ func (b *ClientConfigBuilder) SetTimeout(duration time.Duration) *ClientBuilder 
 
 // SetFollowRedirects controls whether the HTTP client should follow redirects.
 func (b *ClientConfigBuilder) SetFollowRedirects(follow bool) *ClientBuilder {
-	if !follow {
-		b.parentBuilder.client.HttpClient().SetCheckRedirect(
-			func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
-			},
-		)
-	}
+	b.parentBuilder.client.HttpClient().SetFollowRedirects(follow)
 	return b.parentBuilder
 }
 
@@ -56,7 +50,7 @@ func (b *ClientConfigBuilder) SetFollowRedirects(follow bool) *ClientBuilder {
 func (b *ClientConfigBuilder) SetProxy(proxyURL string) *ClientBuilder {
 	parsedURL, err := url.Parse(proxyURL)
 	if err != nil {
-		b.parentBuilder.client.SetValidation(errors.Join(errors.New(constant.ErrMsgParseProxyURL), err))
+		b.parentBuilder.client.Validations().Add(errors.Join(errors.New(constant.ErrMsgParseProxyURL), err))
 		return b.parentBuilder
 	}
 

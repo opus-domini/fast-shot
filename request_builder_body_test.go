@@ -15,7 +15,7 @@ func TestRequestBodyBuilder_AsReader(t *testing.T) {
 	builder := client.POST("/test").
 		Body().AsReader(body)
 	// Assert
-	if builder.request.body == nil {
+	if builder.request.config.body == nil {
 		t.Errorf("Body not set correctly")
 	}
 }
@@ -28,7 +28,7 @@ func TestRequestBodyBuilder_AsString(t *testing.T) {
 	builder := client.POST("/path").
 		Body().AsString(body)
 	// Assert
-	if builder.request.body == nil {
+	if builder.request.config.body == nil {
 		t.Errorf("Body String not set correctly")
 	}
 }
@@ -41,7 +41,7 @@ func TestRequestBodyBuilder_AsJSON(t *testing.T) {
 	builder := client.POST("/test").
 		Body().AsJSON(body)
 	// Assert
-	if builder.request.body == nil {
+	if builder.request.config.body == nil {
 		t.Errorf("Body JSON not set correctly")
 	}
 }
@@ -54,7 +54,7 @@ func TestRequestBodyBuilder_AsJSON_Error(t *testing.T) {
 	builder := client.POST("/path").
 		Body().AsJSON(body)
 	// Assert
-	if len(builder.request.validations) != 1 || !strings.Contains(builder.request.validations[0].Error(), constant.ErrMsgMarshalJSON) {
+	if builder.request.config.Validations().Count() != 1 || !strings.Contains(builder.request.config.Validations().Get(0).Error(), constant.ErrMsgMarshalJSON) {
 		t.Errorf("Body JSON didn't capture the marshaling error")
 	}
 }

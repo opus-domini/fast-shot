@@ -1,27 +1,19 @@
 package fastshot
 
 import (
-	"net/http"
+	"github.com/opus-domini/fast-shot/constant/method"
 	"net/url"
 	"sync/atomic"
-	"time"
-
-	"github.com/opus-domini/fast-shot/constant/method"
 )
 
 type (
 	// ClientConfigBase serves as the main entry point for configuring HTTP clients.
 	ClientConfigBase struct {
 		httpClient  HttpClientComponent
-		httpHeader  *http.Header
-		httpCookies []*http.Cookie
-		validations []error
+		httpHeader  HeaderWrapper
+		httpCookies CookiesWrapper
+		validations ValidationsWrapper
 		ConfigBaseURL
-	}
-
-	// DefaultHttpClient implements HttpClientComponent interface and provides a default HTTP client.
-	DefaultHttpClient struct {
-		client *http.Client
 	}
 
 	// DefaultBaseURL implements ConfigBaseURL interface and provides a single base URL.
@@ -35,36 +27,6 @@ type (
 		currentBaseURL uint32
 	}
 )
-
-// Do will execute the *http.Client Do method
-func (c *DefaultHttpClient) Do(req *http.Request) (*http.Response, error) {
-	return c.client.Do(req)
-}
-
-// SetTransport sets the Transport field on the underlying http.Client type
-func (c *DefaultHttpClient) SetTransport(transport http.RoundTripper) {
-	c.client.Transport = transport
-}
-
-// Transport will return the underlying transport type
-func (c *DefaultHttpClient) Transport() http.RoundTripper {
-	return c.client.Transport
-}
-
-// SetTimeout sets the Timeout field on the underlying http.Client type
-func (c *DefaultHttpClient) SetTimeout(duration time.Duration) {
-	c.client.Timeout = duration
-}
-
-// Timeout will return the underlying timeout value
-func (c *DefaultHttpClient) Timeout() time.Duration {
-	return c.client.Timeout
-}
-
-// SetCheckRedirect sets the CheckRedirect field on the underlying http.Client type
-func (c *DefaultHttpClient) SetCheckRedirect(f func(*http.Request, []*http.Request) error) {
-	c.client.CheckRedirect = f
-}
 
 // BaseURL for DefaultBaseURL returns the base URL.
 func (c *DefaultBaseURL) BaseURL() *url.URL {
@@ -89,28 +51,15 @@ func (c *ClientConfigBase) SetHttpClient(httpClient HttpClientComponent) {
 	c.httpClient = httpClient
 }
 
-// HttpHeader for ClientConfigBase returns the HTTP header.
-func (c *ClientConfigBase) HttpHeader() *http.Header {
+func (c *ClientConfigBase) Header() HeaderWrapper {
 	return c.httpHeader
 }
 
-// SetHttpCookie for ClientConfigBase sets the HTTP cookie.
-func (c *ClientConfigBase) SetHttpCookie(cookie *http.Cookie) {
-	c.httpCookies = append(c.httpCookies, cookie)
-}
-
-// HttpCookies for ClientConfigBase returns the HTTP cookies.
-func (c *ClientConfigBase) HttpCookies() []*http.Cookie {
+func (c *ClientConfigBase) Cookies() CookiesWrapper {
 	return c.httpCookies
 }
 
-// SetValidation for ClientConfigBase sets the validation.
-func (c *ClientConfigBase) SetValidation(validations error) {
-	c.validations = append(c.validations, validations)
-}
-
-// Validations for ClientConfigBase returns the validations.
-func (c *ClientConfigBase) Validations() []error {
+func (c *ClientConfigBase) Validations() ValidationsWrapper {
 	return c.validations
 }
 

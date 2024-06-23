@@ -13,7 +13,7 @@ func TestRequestHeaderBuilder_Add(t *testing.T) {
 		Header().Add("key", "value").
 		Header().Add("key", "value2")
 	// Assert
-	if !strings.Contains(requestBuilder.request.httpHeader.Get("key"), "value") {
+	if !strings.Contains(requestBuilder.request.config.httpHeader.Get("key"), "value") {
 		t.Errorf("BuilderHeader not set correctly")
 	}
 }
@@ -25,7 +25,7 @@ func TestRequestHeaderBuilder_AddAll(t *testing.T) {
 	requestBuilder := builder.GET("/test").
 		Header().AddAll(map[string]string{"key1": "value1", "key2": "value2"})
 	// Assert
-	if !strings.Contains(requestBuilder.request.httpHeader.Get("key2"), "value2") {
+	if !strings.Contains(requestBuilder.request.config.httpHeader.Get("key2"), "value2") {
 		t.Errorf("BuilderHeader not set correctly")
 	}
 }
@@ -39,7 +39,7 @@ func TestRequestHeaderBuilder_Set(t *testing.T) {
 		Header().Set("key", "value2")
 
 	// Assert
-	if requestBuilder.request.httpHeader.Get("key") != "value2" {
+	if requestBuilder.request.config.httpHeader.Get("key") != "value2" {
 		t.Errorf("BuilderHeader not set correctly")
 	}
 }
@@ -51,7 +51,7 @@ func TestRequestHeaderBuilder_SetAll(t *testing.T) {
 	requestBuilder := builder.GET("/test").
 		Header().SetAll(map[string]string{"key1": "value1", "key2": "value2"})
 	// Assert
-	if !strings.Contains(requestBuilder.request.httpHeader.Get("key2"), "value2") {
+	if !strings.Contains(requestBuilder.request.config.httpHeader.Get("key2"), "value2") {
 		t.Errorf("BuilderHeader not set correctly")
 	}
 }
@@ -65,7 +65,7 @@ func TestRequestHeaderBuilder_AddAccept(t *testing.T) {
 		Header().AddAccept("application/json").
 		Header().AddAccept(valueToFind)
 	// Assert
-	values := headerBuilder.request.httpHeader.Values("Accept")
+	values := headerBuilder.request.config.Header().Unwrap().Values("Accept")
 	valueFound := false
 	for _, value := range values {
 		if value == valueToFind {
@@ -88,7 +88,7 @@ func TestRequestHeaderBuilder_AddUserAgent(t *testing.T) {
 		Header().AddUserAgent(valueToFind).
 		Header().AddUserAgent("firefox")
 	// Assert
-	values := headerBuilder.request.httpHeader.Values("User-Agent")
+	values := headerBuilder.request.config.Header().Unwrap().Values("User-Agent")
 	valueFound := false
 	for _, value := range values {
 		if value == valueToFind {
@@ -110,7 +110,7 @@ func TestRequestHeaderBuilder_AddContentType(t *testing.T) {
 		Header().AddContentType("text/html; charset=utf-8").
 		Header().AddContentType(valueToFind)
 	// Assert
-	values := requestBuilder.request.httpHeader.Values("Content-Type")
+	values := requestBuilder.request.config.Header().Unwrap().Values("Content-Type")
 	valueFound := false
 	for _, value := range values {
 		if value == valueToFind {

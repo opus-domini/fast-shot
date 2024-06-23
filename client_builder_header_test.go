@@ -12,7 +12,7 @@ func TestClientHeaderBuilder_Add(t *testing.T) {
 	builder.Header().Add("key", "value").
 		Header().Add("key", "value2")
 	// Assert
-	if !strings.Contains(builder.client.HttpHeader().Get("key"), "value") {
+	if !strings.Contains(builder.client.Header().Get("key"), "value") {
 		t.Errorf("BuilderHeader not set correctly")
 	}
 }
@@ -23,7 +23,7 @@ func TestClientHeaderBuilder_AddAll(t *testing.T) {
 	// Act
 	builder.Header().AddAll(map[string]string{"key1": "value1", "key2": "value2"})
 	// Assert
-	if !strings.Contains(builder.client.HttpHeader().Get("key2"), "value2") {
+	if !strings.Contains(builder.client.Header().Get("key2"), "value2") {
 		t.Errorf("BuilderHeader not set correctly")
 	}
 }
@@ -36,7 +36,7 @@ func TestClientHeaderBuilder_Set(t *testing.T) {
 		Header().Set("key", "value2")
 
 	// Assert
-	if builder.client.HttpHeader().Get("key") != "value2" {
+	if builder.client.Header().Get("key") != "value2" {
 		t.Errorf("BuilderHeader not set correctly")
 	}
 }
@@ -47,7 +47,7 @@ func TestClientHeaderBuilder_SetAll(t *testing.T) {
 	// Act
 	builder.Header().SetAll(map[string]string{"key1": "value1", "key2": "value2"})
 	// Assert
-	if !strings.Contains(builder.client.HttpHeader().Get("key2"), "value2") {
+	if !strings.Contains(builder.client.Header().Get("key2"), "value2") {
 		t.Errorf("BuilderHeader not set correctly")
 	}
 }
@@ -61,7 +61,7 @@ func TestClientHeaderBuilder_AddAccept(t *testing.T) {
 	headerBuilder.AddAccept("application/json")
 	headerBuilder.AddAccept(valueToFind)
 	// Assert
-	values := builder.client.HttpHeader().Values("Accept")
+	values := builder.client.Header().Unwrap().Values("Accept")
 	valueFound := false
 	for _, value := range values {
 		if value == valueToFind {
@@ -84,7 +84,7 @@ func TestClientHeaderBuilder_AddUserAgent(t *testing.T) {
 	headerBuilder.AddUserAgent(valueToFind)
 	headerBuilder.AddUserAgent("firefox")
 	// Assert
-	values := builder.client.HttpHeader().Values("User-Agent")
+	values := builder.client.Header().Unwrap().Values("User-Agent")
 	valueFound := false
 	for _, value := range values {
 		if value == valueToFind {
@@ -105,7 +105,7 @@ func TestClientHeaderBuilder_AddContentType(t *testing.T) {
 	builder.Header().AddContentType("text/html; charset=utf-8").
 		Header().AddContentType(valueToFind)
 	// Assert
-	values := builder.client.HttpHeader().Values("Content-Type")
+	values := builder.client.Header().Unwrap().Values("Content-Type")
 	valueFound := false
 	for _, value := range values {
 		if value == valueToFind {

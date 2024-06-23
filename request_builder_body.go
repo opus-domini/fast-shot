@@ -14,22 +14,26 @@ var _ BuilderRequestBody[RequestBuilder] = (*RequestBodyBuilder)(nil)
 // RequestBodyBuilder serves as the main entry point for configuring BuilderRequestBody.
 type RequestBodyBuilder struct {
 	parentBuilder *RequestBuilder
+	requestConfig *RequestConfigBase
 }
 
 // Body returns a new RequestBodyBuilder for setting custom HTTP Body's.
 func (b *RequestBuilder) Body() *RequestBodyBuilder {
-	return &RequestBodyBuilder{parentBuilder: b}
+	return &RequestBodyBuilder{
+		parentBuilder: b,
+		requestConfig: b.request.config,
+	}
 }
 
 // AsReader sets the body as IO Reader.
 func (b *RequestBodyBuilder) AsReader(body io.Reader) *RequestBuilder {
-	b.parentBuilder.request.body = body
+	b.requestConfig.SetBody(body)
 	return b.parentBuilder
 }
 
 // AsString sets the body as string.
 func (b *RequestBodyBuilder) AsString(body string) *RequestBuilder {
-	b.parentBuilder.request.body = bytes.NewBufferString(body)
+	b.requestConfig.SetBody(bytes.NewBufferString(body))
 	return b.parentBuilder
 }
 
@@ -38,10 +42,10 @@ func (b *RequestBodyBuilder) AsJSON(obj interface{}) *RequestBuilder {
 	// Marshal JSON
 	bodyBytes, err := json.Marshal(obj)
 	if err != nil {
-		b.parentBuilder.request.validations = append(b.parentBuilder.request.validations, errors.Join(errors.New(constant.ErrMsgMarshalJSON), err))
+		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgMarshalJSON), err))
 		return b.parentBuilder
 	}
 	// Set body
-	b.parentBuilder.request.body = bytes.NewBuffer(bodyBytes)
+	b.requestConfig.SetBody(bytes.NewBuffer(bodyBytes))
 	return b.parentBuilder
 }

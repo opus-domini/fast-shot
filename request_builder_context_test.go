@@ -12,7 +12,7 @@ func TestRequestContextBuilder_Set(t *testing.T) {
 	builder := client.GET("/test").
 		Context().Set(context.Background())
 	// Assert
-	if builder.request.ctx == nil {
+	if builder.request.config.ctx == nil {
 		t.Errorf("Set Context not set correctly")
 	}
 }

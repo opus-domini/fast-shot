@@ -12,14 +12,14 @@ type ClientHeaderBuilder struct {
 	parentBuilder *ClientBuilder
 }
 
-// BuilderHeader returns a new ClientHeaderBuilder for setting custom HTTP BuilderHeader.
+// Header returns a new ClientHeaderBuilder for setting custom HTTP BuilderHeader.
 func (b *ClientBuilder) Header() *ClientHeaderBuilder {
 	return &ClientHeaderBuilder{parentBuilder: b}
 }
 
 // Add adds a custom header to the HTTP client. If header already exists, it will be appended.
 func (b *ClientHeaderBuilder) Add(key, value string) *ClientBuilder {
-	b.parentBuilder.client.HttpHeader().Add(key, value)
+	b.parentBuilder.client.Header().Add(key, value)
 	return b.parentBuilder
 }
 
@@ -33,7 +33,7 @@ func (b *ClientHeaderBuilder) AddAll(headers map[string]string) *ClientBuilder {
 
 // Set sets a custom header to the HTTP client. If header already exists, it will be overwritten.
 func (b *ClientHeaderBuilder) Set(key, value string) *ClientBuilder {
-	b.parentBuilder.client.HttpHeader().Set(key, value)
+	b.parentBuilder.client.Header().Set(key, value)
 	return b.parentBuilder
 }
 
