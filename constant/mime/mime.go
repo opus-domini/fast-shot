@@ -84,3 +84,8 @@ const (
 func (t Type) String() string {
 	return string(t)
 }
+
+// Parse parses the string into a Type.
+func Parse(value string) Type {
+	return Type(value)
+}

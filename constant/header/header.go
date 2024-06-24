@@ -72,3 +72,8 @@ const (
 func (t Type) String() string {
 	return string(t)
 }
+
+// Parse parses the header field from a string.
+func Parse(value string) Type {
+	return Type(value)
+}

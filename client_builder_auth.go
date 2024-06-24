@@ -20,7 +20,7 @@ func (b *ClientBuilder) Auth() *ClientAuthBuilder {
 
 // Set sets the Authorization header for custom authentication.
 func (b *ClientAuthBuilder) Set(value string) *ClientBuilder {
-	b.parentBuilder.client.Header().Set(header.Authorization.String(), value)
+	b.parentBuilder.client.Header().Set(header.Authorization, value)
 	return b.parentBuilder
 }
 

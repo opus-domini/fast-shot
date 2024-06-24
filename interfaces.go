@@ -2,6 +2,8 @@ package fastshot
 
 import (
 	"context"
+	"github.com/opus-domini/fast-shot/constant/header"
+	"github.com/opus-domini/fast-shot/constant/mime"
 	"io"
 	"net/http"
 	"net/url"
@@ -11,9 +13,9 @@ import (
 // HeaderWrapper is the interface that wraps the basic methods for setting HTTP Headers.
 type HeaderWrapper interface {
 	Unwrap() *http.Header
-	Get(key string) string
-	Add(key, value string)
-	Set(key, value string)
+	Get(key header.Type) string
+	Add(key header.Type, value string)
+	Set(key header.Type, value string)
 }
 
 // CookiesWrapper is the interface that wraps the basic methods for setting HTTP CookiesWrapper.
@@ -84,12 +86,12 @@ type ClientHttpMethods interface {
 
 // BuilderHeader is the interface that wraps the basic methods for setting custom HTTP BuilderHeader.
 type BuilderHeader[T any] interface {
-	Add(key, value string) *T
-	AddAll(headers map[string]string) *T
-	Set(key, value string) *T
-	SetAll(headers map[string]string) *T
-	AddAccept(value string) *T
-	AddContentType(value string) *T
+	Add(key header.Type, value string) *T
+	AddAll(headers map[header.Type]string) *T
+	Set(key header.Type, value string) *T
+	SetAll(headers map[header.Type]string) *T
+	AddAccept(value mime.Type) *T
+	AddContentType(value mime.Type) *T
 	AddUserAgent(value string) *T
 }
 

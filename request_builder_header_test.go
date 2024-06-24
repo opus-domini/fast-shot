@@ -1,6 +1,8 @@
 package fastshot
 
 import (
+	"github.com/opus-domini/fast-shot/constant/header"
+	"github.com/opus-domini/fast-shot/constant/mime"
 	"strings"
 	"testing"
 )
@@ -23,7 +25,7 @@ func TestRequestHeaderBuilder_AddAll(t *testing.T) {
 	builder := DefaultClient("https://example.com")
 	// Act
 	requestBuilder := builder.GET("/test").
-		Header().AddAll(map[string]string{"key1": "value1", "key2": "value2"})
+		Header().AddAll(map[header.Type]string{"key1": "value1", "key2": "value2"})
 	// Assert
 	if !strings.Contains(requestBuilder.request.config.httpHeader.Get("key2"), "value2") {
 		t.Errorf("BuilderHeader not set correctly")
@@ -49,7 +51,7 @@ func TestRequestHeaderBuilder_SetAll(t *testing.T) {
 	builder := DefaultClient("https://example.com")
 	// Act
 	requestBuilder := builder.GET("/test").
-		Header().SetAll(map[string]string{"key1": "value1", "key2": "value2"})
+		Header().SetAll(map[header.Type]string{"key1": "value1", "key2": "value2"})
 	// Assert
 	if !strings.Contains(requestBuilder.request.config.httpHeader.Get("key2"), "value2") {
 		t.Errorf("BuilderHeader not set correctly")
@@ -62,8 +64,8 @@ func TestRequestHeaderBuilder_AddAccept(t *testing.T) {
 	valueToFind := "application/xml"
 	// Act
 	headerBuilder := builder.GET("/test").
-		Header().AddAccept("application/json").
-		Header().AddAccept(valueToFind)
+		Header().AddAccept(mime.JSON).
+		Header().AddAccept(mime.Parse(valueToFind))
 	// Assert
 	values := headerBuilder.request.config.Header().Unwrap().Values("Accept")
 	valueFound := false
@@ -108,7 +110,7 @@ func TestRequestHeaderBuilder_AddContentType(t *testing.T) {
 	// Act
 	requestBuilder := builder.GET("/test").
 		Header().AddContentType("text/html; charset=utf-8").
-		Header().AddContentType(valueToFind)
+		Header().AddContentType(mime.Parse(valueToFind))
 	// Assert
 	values := requestBuilder.request.config.Header().Unwrap().Values("Content-Type")
 	valueFound := false

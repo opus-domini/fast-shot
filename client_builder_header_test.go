@@ -1,6 +1,8 @@
 package fastshot
 
 import (
+	"github.com/opus-domini/fast-shot/constant/header"
+	"github.com/opus-domini/fast-shot/constant/mime"
 	"strings"
 	"testing"
 )
@@ -21,7 +23,7 @@ func TestClientHeaderBuilder_AddAll(t *testing.T) {
 	// Arrange
 	builder := NewClient("https://example.com")
 	// Act
-	builder.Header().AddAll(map[string]string{"key1": "value1", "key2": "value2"})
+	builder.Header().AddAll(map[header.Type]string{"key1": "value1", "key2": "value2"})
 	// Assert
 	if !strings.Contains(builder.client.Header().Get("key2"), "value2") {
 		t.Errorf("BuilderHeader not set correctly")
@@ -45,7 +47,11 @@ func TestClientHeaderBuilder_SetAll(t *testing.T) {
 	// Arrange
 	builder := NewClient("https://example.com")
 	// Act
-	builder.Header().SetAll(map[string]string{"key1": "value1", "key2": "value2"})
+	builder.Header().SetAll(
+		map[header.Type]string{
+			header.Parse("key1"): "value1",
+			"key2":               "value2",
+		})
 	// Assert
 	if !strings.Contains(builder.client.Header().Get("key2"), "value2") {
 		t.Errorf("BuilderHeader not set correctly")
@@ -55,16 +61,16 @@ func TestClientHeaderBuilder_SetAll(t *testing.T) {
 func TestClientHeaderBuilder_AddAccept(t *testing.T) {
 	// Arrange
 	builder := NewClient("https://example.com")
-	valueToFind := "application/xml"
+	valueToFind := mime.XML
 	// Act
 	headerBuilder := builder.Header()
-	headerBuilder.AddAccept("application/json")
+	headerBuilder.AddAccept(mime.Parse("application/json"))
 	headerBuilder.AddAccept(valueToFind)
 	// Assert
 	values := builder.client.Header().Unwrap().Values("Accept")
 	valueFound := false
 	for _, value := range values {
-		if value == valueToFind {
+		if value == valueToFind.String() {
 			valueFound = true
 			break
 		}
@@ -103,7 +109,7 @@ func TestClientHeaderBuilder_AddContentType(t *testing.T) {
 	valueToFind := "multipart/form-data; boundary=something"
 	// Act
 	builder.Header().AddContentType("text/html; charset=utf-8").
-		Header().AddContentType(valueToFind)
+		Header().AddContentType(mime.Parse(valueToFind))
 	// Assert
 	values := builder.client.Header().Unwrap().Values("Content-Type")
 	valueFound := false

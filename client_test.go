@@ -109,6 +109,7 @@ func TestClientMethods(t *testing.T) {
 			{method.POST, func(url string) *RequestBuilder { return client.client.POST(url) }},
 			{method.PUT, func(url string) *RequestBuilder { return client.client.PUT(url) }},
 			{method.TRACE, func(url string) *RequestBuilder { return client.client.TRACE(url) }},
+			{method.Parse("TRACE"), func(url string) *RequestBuilder { return client.client.TRACE(url) }},
 		}
 
 		for _, tt := range tests {
