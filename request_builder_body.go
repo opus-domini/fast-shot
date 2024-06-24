@@ -2,7 +2,6 @@ package fastshot
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"github.com/opus-domini/fast-shot/constant"
 	"io"
@@ -27,25 +26,21 @@ func (b *RequestBuilder) Body() *RequestBodyBuilder {
 
 // AsReader sets the body as IO Reader.
 func (b *RequestBodyBuilder) AsReader(body io.Reader) *RequestBuilder {
-	b.requestConfig.SetBody(body)
+	b.requestConfig.Body().Set(body)
 	return b.parentBuilder
 }
 
 // AsString sets the body as string.
 func (b *RequestBodyBuilder) AsString(body string) *RequestBuilder {
-	b.requestConfig.SetBody(bytes.NewBufferString(body))
+	b.requestConfig.Body().Set(bytes.NewBufferString(body))
 	return b.parentBuilder
 }
 
 // AsJSON sets the body as JSON.
 func (b *RequestBodyBuilder) AsJSON(obj interface{}) *RequestBuilder {
-	// Marshal JSON
-	bodyBytes, err := json.Marshal(obj)
+	err := b.requestConfig.Body().SetAsJSON(obj)
 	if err != nil {
 		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgMarshalJSON), err))
-		return b.parentBuilder
 	}
-	// Set body
-	b.requestConfig.SetBody(bytes.NewBuffer(bodyBytes))
 	return b.parentBuilder
 }

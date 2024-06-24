@@ -55,7 +55,7 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 		b.request.config.Context().Unwrap(),
 		b.request.config.Method().String(),
 		fullURL.String(),
-		b.request.config.Body(),
+		b.request.config.Body().Unwrap(),
 	)
 	if err != nil {
 		return nil, err

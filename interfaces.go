@@ -41,6 +41,13 @@ type ContextWrapper interface {
 	Set(ctx context.Context)
 }
 
+// BodyWrapper is the interface that wraps the basic methods for setting HTTP BodyWrapper.
+type BodyWrapper interface {
+	Unwrap() io.Reader
+	Set(body io.Reader)
+	SetAsJSON(obj interface{}) error
+}
+
 // Client is the interface that wraps the basic methods for setting HTTP Client.
 type Client interface {
 	ClientConfig

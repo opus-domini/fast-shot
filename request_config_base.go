@@ -2,7 +2,6 @@ package fastshot
 
 import (
 	"github.com/opus-domini/fast-shot/constant/method"
-	"io"
 	"net/url"
 	"time"
 )
@@ -16,7 +15,7 @@ type (
 		method      method.Type
 		path        string
 		queryParams url.Values
-		body        io.Reader
+		body        BodyWrapper
 		validations ValidationsWrapper
 		retryConfig *RetryConfig
 	}
@@ -73,18 +72,13 @@ func (c *RequestConfigBase) QueryParams() url.Values {
 }
 
 // Body returns the body for the request.
-func (c *RequestConfigBase) Body() io.Reader {
+func (c *RequestConfigBase) Body() BodyWrapper {
 	return c.body
 }
 
 // Validations returns the validations for the request.
 func (c *RequestConfigBase) Validations() ValidationsWrapper {
 	return c.validations
-}
-
-// SetBody sets the body for the request.
-func (c *RequestConfigBase) SetBody(body io.Reader) {
-	c.body = body
 }
 
 // RetryConfig returns the retry configuration for the request.
@@ -161,6 +155,7 @@ func newRequestConfigBase(method method.Type, path string) *RequestConfigBase {
 		method:      method,
 		path:        path,
 		queryParams: url.Values{},
+		body:        newDefaultBody(),
 		validations: newDefaultValidations(nil),
 		retryConfig: &RetryConfig{
 			shouldRetry:    func(response Response) bool { return response.IsError() },
