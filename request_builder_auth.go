@@ -11,16 +11,20 @@ var _ BuilderAuth[RequestBuilder] = (*RequestAuthBuilder)(nil)
 // RequestAuthBuilder allows for setting authentication configurations.
 type RequestAuthBuilder struct {
 	parentBuilder *RequestBuilder
+	requestConfig *RequestConfigBase
 }
 
-// BuilderAuth returns a new ClientAuthBuilder for setting authentication options.
+// Auth returns a new ClientAuthBuilder for setting authentication options.
 func (b *RequestBuilder) Auth() *RequestAuthBuilder {
-	return &RequestAuthBuilder{parentBuilder: b}
+	return &RequestAuthBuilder{
+		parentBuilder: b,
+		requestConfig: b.request.config,
+	}
 }
 
 // Set sets the Authorization header for custom authentication.
 func (b *RequestAuthBuilder) Set(value string) *RequestBuilder {
-	b.parentBuilder.request.httpHeader.Set(header.Authorization, value)
+	b.requestConfig.Header().Set(header.Authorization, value)
 	return b.parentBuilder
 }
 

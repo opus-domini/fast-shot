@@ -8,39 +8,68 @@ import (
 	"time"
 )
 
+// HeaderWrapper is the interface that wraps the basic methods for setting HTTP Headers.
+type HeaderWrapper interface {
+	Unwrap() *http.Header
+	Get(key string) string
+	Add(key, value string)
+	Set(key, value string)
+}
+
+// CookiesWrapper is the interface that wraps the basic methods for setting HTTP CookiesWrapper.
+type CookiesWrapper interface {
+	Unwrap() []*http.Cookie
+	Get(index int) *http.Cookie
+	Count() int
+	Add(cookie *http.Cookie)
+}
+
+// ValidationsWrapper is the interface that wraps the basic methods for setting HTTP ValidationsWrapper.
+type ValidationsWrapper interface {
+	Unwrap() []error
+	Get(index int) error
+	IsEmpty() bool
+	Count() int
+	Add(err error)
+}
+
+// Client is the interface that wraps the basic methods for setting HTTP Client.
 type Client interface {
 	ClientConfig
 	ClientHttpMethods
 }
 
+// ClientConfig is the interface that wraps the basic methods for setting HTTP ClientConfig.
 type ClientConfig interface {
 	ConfigHttpClient
-	HttpHeader() *http.Header
-	SetHttpCookie(cookie *http.Cookie)
-	HttpCookies() []*http.Cookie
-	SetValidation(validation error)
-	Validations() []error
+	Header() HeaderWrapper
+	Cookies() CookiesWrapper
+	Validations() ValidationsWrapper
 	ConfigBaseURL
 }
 
+// ConfigHttpClient is the interface that wraps the basic methods for setting HTTP HttpClient.
 type ConfigHttpClient interface {
 	SetHttpClient(httpClient HttpClientComponent)
 	HttpClient() HttpClientComponent
 }
 
+// HttpClientComponent is the interface that wraps the basic methods for setting HTTP HttpClientComponent.
 type HttpClientComponent interface {
-	Do(*http.Request) (*http.Response, error)
-	SetTransport(http.RoundTripper)
+	Do(req *http.Request) (*http.Response, error)
 	Transport() http.RoundTripper
-	SetTimeout(time.Duration)
+	SetTransport(http.RoundTripper)
 	Timeout() time.Duration
-	SetCheckRedirect(func(*http.Request, []*http.Request) error)
+	SetTimeout(time.Duration)
+	SetFollowRedirects(follow bool)
 }
 
+// ConfigBaseURL is the interface that wraps the basic methods for setting HTTP BaseURL.
 type ConfigBaseURL interface {
 	BaseURL() *url.URL
 }
 
+// ClientHttpMethods is the interface that wraps the basic methods for setting HTTP ClientHttpMethods.
 type ClientHttpMethods interface {
 	GET(path string) *RequestBuilder
 	POST(path string) *RequestBuilder
@@ -64,7 +93,7 @@ type BuilderHeader[T any] interface {
 	AddUserAgent(value string) *T
 }
 
-// BuilderCookie is the interface that wraps the basic methods for setting HTTP Cookies.
+// BuilderCookie is the interface that wraps the basic methods for setting HTTP CookiesWrapper.
 type BuilderCookie[T any] interface {
 	Add(cookie *http.Cookie) *T
 }
@@ -108,5 +137,10 @@ type BuilderRequestQuery[T any] interface {
 
 // BuilderRequestRetry is the interface that wraps the basic methods for setting HTTP BuilderRequestRetry.
 type BuilderRequestRetry[T any] interface {
-	Set(retries int, retryInterval time.Duration) *T
+	SetConstantBackoff(interval time.Duration, maxAttempts uint) *T
+	SetConstantBackoffWithJitter(interval time.Duration, maxAttempts uint) *T
+	SetExponentialBackoff(interval time.Duration, maxAttempts uint, backoffRate float64) *T
+	SetExponentialBackoffWithJitter(interval time.Duration, maxAttempts uint, backoffRate float64) *T
+	WithRetryCondition(shouldRetry func(response Response) bool) *T
+	WithMaxDelay(duration time.Duration) *T
 }

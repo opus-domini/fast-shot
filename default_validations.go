@@ -1,0 +1,34 @@
+package fastshot
+
+// DefaultValidations implements ValidationsWrapper interface and provides a default HTTP validations.
+var _ ValidationsWrapper = (*DefaultValidations)(nil)
+
+// DefaultValidations implements ValidationsWrapper interface and provides a default HTTP validations.
+type DefaultValidations struct {
+	validations []error
+}
+
+// Unwrap will return the underlying validations
+func (c *DefaultValidations) Unwrap() []error {
+	return c.validations
+}
+
+// Get will return the validation at the specified index
+func (c *DefaultValidations) Get(index int) error {
+	return c.validations[index]
+}
+
+// IsEmpty will return the underlying validations
+func (c *DefaultValidations) IsEmpty() bool {
+	return c.validations == nil || len(c.validations) == 0
+}
+
+// Count will return the number of validations
+func (c *DefaultValidations) Count() int {
+	return len(c.validations)
+}
+
+// Add will append a new validation to the underlying validations
+func (c *DefaultValidations) Add(err error) {
+	c.validations = append(c.validations, err)
+}

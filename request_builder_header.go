@@ -10,16 +10,20 @@ var _ BuilderHeader[RequestBuilder] = (*RequestHeaderBuilder)(nil)
 // RequestHeaderBuilder is a builder for setting custom HTTP BuilderHeader.
 type RequestHeaderBuilder struct {
 	parentBuilder *RequestBuilder
+	requestConfig *RequestConfigBase
 }
 
-// BuilderHeader returns a new RequestHeaderBuilder for setting custom HTTP BuilderHeader.
+// Header returns a new RequestHeaderBuilder for setting custom HTTP BuilderHeader.
 func (b *RequestBuilder) Header() *RequestHeaderBuilder {
-	return &RequestHeaderBuilder{parentBuilder: b}
+	return &RequestHeaderBuilder{
+		parentBuilder: b,
+		requestConfig: b.request.config,
+	}
 }
 
 // Add adds a custom header to the HTTP request. If header already exists, it will be appended.
 func (b *RequestHeaderBuilder) Add(key, value string) *RequestBuilder {
-	b.parentBuilder.request.httpHeader.Add(key, value)
+	b.requestConfig.httpHeader.Add(key, value)
 	return b.parentBuilder
 }
 
@@ -33,7 +37,7 @@ func (b *RequestHeaderBuilder) AddAll(headers map[string]string) *RequestBuilder
 
 // Set sets a custom header to the HTTP request. If header already exists, it will be overwritten.
 func (b *RequestHeaderBuilder) Set(key, value string) *RequestBuilder {
-	b.parentBuilder.request.httpHeader.Set(key, value)
+	b.requestConfig.httpHeader.Set(key, value)
 	return b.parentBuilder
 }
 

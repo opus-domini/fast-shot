@@ -10,15 +10,19 @@ var _ BuilderRequestContext[RequestBuilder] = (*RequestContextBuilder)(nil)
 // RequestContextBuilder serves as the main entry point for configuring Request Context.
 type RequestContextBuilder struct {
 	parentBuilder *RequestBuilder
+	requestConfig *RequestConfigBase
 }
 
 // Context returns a new RequestContextBuilder for setting custom Context.
 func (b *RequestBuilder) Context() *RequestContextBuilder {
-	return &RequestContextBuilder{parentBuilder: b}
+	return &RequestContextBuilder{
+		parentBuilder: b,
+		requestConfig: b.request.config,
+	}
 }
 
 // Set sets the Context.
 func (b *RequestContextBuilder) Set(ctx context.Context) *RequestBuilder {
-	b.parentBuilder.request.ctx = ctx
+	b.requestConfig.SetContext(ctx)
 	return b.parentBuilder
 }

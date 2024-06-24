@@ -12,23 +12,39 @@
     </p>
 </div>
 
+# Fast Shot: A Fluent Go REST Client Library
+
 Fast Shot is a robust, feature-rich, and highly configurable HTTP client for Go. Crafted with modern Go practices in mind, it offers a fluent, chainable API that allows for clean, idiomatic code.
+
+## Table of Contents
+
+- [Why Fast Shot?](#why-fast-shot)
+- [Features](#features-)
+- [Installation](#installation-)
+- [Quick Start](#quick-start-)
+- [Advanced Usage](#advanced-usage-)
+- [Contributing](#contributing-)
 
 ## Why Fast Shot?
 
 * **Fluent & Chainable API**: Write expressive, readable, and flexible HTTP client code.
 * **Ease of Use**: Reduce boilerplate, making HTTP requests as straightforward as possible.
 * **Rich Features**: From headers to query parameters and JSON support, Fast Shot covers your needs.
+* **Advanced Retry Mechanism**: Built-in support for retries with various backoff strategies.
 
 ## Features 🌟
 
-* Fluent API for HTTP requests
-* Extensible authentication
-* Customizable HTTP headers
-* Query parameter manipulation
+* Fluent and chainable API for clean, expressive code
+* Comprehensive HTTP method support (GET, POST, PUT, DELETE, etc.)
+* Flexible authentication options (Bearer Token, Basic Auth, Custom)
+* Easy manipulation of headers, cookies, and query parameters
+* Advanced retry mechanism with customizable backoff strategies
+* Client-side load balancing for improved reliability
 * JSON request and response support
-* Built-in error handling
-* Well-tested
+* Timeout and redirect control
+* Proxy support
+* Extensible and customizable for specific needs
+* Well-tested and production-ready
 
 ## Installation 🔧
 
@@ -80,18 +96,25 @@ Easily chain multiple settings in a single line:
 client := fastshot.NewClient("https://api.example.com").
     Auth().BearerToken("your-bearer-token").
     Header().Add("My-Header", "My-Value").
-    Config().SetTimeout(time.Second * 30).
+    Config().SetTimeout(30 * time.Second).
     Build()
 ```
-### Retry Mechanism
+### Advanced Retry Mechanism
 
-Handle transient failures, enhancing the reliability of your HTTP requests:
+Handle transient failures with customizable backoff strategies:
 
 ```go 
 client.POST("/resource").
-    Retry().Set(2, time.Second * 2).
+    Retry().SetExponentialBackoff(2 * time.Second, 5, 2.0).
     Send()
 ```
+
+This new retry feature supports:
+- Constant backoff
+- Exponential backoff
+- Full jitter for both constant and exponential backoff
+- Custom retry conditions
+- Maximum delay setting
 
 ### Out-of-the-Box Support for Client Load Balancing
 
@@ -170,4 +193,14 @@ builder.Config().
 
 ## Contributing 🤝
 
-Your contributions are always welcome! Feel free to create pull requests, submit issues, or contribute in any other way.
+We welcome contributions to Fast Shot! Here's how you can contribute:
+
+1. Fork the repository
+2. Create a new branch for your feature or bug fix
+3. Write your code and tests
+4. Ensure all tests pass
+5. Submit a pull request
+
+Please make sure to update tests as appropriate and adhere to the existing coding style.
+
+For more detailed information, check out our [CONTRIBUTING.md](https://github.com/opus-domini/fast-shot/blob/main/CONTRIBUTING.md) file.

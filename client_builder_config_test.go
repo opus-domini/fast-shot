@@ -131,7 +131,7 @@ func TestClientConfigBuilder_SetProxy_WithProxyURLParserError(t *testing.T) {
 	if builder.client.HttpClient().Transport() != nil {
 		t.Errorf("Transport should not be set")
 	}
-	if len(builder.client.Validations()) != 1 {
-		t.Errorf("Validation for proxy URL parser error not set correctly")
+	if len(builder.client.Validations().Unwrap()) != 1 {
+		t.Errorf("ValidationsWrapper for proxy URL parser error not set correctly")
 	}
 }

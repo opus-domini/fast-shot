@@ -2,6 +2,7 @@ package fastshot
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -9,70 +10,244 @@ import (
 	"time"
 )
 
+func logServerResponse(responseStatus string) {
+	fmt.Printf("timestamp: %s, response: %s\n", time.Now().Format(time.StampMilli), responseStatus)
+}
+
 func TestRequest_Send_Retry(t *testing.T) {
 	type retryConfig struct {
-		retries       int
-		retryInterval time.Duration
+		retryBuilder func(requestBuilder *RequestBuilder) *RequestBuilder
+		maxAttempts  uint
+		interval     time.Duration
 	}
 
 	tests := []struct {
 		name        string
 		retryConfig retryConfig
-		serverFunc  func() http.HandlerFunc
+		serverFunc  func() (http.HandlerFunc, *int)
 		expectError bool
 		expectCount int
 	}{
 		{
-			name: "Retry Successful",
+			name: "Retry Constant Backoff Successful",
 			retryConfig: retryConfig{
-				retries:       3,
-				retryInterval: time.Millisecond,
+				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
+					return requestBuilder.
+						Retry().SetConstantBackoff(time.Millisecond, 3)
+				},
+				interval:    time.Millisecond,
+				maxAttempts: 3,
 			},
-			serverFunc: func() http.HandlerFunc {
+			serverFunc: func() (http.HandlerFunc, *int) {
 				retryCount := 0
 				return func(w http.ResponseWriter, r *http.Request) {
 					retryCount++
 					if retryCount < 3 {
+						logServerResponse("500 SERVER ERROR")
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
+					logServerResponse("200 OK")
 					w.WriteHeader(http.StatusOK)
 					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
-				}
+				}, &retryCount
 			},
 			expectError: false,
 			expectCount: 3,
 		},
 		{
-			name: "Retry Unsuccessful",
+			name: "Retry Constant Backoff Unsuccessful",
 			retryConfig: retryConfig{
-				retries:       3,
-				retryInterval: time.Millisecond,
+				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
+					return requestBuilder.
+						Retry().SetConstantBackoff(time.Millisecond, 3)
+				},
+				maxAttempts: 3,
+				interval:    time.Millisecond,
 			},
-			serverFunc: func() http.HandlerFunc {
+			serverFunc: func() (http.HandlerFunc, *int) {
 				retryCount := 0
 				return func(w http.ResponseWriter, r *http.Request) {
 					retryCount++
+					logServerResponse("500 SERVER ERROR")
 					w.WriteHeader(http.StatusInternalServerError)
-				}
+				}, &retryCount
 			},
 			expectError: true,
-			expectCount: 4, // 1 initial attempt + 3 retries
+			expectCount: 3,
+		},
+		{
+			name: "Retry Constant Backoff With Jitter Successful",
+			retryConfig: retryConfig{
+				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
+					return requestBuilder.
+						Retry().SetConstantBackoffWithJitter(time.Millisecond, 3)
+				},
+				interval:    time.Millisecond,
+				maxAttempts: 3,
+			},
+			serverFunc: func() (http.HandlerFunc, *int) {
+				retryCount := 0
+				return func(w http.ResponseWriter, r *http.Request) {
+					retryCount++
+					if retryCount < 3 {
+						logServerResponse("500 SERVER ERROR")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					logServerResponse("200 OK")
+					w.WriteHeader(http.StatusOK)
+					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
+				}, &retryCount
+			},
+			expectError: false,
+			expectCount: 3,
+		},
+		{
+			name: "Retry Exponential Backoff Successful",
+			retryConfig: retryConfig{
+				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
+					return requestBuilder.
+						Retry().SetExponentialBackoff(5*time.Millisecond, 5, 2)
+				},
+			},
+			serverFunc: func() (http.HandlerFunc, *int) {
+				retryCount := 0
+				return func(w http.ResponseWriter, r *http.Request) {
+					retryCount++
+					if retryCount < 5 {
+						logServerResponse("500 SERVER ERROR")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					logServerResponse("200 OK")
+					w.WriteHeader(http.StatusOK)
+					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
+				}, &retryCount
+			},
+			expectError: false,
+			expectCount: 5,
+		},
+		{
+			name: "Retry Exponential Backoff Unsuccessful",
+			retryConfig: retryConfig{
+				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
+					return requestBuilder.
+						Retry().SetExponentialBackoff(5*time.Millisecond, 5, 2)
+				},
+			},
+			serverFunc: func() (http.HandlerFunc, *int) {
+				retryCount := 0
+				return func(w http.ResponseWriter, r *http.Request) {
+					retryCount++
+					logServerResponse("500 SERVER ERROR")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}, &retryCount
+			},
+			expectError: true,
+			expectCount: 5,
+		},
+		{
+			name: "Retry Exponential Backoff With Jitter Successful",
+			retryConfig: retryConfig{
+				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
+					return requestBuilder.
+						Retry().SetExponentialBackoffWithJitter(5*time.Millisecond, 5, 2)
+				},
+			},
+			serverFunc: func() (http.HandlerFunc, *int) {
+				retryCount := 0
+				return func(w http.ResponseWriter, r *http.Request) {
+					retryCount++
+					if retryCount < 5 {
+						logServerResponse("500 SERVER ERROR")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					logServerResponse("200 OK")
+					w.WriteHeader(http.StatusOK)
+					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
+				}, &retryCount
+			},
+			expectError: false,
+			expectCount: 5,
+		},
+		{
+			name: "Retry Exponential Backoff With Max Delay Successful",
+			retryConfig: retryConfig{
+				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
+					return requestBuilder.
+						Retry().SetExponentialBackoff(1*time.Minute, 5, 2).
+						Retry().WithMaxDelay(10 * time.Millisecond)
+				},
+			},
+			serverFunc: func() (http.HandlerFunc, *int) {
+				retryCount := 0
+				return func(w http.ResponseWriter, r *http.Request) {
+					retryCount++
+					if retryCount < 5 {
+						logServerResponse("500 SERVER ERROR")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					logServerResponse("200 OK")
+					w.WriteHeader(http.StatusOK)
+					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
+				}, &retryCount
+			},
+			expectError: false,
+			expectCount: 5,
+		},
+		{
+			name: "Retry Exponential Backoff With Custom Retry Condition Successful",
+			retryConfig: retryConfig{
+				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
+					return requestBuilder.
+						Retry().SetExponentialBackoff(1*time.Millisecond, 5, 2).
+						Retry().
+						WithRetryCondition(
+							func(response Response) bool {
+								return response.IsError() || response.RawResponse.StatusCode == http.StatusNoContent
+							},
+						)
+				},
+			},
+			serverFunc: func() (http.HandlerFunc, *int) {
+				retryCount := 0
+				return func(w http.ResponseWriter, r *http.Request) {
+					retryCount++
+					if retryCount < 5 {
+						logServerResponse("204 NO CONTENT")
+						w.WriteHeader(http.StatusNoContent)
+						return
+					}
+					logServerResponse("200 OK")
+					w.WriteHeader(http.StatusOK)
+					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
+				}, &retryCount
+			},
+			expectError: false,
+			expectCount: 5,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
-			server := httptest.NewServer(tt.serverFunc())
+			serverFunc, retryCount := tt.serverFunc()
+			server := httptest.NewServer(serverFunc)
 			defer server.Close()
 
-			client := DefaultClient(server.URL)
+			requestBuilder := DefaultClient(server.URL).GET("/test")
 
 			// Act
-			resp, err := client.GET("/test").
-				Retry().Set(tt.retryConfig.retries, tt.retryConfig.retryInterval).
-				Send()
+			resp, err := tt.retryConfig.retryBuilder(requestBuilder).Send()
+
+			// Assert
+			if *retryCount != tt.expectCount {
+				t.Errorf("Unexpected retry count: got %v, want %v", *retryCount, tt.expectCount)
+			}
 
 			if err != nil && !tt.expectError {
 				t.Errorf("Execute method failed: %v", err)
