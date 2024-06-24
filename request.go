@@ -52,7 +52,7 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 
 	// Create Http Request with context
 	request, err := http.NewRequestWithContext(
-		b.request.config.Context(),
+		b.request.config.Context().Unwrap(),
 		b.request.config.Method().String(),
 		fullURL.String(),
 		b.request.config.Body(),

@@ -1,7 +1,6 @@
 package fastshot
 
 import (
-	"context"
 	"github.com/opus-domini/fast-shot/constant/method"
 	"io"
 	"net/url"
@@ -11,7 +10,7 @@ import (
 type (
 	// RequestConfigBase encapsulates all configurations for a request.
 	RequestConfigBase struct {
-		ctx         context.Context
+		ctx         ContextWrapper
 		httpHeader  HeaderWrapper
 		httpCookies CookiesWrapper
 		method      method.Type
@@ -44,7 +43,7 @@ const (
 )
 
 // Context returns the context for the request.
-func (c *RequestConfigBase) Context() context.Context {
+func (c *RequestConfigBase) Context() ContextWrapper {
 	return c.ctx
 }
 
@@ -56,11 +55,6 @@ func (c *RequestConfigBase) Header() HeaderWrapper {
 // Cookies returns the cookies for the request.
 func (c *RequestConfigBase) Cookies() CookiesWrapper {
 	return c.httpCookies
-}
-
-// SetContext sets the context for the request.
-func (c *RequestConfigBase) SetContext(ctx context.Context) {
-	c.ctx = ctx
 }
 
 // Method returns the method for the request.
@@ -161,7 +155,7 @@ func (c *RetryConfig) SetJitterStrategy(strategy JitterStrategy) {
 // NewRequestConfigBase creates a new request configuration.
 func newRequestConfigBase(method method.Type, path string) *RequestConfigBase {
 	return &RequestConfigBase{
-		ctx:         context.Background(),
+		ctx:         newDefaultContext(nil),
 		httpHeader:  newDefaultHttpHeader(),
 		httpCookies: newDefaultHttpCookies(),
 		method:      method,

@@ -35,6 +35,12 @@ type ValidationsWrapper interface {
 	Add(err error)
 }
 
+// ContextWrapper is the interface that wraps the basic methods for setting HTTP ContextWrapper.
+type ContextWrapper interface {
+	Unwrap() context.Context
+	Set(ctx context.Context)
+}
+
 // Client is the interface that wraps the basic methods for setting HTTP Client.
 type Client interface {
 	ClientConfig
