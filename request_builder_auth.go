@@ -2,6 +2,7 @@ package fastshot
 
 import (
 	"encoding/base64"
+
 	"github.com/opus-domini/fast-shot/constant/header"
 )
 

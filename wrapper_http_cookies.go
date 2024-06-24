@@ -31,3 +31,10 @@ func (c *DefaultHttpCookies) Get(index int) *http.Cookie {
 func (c *DefaultHttpCookies) Add(cookie *http.Cookie) {
 	c.cookies = append(c.cookies, cookie)
 }
+
+// newDefaultHttpCookies initializes a new DefaultHttpCookies.
+func newDefaultHttpCookies() *DefaultHttpCookies {
+	return &DefaultHttpCookies{
+		cookies: []*http.Cookie{},
+	}
+}

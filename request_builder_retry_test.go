@@ -1,370 +1,103 @@
 package fastshot
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func logServerResponse(responseStatus string) {
-	fmt.Printf("timestamp: %s, response: %s\n", time.Now().Format(time.StampMilli), responseStatus)
-}
-
-type retryConfig struct {
-	retryBuilder func(requestBuilder *RequestBuilder) *RequestBuilder
-	maxAttempts  uint
-	interval     time.Duration
-}
-
-func TestRequest_Send_Retry(t *testing.T) {
-
+func TestRequestRetryBuilder(t *testing.T) {
 	tests := []struct {
-		name        string
-		retryConfig retryConfig
-		serverFunc  func() (http.HandlerFunc, *int)
-		expectError bool
-		expectCount int
-		hasBody     bool
+		name           string
+		method         func(*RequestBuilder) *RequestBuilder
+		expectedConfig func(*RetryConfig) bool
 	}{
 		{
-			name: "Retry Constant Backoff Successful",
-			retryConfig: retryConfig{
-				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
-					return requestBuilder.
-						Retry().SetConstantBackoff(time.Millisecond, 3)
-				},
-				interval:    time.Millisecond,
-				maxAttempts: 3,
+			name: "Set constant backoff",
+			method: func(rb *RequestBuilder) *RequestBuilder {
+				return rb.Retry().SetConstantBackoff(time.Second, 3)
 			},
-			serverFunc: func() (http.HandlerFunc, *int) {
-				retryCount := 0
-				return func(w http.ResponseWriter, r *http.Request) {
-					retryCount++
-					if retryCount < 3 {
-						logServerResponse("500 SERVER ERROR")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					logServerResponse("200 OK")
-					w.WriteHeader(http.StatusOK)
-					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
-				}, &retryCount
+			expectedConfig: func(rc *RetryConfig) bool {
+				return rc.Interval() == time.Second &&
+					rc.MaxAttempts() == 3 &&
+					rc.BackoffRate() == 1 &&
+					rc.JitterStrategy() == JitterStrategyNone
 			},
-			expectError: false,
-			expectCount: 3,
 		},
 		{
-			name: "Retry Constant Backoff Unsuccessful",
-			retryConfig: retryConfig{
-				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
-					return requestBuilder.
-						Retry().SetConstantBackoff(time.Millisecond, 3)
-				},
-				maxAttempts: 3,
-				interval:    time.Millisecond,
+			name: "Set constant backoff with jitter",
+			method: func(rb *RequestBuilder) *RequestBuilder {
+				return rb.Retry().SetConstantBackoffWithJitter(time.Second, 3)
 			},
-			serverFunc: func() (http.HandlerFunc, *int) {
-				retryCount := 0
-				return func(w http.ResponseWriter, r *http.Request) {
-					retryCount++
-					logServerResponse("500 SERVER ERROR")
-					w.WriteHeader(http.StatusInternalServerError)
-				}, &retryCount
+			expectedConfig: func(rc *RetryConfig) bool {
+				return rc.Interval() == time.Second &&
+					rc.MaxAttempts() == 3 &&
+					rc.BackoffRate() == 1 &&
+					rc.JitterStrategy() == JitterStrategyFull
 			},
-			expectError: true,
-			expectCount: 3,
 		},
 		{
-			name: "Retry Constant Backoff With Jitter Successful",
-			retryConfig: retryConfig{
-				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
-					return requestBuilder.
-						Retry().SetConstantBackoffWithJitter(time.Millisecond, 3)
-				},
-				interval:    time.Millisecond,
-				maxAttempts: 3,
+			name: "Set exponential backoff",
+			method: func(rb *RequestBuilder) *RequestBuilder {
+				return rb.Retry().SetExponentialBackoff(time.Second, 3, 2.0)
 			},
-			serverFunc: func() (http.HandlerFunc, *int) {
-				retryCount := 0
-				return func(w http.ResponseWriter, r *http.Request) {
-					retryCount++
-					if retryCount < 3 {
-						logServerResponse("500 SERVER ERROR")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					logServerResponse("200 OK")
-					w.WriteHeader(http.StatusOK)
-					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
-				}, &retryCount
+			expectedConfig: func(rc *RetryConfig) bool {
+				return rc.Interval() == time.Second &&
+					rc.MaxAttempts() == 3 &&
+					rc.BackoffRate() == 2.0 &&
+					rc.JitterStrategy() == JitterStrategyNone
 			},
-			expectError: false,
-			expectCount: 3,
 		},
 		{
-			name: "Retry Exponential Backoff Successful",
-			retryConfig: retryConfig{
-				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
-					return requestBuilder.
-						Retry().SetExponentialBackoff(5*time.Millisecond, 5, 2)
-				},
+			name: "Set exponential backoff with jitter",
+			method: func(rb *RequestBuilder) *RequestBuilder {
+				return rb.Retry().SetExponentialBackoffWithJitter(time.Second, 3, 2.0)
 			},
-			serverFunc: func() (http.HandlerFunc, *int) {
-				retryCount := 0
-				return func(w http.ResponseWriter, r *http.Request) {
-					retryCount++
-					if retryCount < 5 {
-						logServerResponse("500 SERVER ERROR")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					logServerResponse("200 OK")
-					w.WriteHeader(http.StatusOK)
-					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
-				}, &retryCount
+			expectedConfig: func(rc *RetryConfig) bool {
+				return rc.Interval() == time.Second &&
+					rc.MaxAttempts() == 3 &&
+					rc.BackoffRate() == 2.0 &&
+					rc.JitterStrategy() == JitterStrategyFull
 			},
-			expectError: false,
-			expectCount: 5,
 		},
 		{
-			name: "Retry Exponential Backoff Unsuccessful",
-			retryConfig: retryConfig{
-				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
-					return requestBuilder.
-						Retry().SetExponentialBackoff(5*time.Millisecond, 5, 2)
-				},
+			name: "Set retry condition",
+			method: func(rb *RequestBuilder) *RequestBuilder {
+				return rb.Retry().WithRetryCondition(func(response *Response) bool {
+					return response.Status().Is5xxServerError()
+				})
 			},
-			serverFunc: func() (http.HandlerFunc, *int) {
-				retryCount := 0
-				return func(w http.ResponseWriter, r *http.Request) {
-					retryCount++
-					logServerResponse("500 SERVER ERROR")
-					w.WriteHeader(http.StatusInternalServerError)
-				}, &retryCount
+			expectedConfig: func(rc *RetryConfig) bool {
+				return rc.ShouldRetry() != nil
 			},
-			expectError: true,
-			expectCount: 5,
 		},
 		{
-			name: "Retry Exponential Backoff With Jitter Successful",
-			retryConfig: retryConfig{
-				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
-					return requestBuilder.
-						Retry().SetExponentialBackoffWithJitter(5*time.Millisecond, 5, 2)
-				},
+			name: "Set max delay",
+			method: func(rb *RequestBuilder) *RequestBuilder {
+				return rb.Retry().WithMaxDelay(5 * time.Second)
 			},
-			serverFunc: func() (http.HandlerFunc, *int) {
-				retryCount := 0
-				return func(w http.ResponseWriter, r *http.Request) {
-					retryCount++
-					if retryCount < 5 {
-						logServerResponse("500 SERVER ERROR")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					logServerResponse("200 OK")
-					w.WriteHeader(http.StatusOK)
-					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
-				}, &retryCount
+			expectedConfig: func(rc *RetryConfig) bool {
+				return rc.MaxDelay() != nil && *rc.MaxDelay() == 5*time.Second
 			},
-			expectError: false,
-			expectCount: 5,
-		},
-		{
-			name: "Retry Exponential Backoff With Max Delay Successful",
-			retryConfig: retryConfig{
-				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
-					return requestBuilder.
-						Retry().SetExponentialBackoff(1*time.Minute, 5, 2).
-						Retry().WithMaxDelay(10 * time.Millisecond)
-				},
-			},
-			serverFunc: func() (http.HandlerFunc, *int) {
-				retryCount := 0
-				return func(w http.ResponseWriter, r *http.Request) {
-					retryCount++
-					if retryCount < 5 {
-						logServerResponse("500 SERVER ERROR")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					logServerResponse("200 OK")
-					w.WriteHeader(http.StatusOK)
-					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
-				}, &retryCount
-			},
-			expectError: false,
-			expectCount: 5,
-		},
-		{
-			name: "Retry Exponential Backoff With Custom Retry Condition Successful",
-			retryConfig: retryConfig{
-				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
-					return requestBuilder.
-						Retry().SetExponentialBackoff(1*time.Millisecond, 5, 2).
-						Retry().
-						WithRetryCondition(
-							func(response Response) bool {
-								return response.IsError() || response.RawResponse.StatusCode == http.StatusNoContent
-							},
-						)
-				},
-			},
-			serverFunc: func() (http.HandlerFunc, *int) {
-				retryCount := 0
-				return func(w http.ResponseWriter, r *http.Request) {
-					retryCount++
-					if retryCount < 5 {
-						logServerResponse("204 NO CONTENT")
-						w.WriteHeader(http.StatusNoContent)
-						return
-					}
-					logServerResponse("200 OK")
-					w.WriteHeader(http.StatusOK)
-					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
-				}, &retryCount
-			},
-			expectError: false,
-			expectCount: 5,
-		},
-		{
-			name: "Retry With Body Unsuccessful",
-			retryConfig: retryConfig{
-				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
-					return requestBuilder.
-						Retry().SetConstantBackoff(time.Millisecond, 3)
-				},
-				interval:    time.Millisecond,
-				maxAttempts: 3,
-			},
-			serverFunc: func() (http.HandlerFunc, *int) {
-				retryCount := 0
-				return func(w http.ResponseWriter, r *http.Request) {
-					retryCount++
-					bodyBytes, err := io.ReadAll(r.Body)
-					if err != nil {
-						t.Errorf("Error reading body: %v", err)
-					}
-					expectedBodyLength := len([]byte("wrong test body"))
-					if retryCount < 3 {
-						logServerResponse("500 SERVER ERROR")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					if len(bodyBytes) == expectedBodyLength {
-						logServerResponse("200 OK")
-						w.WriteHeader(http.StatusOK)
-						_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
-						return
-					}
-					logServerResponse("500 SERVER ERROR")
-					w.WriteHeader(http.StatusInternalServerError)
-				}, &retryCount
-			},
-			expectError: true,
-			expectCount: 3,
-			hasBody:     true,
-		},
-		{
-			name: "Retry With Body Successful",
-			retryConfig: retryConfig{
-				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
-					return requestBuilder.
-						Retry().SetConstantBackoff(time.Millisecond, 3)
-				},
-				interval:    time.Millisecond,
-				maxAttempts: 3,
-			},
-			serverFunc: func() (http.HandlerFunc, *int) {
-				retryCount := 0
-				return func(w http.ResponseWriter, r *http.Request) {
-					retryCount++
-					bodyBytes, err := io.ReadAll(r.Body)
-					if err != nil {
-						t.Errorf("Error reading body: %v", err)
-					}
-					expectedBodyLength := len([]byte("test body"))
-					if retryCount < 3 {
-						logServerResponse("500 SERVER ERROR")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					if len(bodyBytes) == expectedBodyLength {
-						logServerResponse("200 OK")
-						w.WriteHeader(http.StatusOK)
-						_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
-						return
-					}
-					logServerResponse("500 SERVER ERROR")
-					w.WriteHeader(http.StatusInternalServerError)
-				}, &retryCount
-			},
-			expectError: false,
-			expectCount: 3,
-			hasBody:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
-			serverFunc, retryCount := tt.serverFunc()
-			server := httptest.NewServer(serverFunc)
-			defer server.Close()
-
-			requestBuilder := DefaultClient(server.URL).GET("/test")
-			if tt.hasBody {
-				requestBuilder.Body().AsReader(io.NopCloser(bytes.NewBufferString("test body")))
+			rb := &RequestBuilder{
+				request: &Request{
+					config: newRequestConfigBase("", ""),
+				},
 			}
+
 			// Act
-			resp, err := tt.retryConfig.retryBuilder(requestBuilder).Send()
+			result := tt.method(rb)
 
 			// Assert
-			if *retryCount != tt.expectCount {
-				t.Errorf("Unexpected retry count: got %v, want %v", *retryCount, tt.expectCount)
-			}
-
-			if err != nil && !tt.expectError {
-				t.Errorf("Execute method failed: %v", err)
-				return
-			}
-
-			if err == nil && tt.expectError {
-				t.Errorf("Expected error, but got nil")
-				return
-			}
-
-			if !tt.expectError {
-				defer func(Body io.ReadCloser) {
-					_ = Body.Close()
-				}(resp.RawBody())
-
-				body, _ := io.ReadAll(resp.RawBody())
-
-				var result map[string]string
-				_ = json.Unmarshal(body, &result)
-
-				// Assert
-				if result["message"] != "Success!" {
-					t.Errorf(
-						"Unexpected response: got %v, want 'Success!'",
-						result["message"],
-					)
-				}
-			} else {
-				// Assert
-				if resp.RawResponse.StatusCode != http.StatusInternalServerError {
-					t.Errorf(
-						"Unexpected status code: got %v, want %v",
-						resp.RawResponse.StatusCode, http.StatusInternalServerError,
-					)
-				}
-			}
+			assert.Equal(t, rb, result)
+			assert.True(t, tt.expectedConfig(rb.request.config.RetryConfig()))
 		})
 	}
 }

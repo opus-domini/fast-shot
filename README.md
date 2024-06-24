@@ -12,8 +12,6 @@
     </p>
 </div>
 
-# Fast Shot: A Fluent Go REST Client Library
-
 Fast Shot is a robust, feature-rich, and highly configurable HTTP client for Go. Crafted with modern Go practices in mind, it offers a fluent, chainable API that allows for clean, idiomatic code.
 
 ## Table of Contents
@@ -81,8 +79,20 @@ func main() {
         Header().AddAccept(mime.JSON).
         Body().AsJSON(payload).
         Send()
+
+    if err != nil {
+        // What happened? (¬_¬")
+        panic(err)
+    }
+
+    if response.Status().IsError() {
+        // What's wrong here, server?! ¯\_(ツ)_/¯
+        panic(response.Body().AsString())
+    }
 	
-    // Process response...
+    var result map[string]interface{}
+    _ := response.Body().AsJSON(&result)	
+    // Do something with the result (¬‿¬)
 }
 ```
 
@@ -189,7 +199,30 @@ builder.Config().
 // Set Proxy
 builder.Config().
     SetProxy("http://my-proxy-server:port")
-````
+```
+
+### Response Handling
+
+Extract information from the response with ease:
+
+```go
+// Fluent response status check
+response.Status()
+
+// Easy response body access and conversion
+response.Body()
+
+// Get response headers to inspect
+response.Header()
+
+// Get response cookies for further processing 
+response.Cookie()
+
+// Get raw response if needed
+response.Raw()
+
+// and more...
+```
 
 ## Contributing 🤝
 

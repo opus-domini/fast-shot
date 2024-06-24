@@ -2,12 +2,12 @@ package constant
 
 const (
 	ErrMsgClientValidation  = "invalid client attributes"
-	ErrMsgRequestValidation = "invalid request attributes"
 	ErrMsgCreateRequest     = "failed to create request"
-	ErrMsgMarshalJSON       = "failed to marshal JSON"
 	ErrMsgEmptyBaseURL      = "empty base URL"
+	ErrMsgMarshalJSON       = "failed to marshal JSON"
+	ErrMsgParseProxyURL     = "failed to parse proxy URL"
 	ErrMsgParseQueryString  = "failed to parse query string"
 	ErrMsgParseURL          = "failed to parse URL"
-	ErrMsgParseProxyURL     = "failed to parse proxy URL"
-	ErrMsgReadBody          = "failed to read body"
+	ErrMsgRequestValidation = "invalid request attributes"
+	ErrMsgSetBody           = "failed to set body"
 )

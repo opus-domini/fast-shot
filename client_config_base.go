@@ -1,44 +1,21 @@
 package fastshot
 
 import (
-	"github.com/opus-domini/fast-shot/constant/method"
+	"errors"
+	"fmt"
 	"net/url"
-	"sync/atomic"
+
+	"github.com/opus-domini/fast-shot/constant"
+	"github.com/opus-domini/fast-shot/constant/method"
 )
 
-type (
-	// ClientConfigBase serves as the main entry point for configuring HTTP clients.
-	ClientConfigBase struct {
-		httpClient  HttpClientComponent
-		httpHeader  HeaderWrapper
-		httpCookies CookiesWrapper
-		validations ValidationsWrapper
-		ConfigBaseURL
-	}
-
-	// DefaultBaseURL implements ConfigBaseURL interface and provides a single base URL.
-	DefaultBaseURL struct {
-		baseURL *url.URL
-	}
-
-	// BalancedBaseURL implements ConfigBaseURL interface and provides load balancing.
-	BalancedBaseURL struct {
-		baseURLs       []*url.URL
-		currentBaseURL uint32
-	}
-)
-
-// BaseURL for DefaultBaseURL returns the base URL.
-func (c *DefaultBaseURL) BaseURL() *url.URL {
-	return c.baseURL
-}
-
-// BaseURL for BalancedBaseURL returns the next base URL in the list.
-func (c *BalancedBaseURL) BaseURL() *url.URL {
-	currentIndex := atomic.LoadUint32(&c.currentBaseURL)
-	atomic.AddUint32(&c.currentBaseURL, 1)
-	c.currentBaseURL = c.currentBaseURL % uint32(len(c.baseURLs))
-	return c.baseURLs[currentIndex]
+// ClientConfigBase serves as the main entry point for configuring HTTP clients.
+type ClientConfigBase struct {
+	httpClient  HttpClientComponent
+	httpHeader  HeaderWrapper
+	httpCookies CookiesWrapper
+	validations ValidationsWrapper
+	ConfigBaseURL
 }
 
 // HttpClient for ClientConfigBase returns the HTTP client.
@@ -51,14 +28,17 @@ func (c *ClientConfigBase) SetHttpClient(httpClient HttpClientComponent) {
 	c.httpClient = httpClient
 }
 
+// Header for ClientConfigBase returns the HeaderWrapper.
 func (c *ClientConfigBase) Header() HeaderWrapper {
 	return c.httpHeader
 }
 
+// Cookies for ClientConfigBase returns the CookiesWrapper.
 func (c *ClientConfigBase) Cookies() CookiesWrapper {
 	return c.httpCookies
 }
 
+// Validations for ClientConfigBase returns the ValidationsWrapper.
 func (c *ClientConfigBase) Validations() ValidationsWrapper {
 	return c.validations
 }
@@ -106,4 +86,57 @@ func (c *ClientConfigBase) OPTIONS(path string) *RequestBuilder {
 // TRACE is a shortcut for NewRequest(c, method.TRACE, path).
 func (c *ClientConfigBase) TRACE(path string) *RequestBuilder {
 	return newRequest(c, method.TRACE, path)
+}
+
+// newClientConfigBase initializes a new ClientConfigBase with a given baseURL.
+func newClientConfigBase(baseURL string) *ClientConfigBase {
+	var validations []error
+
+	if baseURL == "" {
+		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
+	}
+
+	parsedURL, err := url.Parse(baseURL)
+	if err != nil {
+		validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
+	}
+
+	return &ClientConfigBase{
+		httpClient:    newDefaultHttpClient(),
+		httpHeader:    newDefaultHttpHeader(),
+		httpCookies:   newDefaultHttpCookies(),
+		validations:   newDefaultValidations(validations),
+		ConfigBaseURL: newDefaultBaseURL(parsedURL),
+	}
+}
+
+// newBalancedClientConfigBase initializes a new ClientConfigBase with a given baseURLs.
+func newBalancedClientConfigBase(baseURLs []string) *ClientConfigBase {
+	var validations []error
+
+	var parsedURLs []*url.URL
+	for index, baseURL := range baseURLs {
+		if baseURL == "" {
+			validations = append(validations, fmt.Errorf("base URL %d: %s", index, constant.ErrMsgEmptyBaseURL))
+			continue
+		}
+
+		parsedURL, err := url.Parse(baseURL)
+		if err != nil {
+			validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
+		}
+		parsedURLs = append(parsedURLs, parsedURL)
+	}
+
+	if len(parsedURLs) == 0 {
+		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
+	}
+
+	return &ClientConfigBase{
+		httpClient:    newDefaultHttpClient(),
+		httpHeader:    newDefaultHttpHeader(),
+		httpCookies:   newDefaultHttpCookies(),
+		validations:   newDefaultValidations(validations),
+		ConfigBaseURL: newBalancedBaseURL(parsedURLs),
+	}
 }

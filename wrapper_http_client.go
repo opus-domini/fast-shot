@@ -41,9 +41,15 @@ func (c *DefaultHttpClient) SetTimeout(duration time.Duration) {
 // SetFollowRedirects sets the CheckRedirect field on the underlying http.Client type
 func (c *DefaultHttpClient) SetFollowRedirects(follow bool) {
 	if !follow {
-		c.client.CheckRedirect =
-			func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
-			}
+		c.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	}
+}
+
+// newDefaultHttpClient initializes a new DefaultHttpClient.
+func newDefaultHttpClient() *DefaultHttpClient {
+	return &DefaultHttpClient{
+		client: &http.Client{},
 	}
 }
