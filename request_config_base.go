@@ -2,6 +2,7 @@ package fastshot
 
 import (
 	"context"
+	"github.com/opus-domini/fast-shot/constant/method"
 	"io"
 	"net/url"
 	"time"
@@ -13,7 +14,7 @@ type (
 		ctx         context.Context
 		httpHeader  HeaderWrapper
 		httpCookies CookiesWrapper
-		method      string
+		method      method.Type
 		path        string
 		queryParams url.Values
 		body        io.Reader
@@ -63,7 +64,7 @@ func (c *RequestConfigBase) SetContext(ctx context.Context) {
 }
 
 // Method returns the method for the request.
-func (c *RequestConfigBase) Method() string {
+func (c *RequestConfigBase) Method() method.Type {
 	return c.method
 }
 

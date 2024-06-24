@@ -97,7 +97,7 @@ func TestClientMethods(t *testing.T) {
 
 	for _, client := range clients {
 		tests := []struct {
-			name       string
+			methodType method.Type
 			methodFunc func(string) *RequestBuilder
 		}{
 			{method.CONNECT, func(url string) *RequestBuilder { return client.client.CONNECT(url) }},
@@ -112,7 +112,7 @@ func TestClientMethods(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			t.Run(client.name+" "+tt.name, func(t *testing.T) {
+			t.Run(client.name+" "+tt.methodType.String(), func(t *testing.T) {
 				req := tt.methodFunc("/")
 				resp, _ := req.Send()
 				if resp.IsError() {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/opus-domini/fast-shot/constant"
+	"github.com/opus-domini/fast-shot/constant/method"
 	"math"
 	"math/rand/v2"
 	"net/http"
@@ -21,7 +22,7 @@ type RequestBuilder struct {
 	request *Request
 }
 
-func newRequest(client ClientConfig, method, path string) *RequestBuilder {
+func newRequest(client ClientConfig, method method.Type, path string) *RequestBuilder {
 	return &RequestBuilder{
 		request: &Request{
 			client: client,
@@ -73,7 +74,7 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 	// Create Http Request with context
 	request, err := http.NewRequestWithContext(
 		b.request.config.Context(),
-		b.request.config.Method(),
+		b.request.config.Method().String(),
 		fullURL.String(),
 		b.request.config.Body(),
 	)
