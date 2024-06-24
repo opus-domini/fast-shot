@@ -32,3 +32,13 @@ func (c *DefaultValidations) Count() int {
 func (c *DefaultValidations) Add(err error) {
 	c.validations = append(c.validations, err)
 }
+
+// newDefaultValidations initializes a new DefaultValidations with a given validations.
+func newDefaultValidations(validations []error) *DefaultValidations {
+	if validations == nil {
+		validations = make([]error, 0)
+	}
+	return &DefaultValidations{
+		validations: validations,
+	}
+}

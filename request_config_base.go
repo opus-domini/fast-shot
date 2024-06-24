@@ -157,3 +157,22 @@ func (c *RetryConfig) JitterStrategy() JitterStrategy {
 func (c *RetryConfig) SetJitterStrategy(strategy JitterStrategy) {
 	c.jitterStrategy = strategy
 }
+
+// NewRequestConfigBase creates a new request configuration.
+func newRequestConfigBase(method method.Type, path string) *RequestConfigBase {
+	return &RequestConfigBase{
+		ctx:         context.Background(),
+		httpHeader:  newDefaultHttpHeader(),
+		httpCookies: newDefaultHttpCookies(),
+		method:      method,
+		path:        path,
+		queryParams: url.Values{},
+		validations: newDefaultValidations(nil),
+		retryConfig: &RetryConfig{
+			shouldRetry:    func(response Response) bool { return response.IsError() },
+			interval:       1 * time.Second,
+			backoffRate:    2.0,
+			jitterStrategy: JitterStrategyNone,
+		},
+	}
+}

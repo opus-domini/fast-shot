@@ -30,3 +30,17 @@ func (c *BalancedBaseURL) BaseURL() *url.URL {
 	c.currentBaseURL = c.currentBaseURL % uint32(len(c.baseURLs))
 	return c.baseURLs[currentIndex]
 }
+
+// newDefaultBaseURL initializes a new DefaultBaseURL with a given base URL.
+func newDefaultBaseURL(baseURL *url.URL) *DefaultBaseURL {
+	return &DefaultBaseURL{
+		baseURL: baseURL,
+	}
+}
+
+// newBalancedBaseURL initializes a new BalancedBaseURL with a given base URLs.
+func newBalancedBaseURL(baseURLs []*url.URL) *BalancedBaseURL {
+	return &BalancedBaseURL{
+		baseURLs: baseURLs,
+	}
+}

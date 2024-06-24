@@ -47,3 +47,10 @@ func (c *DefaultHttpClient) SetFollowRedirects(follow bool) {
 			}
 	}
 }
+
+// newDefaultHttpClient initializes a new DefaultHttpClient.
+func newDefaultHttpClient() *DefaultHttpClient {
+	return &DefaultHttpClient{
+		client: &http.Client{},
+	}
+}

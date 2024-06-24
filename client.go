@@ -1,14 +1,5 @@
 package fastshot
 
-import (
-	"errors"
-	"fmt"
-	"net/http"
-	"net/url"
-
-	"github.com/opus-domini/fast-shot/constant"
-)
-
 // ClientBuilder serves as the main entry point for configuring HTTP clients.
 type ClientBuilder struct {
 	client Client
@@ -16,79 +7,15 @@ type ClientBuilder struct {
 
 // NewClient initializes a new ClientBuilder with a given baseURL.
 func NewClient(baseURL string) *ClientBuilder {
-	var validations []error
-
-	if baseURL == "" {
-		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
-	}
-
-	parsedURL, err := url.Parse(baseURL)
-	if err != nil {
-		validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
-	}
-
 	return &ClientBuilder{
-		client: &ClientConfigBase{
-			httpClient: &DefaultHttpClient{
-				client: &http.Client{},
-			},
-			httpHeader: &DefaultHttpHeader{
-				header: &http.Header{},
-			},
-			httpCookies: &DefaultHttpCookies{
-				cookies: []*http.Cookie{},
-			},
-			validations: &DefaultValidations{
-				validations: validations,
-			},
-			ConfigBaseURL: &DefaultBaseURL{
-				baseURL: parsedURL,
-			},
-		},
+		client: newClientConfigBase(baseURL),
 	}
 }
 
 // NewClientLoadBalancer initializes a new ClientBuilder with a given baseURLs.
 func NewClientLoadBalancer(baseURLs []string) *ClientBuilder {
-	var validations []error
-
-	var parsedURLs []*url.URL
-	for index, baseURL := range baseURLs {
-		if baseURL == "" {
-			validations = append(validations, fmt.Errorf("base URL %d: %s", index, constant.ErrMsgEmptyBaseURL))
-			continue
-		}
-
-		parsedURL, err := url.Parse(baseURL)
-		if err != nil {
-			validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
-		}
-		parsedURLs = append(parsedURLs, parsedURL)
-	}
-
-	if len(parsedURLs) == 0 {
-		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
-	}
-
 	return &ClientBuilder{
-		client: &ClientConfigBase{
-			httpClient: &DefaultHttpClient{
-				client: &http.Client{},
-			},
-			httpHeader: &DefaultHttpHeader{
-				header: &http.Header{},
-			},
-			httpCookies: &DefaultHttpCookies{
-				cookies: []*http.Cookie{},
-			},
-			validations: &DefaultValidations{
-				validations: validations,
-			},
-			ConfigBaseURL: &BalancedBaseURL{
-				baseURLs:       parsedURLs,
-				currentBaseURL: 0,
-			},
-		},
+		client: newBalancedClientConfigBase(baseURLs),
 	}
 }
 

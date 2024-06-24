@@ -1,7 +1,11 @@
 package fastshot
 
 import (
+	"errors"
+	"fmt"
+	"github.com/opus-domini/fast-shot/constant"
 	"github.com/opus-domini/fast-shot/constant/method"
+	"net/url"
 )
 
 // ClientConfigBase serves as the main entry point for configuring HTTP clients.
@@ -81,4 +85,57 @@ func (c *ClientConfigBase) OPTIONS(path string) *RequestBuilder {
 // TRACE is a shortcut for NewRequest(c, method.TRACE, path).
 func (c *ClientConfigBase) TRACE(path string) *RequestBuilder {
 	return newRequest(c, method.TRACE, path)
+}
+
+// newClientConfigBase initializes a new ClientConfigBase with a given baseURL.
+func newClientConfigBase(baseURL string) *ClientConfigBase {
+	var validations []error
+
+	if baseURL == "" {
+		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
+	}
+
+	parsedURL, err := url.Parse(baseURL)
+	if err != nil {
+		validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
+	}
+
+	return &ClientConfigBase{
+		httpClient:    newDefaultHttpClient(),
+		httpHeader:    newDefaultHttpHeader(),
+		httpCookies:   newDefaultHttpCookies(),
+		validations:   newDefaultValidations(validations),
+		ConfigBaseURL: newDefaultBaseURL(parsedURL),
+	}
+}
+
+// newBalancedClientConfigBase initializes a new ClientConfigBase with a given baseURLs.
+func newBalancedClientConfigBase(baseURLs []string) *ClientConfigBase {
+	var validations []error
+
+	var parsedURLs []*url.URL
+	for index, baseURL := range baseURLs {
+		if baseURL == "" {
+			validations = append(validations, fmt.Errorf("base URL %d: %s", index, constant.ErrMsgEmptyBaseURL))
+			continue
+		}
+
+		parsedURL, err := url.Parse(baseURL)
+		if err != nil {
+			validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
+		}
+		parsedURLs = append(parsedURLs, parsedURL)
+	}
+
+	if len(parsedURLs) == 0 {
+		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
+	}
+
+	return &ClientConfigBase{
+		httpClient:    newDefaultHttpClient(),
+		httpHeader:    newDefaultHttpHeader(),
+		httpCookies:   newDefaultHttpCookies(),
+		validations:   newDefaultValidations(validations),
+		ConfigBaseURL: newBalancedBaseURL(parsedURLs),
+	}
 }

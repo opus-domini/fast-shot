@@ -1,7 +1,6 @@
 package fastshot
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"github.com/opus-domini/fast-shot/constant"
@@ -26,27 +25,7 @@ func newRequest(client ClientConfig, method method.Type, path string) *RequestBu
 	return &RequestBuilder{
 		request: &Request{
 			client: client,
-			config: &RequestConfigBase{
-				ctx: context.Background(),
-				httpHeader: &DefaultHttpHeader{
-					header: &http.Header{},
-				},
-				httpCookies: &DefaultHttpCookies{
-					cookies: []*http.Cookie{},
-				},
-				method:      method,
-				path:        path,
-				queryParams: url.Values{},
-				validations: &DefaultValidations{
-					validations: []error{},
-				},
-				retryConfig: &RetryConfig{
-					shouldRetry:    func(response Response) bool { return response.IsError() },
-					interval:       1 * time.Second,
-					backoffRate:    2.0,
-					jitterStrategy: JitterStrategyNone,
-				},
-			},
+			config: newRequestConfigBase(method, path),
 		},
 	}
 }

@@ -32,3 +32,10 @@ func (c *DefaultHttpHeader) Add(key header.Type, value string) {
 func (c *DefaultHttpHeader) Set(key header.Type, value string) {
 	c.header.Set(key.String(), value)
 }
+
+// newDefaultHttpHeader initializes a new DefaultHttpHeader with a given header.
+func newDefaultHttpHeader() *DefaultHttpHeader {
+	return &DefaultHttpHeader{
+		header: &http.Header{},
+	}
+}
