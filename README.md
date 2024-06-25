@@ -12,8 +12,6 @@
     </p>
 </div>
 
-# Fast Shot: A Fluent Go REST Client Library
-
 Fast Shot is a robust, feature-rich, and highly configurable HTTP client for Go. Crafted with modern Go practices in mind, it offers a fluent, chainable API that allows for clean, idiomatic code.
 
 ## Table of Contents
