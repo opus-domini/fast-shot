@@ -142,7 +142,6 @@ func TestRequest_Send_Retry(t *testing.T) {
 					retryCount++
 					logServerResponse("500 SERVER ERROR")
 					w.WriteHeader(http.StatusInternalServerError)
-					return
 				}, &retryCount
 			},
 			expectError: true,

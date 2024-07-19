@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/opus-domini/fast-shot/constant"
 	"math"
 	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/opus-domini/fast-shot/constant"
 )
 
 type Request struct {
@@ -111,13 +112,18 @@ func (b *RequestBuilder) execute(req *http.Request) (Response, error) {
 	return Response{Request: b.request, RawResponse: response}, err
 }
 
-func (b *RequestBuilder) executeWithRetry(req *http.Request) (Response, error) {
+func (b *RequestBuilder) executeWithRetry() (Response, error) {
 	var config = b.request.config.RetryConfig()
 	var errExecution error
 	var errAttempts []error
 	var response Response
 
 	for attempt := uint(0); attempt < config.MaxAttempts(); attempt++ {
+		// For each unique attempt, create a new request instance to avoid side effects from previous attempts (e.g. request body)
+		req, err := b.createHTTPRequest()
+		if err != nil {
+			return Response{}, errors.Join(errors.New(constant.ErrMsgCreateRequest), err)
+		}
 		// Execute request
 		response, errExecution = b.execute(req)
 		// Check for errors
@@ -168,15 +174,15 @@ func (b *RequestBuilder) Send() (Response, error) {
 		return Response{}, errors.Join(errors.New(constant.ErrMsgRequestValidation), err)
 	}
 
+	// Check if maxAttempts are enabled
+	if b.request.config.RetryConfig() != nil && b.request.config.RetryConfig().MaxAttempts() > 1 {
+		return b.executeWithRetry()
+	}
+
 	// Create request
 	req, err := b.createHTTPRequest()
 	if err != nil {
 		return Response{}, errors.Join(errors.New(constant.ErrMsgCreateRequest), err)
-	}
-
-	// Check if maxAttempts are enabled
-	if b.request.config.RetryConfig() != nil && b.request.config.RetryConfig().MaxAttempts() > 1 {
-		return b.executeWithRetry(req)
 	}
 
 	// Execute the request
