@@ -9,4 +9,5 @@ const (
 	ErrMsgParseQueryString  = "failed to parse query string"
 	ErrMsgParseURL          = "failed to parse URL"
 	ErrMsgParseProxyURL     = "failed to parse proxy URL"
+	ErrMsgReadBody          = "failed to read body"
 )

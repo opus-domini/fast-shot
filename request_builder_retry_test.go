@@ -27,6 +27,7 @@ func TestRequest_Send_Retry(t *testing.T) {
 		serverFunc  func() (http.HandlerFunc, *int)
 		expectError bool
 		expectCount int
+		withBody    bool
 	}{
 		{
 			name: "Retry Constant Backoff Successful",
@@ -54,6 +55,34 @@ func TestRequest_Send_Retry(t *testing.T) {
 			},
 			expectError: false,
 			expectCount: 3,
+		},
+		{
+			name: "Retry Constant Backoff With Body Successful",
+			retryConfig: retryConfig{
+				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
+					return requestBuilder.
+						Retry().SetConstantBackoff(time.Millisecond, 3)
+				},
+				interval:    time.Millisecond,
+				maxAttempts: 3,
+			},
+			serverFunc: func() (http.HandlerFunc, *int) {
+				retryCount := 0
+				return func(w http.ResponseWriter, r *http.Request) {
+					retryCount++
+					if retryCount < 3 {
+						logServerResponse("500 SERVER ERROR")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					logServerResponse("200 OK")
+					w.WriteHeader(http.StatusOK)
+					_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
+				}, &retryCount
+			},
+			expectError: false,
+			expectCount: 3,
+			withBody:    true,
 		},
 		{
 			name: "Retry Constant Backoff Unsuccessful",
@@ -239,9 +268,15 @@ func TestRequest_Send_Retry(t *testing.T) {
 			defer server.Close()
 
 			requestBuilder := DefaultClient(server.URL).GET("/test")
-
+			testBody := map[string]string{"key": "value"}
 			// Act
-			resp, err := tt.retryConfig.retryBuilder(requestBuilder).Send()
+			var resp Response
+			var err error
+			if !tt.withBody {
+				resp, err = tt.retryConfig.retryBuilder(requestBuilder).Send()
+			} else {
+				resp, err = tt.retryConfig.retryBuilder(requestBuilder).Body().AsJSON(testBody).Send()
+			}
 
 			// Assert
 			if *retryCount != tt.expectCount {

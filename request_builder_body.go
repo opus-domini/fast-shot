@@ -27,8 +27,14 @@ func (b *RequestBuilder) Body() *RequestBodyBuilder {
 
 // AsReader sets the body as IO Reader.
 func (b *RequestBodyBuilder) AsReader(body io.Reader) *RequestBuilder {
-	b.requestConfig.SetBody(body)
-	return b.parentBuilder
+    buf := new(bytes.Buffer)
+    _, err := buf.ReadFrom(body)
+    if err != nil {
+        b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgReadBody), err))
+        return b.parentBuilder
+    }
+    b.requestConfig.SetBody(buf)
+    return b.parentBuilder
 }
 
 // AsString sets the body as string.

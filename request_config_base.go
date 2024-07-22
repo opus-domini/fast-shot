@@ -1,6 +1,7 @@
 package fastshot
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/url"
@@ -89,7 +90,13 @@ func (c *RequestConfigBase) Validations() ValidationsWrapper {
 
 // SetBody sets the body for the request.
 func (c *RequestConfigBase) SetBody(body io.Reader) {
-	c.body = body
+	if buf, ok := body.(*bytes.Buffer); ok {
+		c.body = buf
+	} else {
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(body)
+		c.body = buf
+	}
 }
 
 // RetryConfig returns the retry configuration for the request.
