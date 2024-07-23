@@ -2,9 +2,10 @@ package fastshot
 
 import (
 	"bytes"
-	"github.com/opus-domini/fast-shot/constant"
 	"strings"
 	"testing"
+
+	"github.com/opus-domini/fast-shot/constant"
 )
 
 func TestRequestBodyBuilder_AsReader(t *testing.T) {

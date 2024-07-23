@@ -1,6 +1,7 @@
 package fastshot
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,12 +15,13 @@ func logServerResponse(responseStatus string) {
 	fmt.Printf("timestamp: %s, response: %s\n", time.Now().Format(time.StampMilli), responseStatus)
 }
 
+type retryConfig struct {
+	retryBuilder func(requestBuilder *RequestBuilder) *RequestBuilder
+	maxAttempts  uint
+	interval     time.Duration
+}
+
 func TestRequest_Send_Retry(t *testing.T) {
-	type retryConfig struct {
-		retryBuilder func(requestBuilder *RequestBuilder) *RequestBuilder
-		maxAttempts  uint
-		interval     time.Duration
-	}
 
 	tests := []struct {
 		name        string
@@ -27,6 +29,7 @@ func TestRequest_Send_Retry(t *testing.T) {
 		serverFunc  func() (http.HandlerFunc, *int)
 		expectError bool
 		expectCount int
+		hasBody     bool
 	}{
 		{
 			name: "Retry Constant Backoff Successful",
@@ -142,7 +145,6 @@ func TestRequest_Send_Retry(t *testing.T) {
 					retryCount++
 					logServerResponse("500 SERVER ERROR")
 					w.WriteHeader(http.StatusInternalServerError)
-					return
 				}, &retryCount
 			},
 			expectError: true,
@@ -230,6 +232,82 @@ func TestRequest_Send_Retry(t *testing.T) {
 			expectError: false,
 			expectCount: 5,
 		},
+		{
+			name: "Retry With Body Unsuccessful",
+			retryConfig: retryConfig{
+				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
+					return requestBuilder.
+						Retry().SetConstantBackoff(time.Millisecond, 3)
+				},
+				interval:    time.Millisecond,
+				maxAttempts: 3,
+			},
+			serverFunc: func() (http.HandlerFunc, *int) {
+				retryCount := 0
+				return func(w http.ResponseWriter, r *http.Request) {
+					retryCount++
+					bodyBytes, err := io.ReadAll(r.Body)
+					if err != nil {
+						t.Errorf("Error reading body: %v", err)
+					}
+					expectedBodyLength := len([]byte("wrong test body"))
+					if retryCount < 3 {
+						logServerResponse("500 SERVER ERROR")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					if len(bodyBytes) == expectedBodyLength {
+						logServerResponse("200 OK")
+						w.WriteHeader(http.StatusOK)
+						_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
+						return
+					}
+					logServerResponse("500 SERVER ERROR")
+					w.WriteHeader(http.StatusInternalServerError)
+				}, &retryCount
+			},
+			expectError: true,
+			expectCount: 3,
+			hasBody:     true,
+		},
+		{
+			name: "Retry With Body Successful",
+			retryConfig: retryConfig{
+				retryBuilder: func(requestBuilder *RequestBuilder) *RequestBuilder {
+					return requestBuilder.
+						Retry().SetConstantBackoff(time.Millisecond, 3)
+				},
+				interval:    time.Millisecond,
+				maxAttempts: 3,
+			},
+			serverFunc: func() (http.HandlerFunc, *int) {
+				retryCount := 0
+				return func(w http.ResponseWriter, r *http.Request) {
+					retryCount++
+					bodyBytes, err := io.ReadAll(r.Body)
+					if err != nil {
+						t.Errorf("Error reading body: %v", err)
+					}
+					expectedBodyLength := len([]byte("test body"))
+					if retryCount < 3 {
+						logServerResponse("500 SERVER ERROR")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					if len(bodyBytes) == expectedBodyLength {
+						logServerResponse("200 OK")
+						w.WriteHeader(http.StatusOK)
+						_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
+						return
+					}
+					logServerResponse("500 SERVER ERROR")
+					w.WriteHeader(http.StatusInternalServerError)
+				}, &retryCount
+			},
+			expectError: false,
+			expectCount: 3,
+			hasBody:     true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -240,7 +318,9 @@ func TestRequest_Send_Retry(t *testing.T) {
 			defer server.Close()
 
 			requestBuilder := DefaultClient(server.URL).GET("/test")
-
+			if tt.hasBody {
+				requestBuilder.Body().AsReader(io.NopCloser(bytes.NewBufferString("test body")))
+			}
 			// Act
 			resp, err := tt.retryConfig.retryBuilder(requestBuilder).Send()
 

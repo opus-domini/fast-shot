@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/opus-domini/fast-shot/constant"
 	"math"
 	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/opus-domini/fast-shot/constant"
 )
 
 type Request struct {
