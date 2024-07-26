@@ -2,8 +2,8 @@
 name: Bug report
 about: Create a report to help us improve
 title: ''
-labels: ''
-assignees: 'hugo-andrade'
+labels: bug
+assignees: hugo-andrade
 
 ---
 
