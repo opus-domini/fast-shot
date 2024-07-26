@@ -1,23 +1,22 @@
 package fastshot
 
 import (
-	"bytes"
-	"context"
-	"io"
 	"net/url"
 	"time"
+
+	"github.com/opus-domini/fast-shot/constant/method"
 )
 
 type (
 	// RequestConfigBase encapsulates all configurations for a request.
 	RequestConfigBase struct {
-		ctx         context.Context
+		ctx         ContextWrapper
 		httpHeader  HeaderWrapper
 		httpCookies CookiesWrapper
-		method      string
+		method      method.Type
 		path        string
 		queryParams url.Values
-		body        io.Reader
+		body        BodyWrapper
 		validations ValidationsWrapper
 		retryConfig *RetryConfig
 	}
@@ -27,7 +26,7 @@ type (
 
 	// RetryConfig represents the configuration for the retry mechanism.
 	RetryConfig struct {
-		shouldRetry    func(response Response) bool
+		shouldRetry    func(response *Response) bool
 		interval       time.Duration
 		maxAttempts    uint
 		backoffRate    float64
@@ -44,7 +43,7 @@ const (
 )
 
 // Context returns the context for the request.
-func (c *RequestConfigBase) Context() context.Context {
+func (c *RequestConfigBase) Context() ContextWrapper {
 	return c.ctx
 }
 
@@ -58,13 +57,8 @@ func (c *RequestConfigBase) Cookies() CookiesWrapper {
 	return c.httpCookies
 }
 
-// SetContext sets the context for the request.
-func (c *RequestConfigBase) SetContext(ctx context.Context) {
-	c.ctx = ctx
-}
-
 // Method returns the method for the request.
-func (c *RequestConfigBase) Method() string {
+func (c *RequestConfigBase) Method() method.Type {
 	return c.method
 }
 
@@ -79,7 +73,7 @@ func (c *RequestConfigBase) QueryParams() url.Values {
 }
 
 // Body returns the body for the request.
-func (c *RequestConfigBase) Body() io.Reader {
+func (c *RequestConfigBase) Body() BodyWrapper {
 	return c.body
 }
 
@@ -88,29 +82,18 @@ func (c *RequestConfigBase) Validations() ValidationsWrapper {
 	return c.validations
 }
 
-// SetBody sets the body for the request.
-func (c *RequestConfigBase) SetBody(body io.Reader) {
-	if buf, ok := body.(*bytes.Buffer); ok {
-		c.body = buf
-	} else {
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(body)
-		c.body = buf
-	}
-}
-
 // RetryConfig returns the retry configuration for the request.
 func (c *RequestConfigBase) RetryConfig() *RetryConfig {
 	return c.retryConfig
 }
 
 // ShouldRetry returns the retry condition for the request.
-func (c *RetryConfig) ShouldRetry() func(response Response) bool {
+func (c *RetryConfig) ShouldRetry() func(response *Response) bool {
 	return c.shouldRetry
 }
 
 // SetShouldRetry sets the retry condition for the request.
-func (c *RetryConfig) SetShouldRetry(shouldRetry func(response Response) bool) {
+func (c *RetryConfig) SetShouldRetry(shouldRetry func(response *Response) bool) {
 	c.shouldRetry = shouldRetry
 }
 
@@ -162,4 +145,24 @@ func (c *RetryConfig) JitterStrategy() JitterStrategy {
 // SetJitterStrategy sets the retry jitter strategy for the request.
 func (c *RetryConfig) SetJitterStrategy(strategy JitterStrategy) {
 	c.jitterStrategy = strategy
+}
+
+// NewRequestConfigBase creates a new request configuration.
+func newRequestConfigBase(method method.Type, path string) *RequestConfigBase {
+	return &RequestConfigBase{
+		ctx:         newDefaultContext(nil),
+		httpHeader:  newDefaultHttpHeader(),
+		httpCookies: newDefaultHttpCookies(),
+		method:      method,
+		path:        path,
+		queryParams: url.Values{},
+		body:        newBufferedBody(),
+		validations: newDefaultValidations(nil),
+		retryConfig: &RetryConfig{
+			shouldRetry:    func(response *Response) bool { return response.Status().IsError() },
+			interval:       1 * time.Second,
+			backoffRate:    2.0,
+			jitterStrategy: JitterStrategyNone,
+		},
+	}
 }

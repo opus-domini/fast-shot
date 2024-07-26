@@ -2,6 +2,7 @@ package fastshot
 
 import (
 	"encoding/base64"
+
 	"github.com/opus-domini/fast-shot/constant/header"
 )
 
@@ -20,7 +21,7 @@ func (b *ClientBuilder) Auth() *ClientAuthBuilder {
 
 // Set sets the Authorization header for custom authentication.
 func (b *ClientAuthBuilder) Set(value string) *ClientBuilder {
-	b.parentBuilder.Header().Set(header.Authorization, value)
+	b.parentBuilder.client.Header().Set(header.Authorization, value)
 	return b.parentBuilder
 }
 

@@ -2,6 +2,7 @@ package fastshot
 
 import (
 	"github.com/opus-domini/fast-shot/constant/header"
+	"github.com/opus-domini/fast-shot/constant/mime"
 )
 
 // BuilderHeader is the interface that wraps the basic methods for setting custom HTTP BuilderHeader.
@@ -18,13 +19,13 @@ func (b *ClientBuilder) Header() *ClientHeaderBuilder {
 }
 
 // Add adds a custom header to the HTTP client. If header already exists, it will be appended.
-func (b *ClientHeaderBuilder) Add(key, value string) *ClientBuilder {
+func (b *ClientHeaderBuilder) Add(key header.Type, value string) *ClientBuilder {
 	b.parentBuilder.client.Header().Add(key, value)
 	return b.parentBuilder
 }
 
 // AddAll adds multiple custom headers to the HTTP client. If header already exists, it will be appended.
-func (b *ClientHeaderBuilder) AddAll(headers map[string]string) *ClientBuilder {
+func (b *ClientHeaderBuilder) AddAll(headers map[header.Type]string) *ClientBuilder {
 	for key, value := range headers {
 		b.Add(key, value)
 	}
@@ -32,13 +33,13 @@ func (b *ClientHeaderBuilder) AddAll(headers map[string]string) *ClientBuilder {
 }
 
 // Set sets a custom header to the HTTP client. If header already exists, it will be overwritten.
-func (b *ClientHeaderBuilder) Set(key, value string) *ClientBuilder {
+func (b *ClientHeaderBuilder) Set(key header.Type, value string) *ClientBuilder {
 	b.parentBuilder.client.Header().Set(key, value)
 	return b.parentBuilder
 }
 
 // SetAll sets multiple custom headers to the HTTP client. If header already exists, it will be overwritten.
-func (b *ClientHeaderBuilder) SetAll(headers map[string]string) *ClientBuilder {
+func (b *ClientHeaderBuilder) SetAll(headers map[header.Type]string) *ClientBuilder {
 	for key, value := range headers {
 		b.Set(key, value)
 	}
@@ -46,14 +47,14 @@ func (b *ClientHeaderBuilder) SetAll(headers map[string]string) *ClientBuilder {
 }
 
 // AddAccept sets the Accept header. If header already exists, it will be appended.
-func (b *ClientHeaderBuilder) AddAccept(value string) *ClientBuilder {
-	b.Add(header.Accept, value)
+func (b *ClientHeaderBuilder) AddAccept(value mime.Type) *ClientBuilder {
+	b.Add(header.Accept, value.String())
 	return b.parentBuilder
 }
 
 // AddContentType sets the Content-Type header. If header already exists, it will be appended.
-func (b *ClientHeaderBuilder) AddContentType(value string) *ClientBuilder {
-	b.Add(header.ContentType, value)
+func (b *ClientHeaderBuilder) AddContentType(value mime.Type) *ClientBuilder {
+	b.Add(header.ContentType, value.String())
 	return b.parentBuilder
 }
 

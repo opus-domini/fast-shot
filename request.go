@@ -1,7 +1,6 @@
 package fastshot
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/opus-domini/fast-shot/constant"
+	"github.com/opus-domini/fast-shot/constant/method"
 )
 
 type Request struct {
@@ -22,31 +22,11 @@ type RequestBuilder struct {
 	request *Request
 }
 
-func newRequest(client ClientConfig, method, path string) *RequestBuilder {
+func newRequest(client ClientConfig, method method.Type, path string) *RequestBuilder {
 	return &RequestBuilder{
 		request: &Request{
 			client: client,
-			config: &RequestConfigBase{
-				ctx: context.Background(),
-				httpHeader: &DefaultHttpHeader{
-					header: &http.Header{},
-				},
-				httpCookies: &DefaultHttpCookies{
-					cookies: []*http.Cookie{},
-				},
-				method:      method,
-				path:        path,
-				queryParams: url.Values{},
-				validations: &DefaultValidations{
-					validations: []error{},
-				},
-				retryConfig: &RetryConfig{
-					shouldRetry:    func(response Response) bool { return response.IsError() },
-					interval:       1 * time.Second,
-					backoffRate:    2.0,
-					jitterStrategy: JitterStrategyNone,
-				},
-			},
+			config: newRequestConfigBase(method, path),
 		},
 	}
 }
@@ -73,10 +53,10 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 
 	// Create Http Request with context
 	request, err := http.NewRequestWithContext(
-		b.request.config.Context(),
-		b.request.config.Method(),
+		b.request.config.Context().Unwrap(),
+		b.request.config.Method().String(),
 		fullURL.String(),
-		b.request.config.Body(),
+		b.request.config.Body().Unwrap(),
 	)
 	if err != nil {
 		return nil, err
@@ -92,8 +72,12 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 		request.AddCookie(cookie)
 	}
 
-	// Clone and attach client httpHeader
-	request.Header = http.Header.Clone(*b.request.client.Header().Unwrap())
+	// Add Client Headers
+	for key, values := range *b.request.client.Header().Unwrap() {
+		for _, value := range values {
+			request.Header.Add(key, value)
+		}
+	}
 
 	// Add Request Headers
 	for key, values := range *b.request.config.Header().Unwrap() {
@@ -105,18 +89,21 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 	return request, nil
 }
 
-func (b *RequestBuilder) execute(req *http.Request) (Response, error) {
+func (b *RequestBuilder) execute(request *http.Request) (*Response, error) {
 	// Execute request
-	response, err := b.request.client.HttpClient().Do(req)
+	response, err := b.request.client.HttpClient().Do(request)
+	if err != nil {
+		return nil, err
+	}
 
-	return Response{Request: b.request, RawResponse: response}, err
+	return newResponse(response), nil
 }
 
-func (b *RequestBuilder) executeWithRetry(req *http.Request) (Response, error) {
-	var config = b.request.config.RetryConfig()
+func (b *RequestBuilder) executeWithRetry(req *http.Request) (*Response, error) {
+	config := b.request.config.RetryConfig()
 	var errExecution error
 	var errAttempts []error
-	var response Response
+	var response *Response
 
 	for attempt := uint(0); attempt < config.MaxAttempts(); attempt++ {
 		// Execute request
@@ -126,7 +113,7 @@ func (b *RequestBuilder) executeWithRetry(req *http.Request) (Response, error) {
 			if !config.ShouldRetry()(response) {
 				return response, nil
 			}
-			errExecution = errors.New(response.StatusText())
+			errExecution = errors.New(response.Status().Text())
 		}
 		// Append error
 		errAttempts = append(errAttempts, fmt.Errorf("attempt %d: %w", attempt+1, errExecution))
@@ -135,7 +122,7 @@ func (b *RequestBuilder) executeWithRetry(req *http.Request) (Response, error) {
 		time.Sleep(delay)
 	}
 
-	return response,
+	return nil,
 		fmt.Errorf(
 			"request failed after %d attempts: %w",
 			config.MaxAttempts(),
@@ -158,21 +145,21 @@ func (b *RequestBuilder) calculateRetryDelay(attempt uint) time.Duration {
 	return time.Duration(delay)
 }
 
-func (b *RequestBuilder) Send() (Response, error) {
+func (b *RequestBuilder) Send() (*Response, error) {
 	// Check for client validation errors
 	if err := errors.Join(b.request.client.Validations().Unwrap()...); err != nil {
-		return Response{}, errors.Join(errors.New(constant.ErrMsgClientValidation), err)
+		return nil, errors.Join(errors.New(constant.ErrMsgClientValidation), err)
 	}
 
 	// Check for request validation errors
 	if err := errors.Join(b.request.config.Validations().Unwrap()...); err != nil {
-		return Response{}, errors.Join(errors.New(constant.ErrMsgRequestValidation), err)
+		return nil, errors.Join(errors.New(constant.ErrMsgRequestValidation), err)
 	}
 
 	// Create request
 	req, err := b.createHTTPRequest()
 	if err != nil {
-		return Response{}, errors.Join(errors.New(constant.ErrMsgCreateRequest), err)
+		return nil, errors.Join(errors.New(constant.ErrMsgCreateRequest), err)
 	}
 
 	// Check if maxAttempts are enabled

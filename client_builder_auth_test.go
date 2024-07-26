@@ -3,49 +3,53 @@ package fastshot
 import (
 	"encoding/base64"
 	"testing"
+
+	"github.com/opus-domini/fast-shot/constant/header"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestClientAuthBuilder_Set(t *testing.T) {
-	// Arrange
-	builder := NewClient("https://example.com")
-	// Act
-	authBuilder := builder.Auth()
-	authBuilder.Set("value")
-	// Assert
-	if builder.client.Header().Get("Authorization") != "value" {
-		t.Errorf("Authorization header not set correctly")
+func TestClientAuthBuilder(t *testing.T) {
+	tests := []struct {
+		name           string
+		method         func(*ClientBuilder) *ClientBuilder
+		expectedHeader string
+	}{
+		{
+			name: "Set custom auth",
+			method: func(cb *ClientBuilder) *ClientBuilder {
+				return cb.Auth().Set("Custom auth-token")
+			},
+			expectedHeader: "Custom auth-token",
+		},
+		{
+			name: "Set bearer token",
+			method: func(cb *ClientBuilder) *ClientBuilder {
+				return cb.Auth().BearerToken("my-token")
+			},
+			expectedHeader: "Bearer my-token",
+		},
+		{
+			name: "Set basic auth",
+			method: func(cb *ClientBuilder) *ClientBuilder {
+				return cb.Auth().BasicAuth("username", "password")
+			},
+			expectedHeader: "Basic " + base64.StdEncoding.EncodeToString([]byte("username:password")),
+		},
 	}
-}
 
-func TestClientAuthBuilder_BasicAuth(t *testing.T) {
-	// Arrange
-	builder := NewClient("https://example.com")
-	// Act
-	authBuilder := builder.Auth()
-	authBuilder.BasicAuth("username", "password")
-	// Assert
-	expected := "Basic " + base64.StdEncoding.EncodeToString([]byte("username:password"))
-	if builder.client.Header().Get("Authorization") != expected {
-		t.Errorf(
-			"BuilderHeader not set correctly, got: %s, want: %s",
-			builder.client.Header().Get("Authorization"),
-			expected,
-		)
-	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			cb := &ClientBuilder{
+				client: newClientConfigBase("https://api.example.com"),
+			}
 
-func TestClientAuthBuilder_BearerToken(t *testing.T) {
-	// Arrange
-	builder := NewClient("https://example.com")
-	// Act
-	authBuilder := builder.Auth()
-	authBuilder.BearerToken("token")
-	// Assert
-	if builder.client.Header().Get("Authorization") != "Bearer token" {
-		t.Errorf(
-			"BuilderHeader not set correctly, got: %s, want: %s",
-			builder.client.Header().Get("Authorization"),
-			"Bearer token",
-		)
+			// Act
+			result := tt.method(cb)
+
+			// Assert
+			assert.Equal(t, cb, result)
+			assert.Equal(t, tt.expectedHeader, cb.client.Header().Get(header.Authorization))
+		})
 	}
 }

@@ -2,9 +2,10 @@ package fastshot
 
 import (
 	"errors"
-	"github.com/opus-domini/fast-shot/constant"
 	"net/url"
 	"strings"
+
+	"github.com/opus-domini/fast-shot/constant"
 )
 
 // BuilderRequestQuery is the interface that wraps the basic methods for setting query parameters.

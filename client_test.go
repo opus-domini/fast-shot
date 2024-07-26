@@ -1,10 +1,11 @@
 package fastshot
 
 import (
-	"github.com/opus-domini/fast-shot/constant/method"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/opus-domini/fast-shot/constant/method"
 )
 
 func TestNewClient(t *testing.T) {
@@ -97,7 +98,7 @@ func TestClientMethods(t *testing.T) {
 
 	for _, client := range clients {
 		tests := []struct {
-			name       string
+			methodType method.Type
 			methodFunc func(string) *RequestBuilder
 		}{
 			{method.CONNECT, func(url string) *RequestBuilder { return client.client.CONNECT(url) }},
@@ -109,14 +110,15 @@ func TestClientMethods(t *testing.T) {
 			{method.POST, func(url string) *RequestBuilder { return client.client.POST(url) }},
 			{method.PUT, func(url string) *RequestBuilder { return client.client.PUT(url) }},
 			{method.TRACE, func(url string) *RequestBuilder { return client.client.TRACE(url) }},
+			{method.Parse("TRACE"), func(url string) *RequestBuilder { return client.client.TRACE(url) }},
 		}
 
 		for _, tt := range tests {
-			t.Run(client.name+" "+tt.name, func(t *testing.T) {
+			t.Run(client.name+" "+tt.methodType.String(), func(t *testing.T) {
 				req := tt.methodFunc("/")
 				resp, _ := req.Send()
-				if resp.IsError() {
-					t.Errorf("Expected 200, got %d", resp.StatusCode())
+				if resp.Status().IsError() {
+					t.Errorf("Expected 200, got %d", resp.Status().Code())
 				}
 			})
 		}

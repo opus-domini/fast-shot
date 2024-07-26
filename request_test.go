@@ -3,245 +3,567 @@ package fastshot
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/opus-domini/fast-shot/constant"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
+	"time"
+
+	"github.com/opus-domini/fast-shot/constant"
+	"github.com/opus-domini/fast-shot/constant/header"
+	"github.com/opus-domini/fast-shot/constant/method"
+	"github.com/opus-domini/fast-shot/mock"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestRequest_createFullURL_WithQueryParams(t *testing.T) {
-	// Arrange
-	client := DefaultClient("https://example.com")
-	r := client.GET("/path").
-		Query().AddParams(
-		map[string]string{
-			"key1": "value1",
-			"key2": "value2",
+func TestRequest_createFullURL(t *testing.T) {
+	tests := []struct {
+		name           string
+		baseURL        string
+		path           string
+		queryParams    map[string]string
+		expectedURLStr string
+	}{
+		{
+			name:           "Base URL with path and query params",
+			baseURL:        "https://example.com",
+			path:           "/path",
+			queryParams:    map[string]string{"key1": "value1", "key2": "value2"},
+			expectedURLStr: "https://example.com/path?key1=value1&key2=value2",
+		},
+		{
+			name:           "Base URL with path and no query params",
+			baseURL:        "https://example.com",
+			path:           "/path",
+			queryParams:    map[string]string{},
+			expectedURLStr: "https://example.com/path",
+		},
+		{
+			name:           "Base URL with no path and query params",
+			baseURL:        "https://example.com",
+			path:           "",
+			queryParams:    map[string]string{"key": "value"},
+			expectedURLStr: "https://example.com?key=value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			client := DefaultClient(tt.baseURL)
+			rb := client.GET(tt.path)
+			for k, v := range tt.queryParams {
+				rb.Query().AddParam(k, v)
+			}
+
+			// Act
+			fullURL := rb.createFullURL()
+
+			// Assert
+			assert.Equal(t, tt.expectedURLStr, fullURL.String())
 		})
-
-	// Act
-	fullURL := r.createFullURL()
-
-	// Assert
-	expectedURL := "https://example.com/path?key1=value1&key2=value2"
-	if fullURL.String() != expectedURL {
-		t.Errorf("createFullURL returned wrong URL, got: %s, want: %s", fullURL, expectedURL)
 	}
 }
 
 func TestRequest_createHTTPRequest(t *testing.T) {
 	tests := []struct {
-		name           string
-		clientBaseURL  string
-		requestPath    string
-		ctx            context.Context
-		expectError    bool
-		expectedErrMsg string
+		name          string
+		baseURL       string
+		path          string
+		method        method.Type
+		ctx           context.Context
+		clientCookie  *http.Cookie
+		requestCookie *http.Cookie
+		clientHeader  map[header.Type]string
+		requestHeader map[header.Type]string
+		expectError   error
+		setupMock     func(*mock.HttpClientComponent)
 	}{
 		{
-			name:           "Successful Request Creation",
-			clientBaseURL:  "https://example.com",
-			requestPath:    "/test",
-			ctx:            context.Background(),
-			expectError:    false,
-			expectedErrMsg: "",
-		},
-		{
-			name:          "Creating HTTP Request with space in path",
-			clientBaseURL: "https://example.com",
-			requestPath:   " ",
+			name:          "Successful Request Creation",
+			baseURL:       "https://example.com",
+			path:          "/test",
+			method:        method.GET,
 			ctx:           context.Background(),
-			expectError:   false,
+			clientCookie:  &http.Cookie{Name: "client", Value: "test-value"},
+			requestCookie: &http.Cookie{Name: "request", Value: "test-value"},
+			clientHeader:  map[header.Type]string{"Accept": "application/json"},
+			requestHeader: map[header.Type]string{"X-Request-ID": "123"},
 		},
-
 		{
-			name:           "Nil Context",
-			clientBaseURL:  "https://example.com",
-			requestPath:    "/test",
-			ctx:            nil,
-			expectError:    true,
-			expectedErrMsg: "net/http: nil Context",
+			name:        "Invalid URL",
+			baseURL:     "://invalid-url",
+			path:        "/test",
+			method:      method.GET,
+			ctx:         context.Background(),
+			expectError: errors.New("invalid URL"),
+		},
+		{
+			name:        "Request Creation Failure",
+			baseURL:     "https://example.com",
+			path:        "/test",
+			method:      method.Parse(":%^:"),
+			ctx:         context.Background(),
+			expectError: errors.New("net/http: invalid method \":%^:\""),
+			setupMock:   func(m *mock.HttpClientComponent) {},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := NewClient(tt.clientBaseURL).
-				Cookie().Add(&http.Cookie{Name: "client", Value: "test-value"}).
-				Header().AddAccept("application/json").
-				Build()
+			// Arrange
+			var err error
 
-			httpReq, err := client.GET(tt.requestPath).
-				Context().Set(tt.ctx).
-				Cookie().Add(&http.Cookie{Name: "request", Value: "test-value"}).
-				Header().Set("request-header", "test-value").
-				createHTTPRequest()
+			defer func() {
+				if r := recover(); r != nil {
+					err = fmt.Errorf("panic occurred: %v", r)
+				}
+			}()
 
-			if (err != nil) != tt.expectError {
-				t.Errorf("createHTTPRequest() error = %v, expectError %v", err, tt.expectError)
-				return
+			clientBuilder := NewClient(tt.baseURL)
+
+			if tt.setupMock != nil {
+				mockClient := new(mock.HttpClientComponent)
+				tt.setupMock(mockClient)
+				clientBuilder.Config().SetCustomHttpClient(mockClient)
 			}
 
-			if err != nil && !strings.Contains(err.Error(), tt.expectedErrMsg) {
-				t.Errorf("createHTTPRequest() error = %v, expectedErrMsg %v", err, tt.expectedErrMsg)
+			if tt.clientCookie != nil {
+				clientBuilder.Cookie().Add(tt.clientCookie)
 			}
 
-			if err == nil && httpReq == nil {
-				t.Error("Expected a non-nil http.Request object, got nil")
-			}
-		})
-	}
-}
+			clientBuilder.Header().AddAll(tt.clientHeader)
 
-// noins
-func TestRequest_Send(t *testing.T) {
-	// Arrange
-	server := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_ = json.NewEncoder(w).
-				Encode(map[string]string{
-					"message": "Success!",
-				})
-		}))
-	defer server.Close()
+			rb := newRequest(clientBuilder.client, tt.method, tt.path)
 
-	tests := []struct {
-		name           string
-		client         ClientHttpMethods
-		configure      func(client ClientHttpMethods) *RequestBuilder
-		expectedResult map[string]string
-		expectedError  string
-	}{
-		{
-			name: "Successful Request",
-			configure: func(client ClientHttpMethods) *RequestBuilder {
-				return client.GET("/test")
-			},
-			expectedResult: map[string]string{"message": "Success!"},
-		},
-		{
-			name: "ClientConfig Proxy URL Parser Error",
-			client: NewClient("https://example.com").
-				Config().SetProxy(":%^:").
-				Build(),
-			configure: func(client ClientHttpMethods) *RequestBuilder {
-				return client.GET("/test")
-			},
-			expectedError: constant.ErrMsgClientValidation,
-		},
-		{
-			name:   "Request set with nil Context",
-			client: NewClient("https://example.com").Build(),
-			configure: func(client ClientHttpMethods) *RequestBuilder {
-				//nolint:staticcheck
-				return client.GET("/test").
-					Context().Set(nil)
-			},
-			expectedError: constant.ErrMsgCreateRequest,
-		},
-		{
-			name: "JSON Marshalling Error",
-			configure: func(client ClientHttpMethods) *RequestBuilder {
-				invalidObject := func() {}
-				return client.GET("/test").Body().AsJSON(invalidObject)
-			},
-			expectedError: constant.ErrMsgRequestValidation,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.client == nil {
-				tt.client = DefaultClient(server.URL)
+			if tt.ctx != nil {
+				rb.Context().Set(tt.ctx)
 			}
 
-			req := tt.configure(tt.client)
-
-			resp, err := req.Send()
-			if err != nil && tt.expectedError == "" {
-				t.Errorf("unexpected error: %v", err)
-				return
-			} else if err == nil && tt.expectedError != "" {
-				t.Errorf("expected error: %v, got nil", tt.expectedError)
-				return
-			} else if err != nil && !strings.Contains(err.Error(), tt.expectedError) {
-				t.Errorf("expected error: %v, got: %v", tt.expectedError, err)
-				return
+			if tt.requestCookie != nil {
+				rb.Cookie().Add(tt.requestCookie)
 			}
 
-			if tt.expectedResult != nil {
-				defer func(Body io.ReadCloser) {
-					_ = Body.Close()
-				}(resp.RawBody())
+			rb.Header().AddAll(tt.requestHeader)
 
-				body, _ := io.ReadAll(resp.RawBody())
+			// Act
+			var httpReq *http.Request
+			if rb != nil {
+				httpReq, err = rb.createHTTPRequest()
+			}
 
-				var result map[string]string
-				_ = json.Unmarshal(body, &result)
+			// Assert
+			if tt.expectError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectError, err)
+				assert.Nil(t, httpReq)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, httpReq)
+				assert.Equal(t, tt.method.String(), httpReq.Method)
+				assert.Equal(t, tt.baseURL+tt.path, httpReq.URL.String())
 
-				if result["message"] != tt.expectedResult["message"] {
-					t.Errorf(
-						"Unexpected response: got %v, want %v",
-						result["message"], tt.expectedResult["message"],
-					)
+				// Check cookies
+				cookies := httpReq.Cookies()
+				cookieMap := make(map[string]string)
+				for _, cookie := range cookies {
+					cookieMap[cookie.Name] = cookie.Value
+				}
+
+				if tt.clientCookie != nil {
+					assert.Equal(t, tt.clientCookie.Value, cookieMap[tt.clientCookie.Name])
+				}
+				if tt.requestCookie != nil {
+					assert.Equal(t, tt.requestCookie.Value, cookieMap[tt.requestCookie.Name])
+				}
+
+				// Check headers
+				for k, v := range tt.requestHeader {
+					assert.Equal(t, v, httpReq.Header.Get(k.String()))
+				}
+				for k, v := range tt.clientHeader {
+					assert.Equal(t, v, httpReq.Header.Get(k.String()))
 				}
 			}
 		})
 	}
 }
 
-func TestRequest_WithLoadBalancer(t *testing.T) {
-	// Arrange
-	server1 := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte("Server 1"))
-		}))
-	defer server1.Close()
-
-	server2 := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte("Server 2"))
-		}))
-	defer server2.Close()
-
-	client := NewClientLoadBalancer([]string{server1.URL, server2.URL}).Build()
-
-	// Act
-	numRequests := 10
-	responses := make([]string, numRequests)
-	for i := 0; i < numRequests; i++ {
-		resp, err := client.GET("/test").Send()
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-			return
-		}
-
-		//defer func(Body io.ReadCloser) {
-		//	_ = Body.Close()
-		//}(resp.RawBody())
-
-		body, _ := io.ReadAll(resp.RawBody())
-
-		// Close the response body at the end of each iteration
-		err = resp.RawBody().Close()
-		if err != nil {
-			t.Errorf("error closing the response body: %v", err)
-		}
-
-		responses[i] = string(body)
+func TestRequest_execute_Error(t *testing.T) {
+	tests := []struct {
+		name          string
+		setupClient   func() ClientHttpMethods
+		expectedError string
+	}{
+		{
+			name: "Network error",
+			setupClient: func() ClientHttpMethods {
+				// non-existent URL to simulate a network error
+				return DefaultClient("http://localhost:12345")
+			},
+			expectedError: "connection refused",
+		},
+		{
+			name: "Context canceled",
+			setupClient: func() ClientHttpMethods {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					time.Sleep(100 * time.Millisecond)
+					w.WriteHeader(http.StatusOK)
+				}))
+				return DefaultClient(server.URL)
+			},
+			expectedError: "context canceled",
+		},
 	}
 
-	// Assert
-	for i, response := range responses {
-		expectedServer := fmt.Sprintf("Server %d", (i%2)+1)
-		if response != expectedServer {
-			t.Errorf("unexpected response for request %d: got %v, want %v", i+1, response, expectedServer)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			client := tt.setupClient()
+
+			var req *RequestBuilder
+			if tt.name == "Context canceled" {
+				ctx, cancel := context.WithCancel(context.Background())
+				req = client.GET("/").Context().Set(ctx)
+				go func() {
+					time.Sleep(50 * time.Millisecond)
+					cancel()
+				}()
+			} else {
+				req = client.GET("/")
+			}
+
+			// Act
+			resp, err := req.Send()
+
+			// Assert
+			assert.Error(t, err)
+			assert.Nil(t, resp)
+			assert.Contains(t, err.Error(), tt.expectedError)
+		})
+	}
+}
+
+func TestRequest_Send(t *testing.T) {
+	// Arrange
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Success!"})
+	}))
+	defer server.Close()
+
+	tests := []struct {
+		name             string
+		setupClient      func() ClientHttpMethods
+		configureRequest func(client ClientHttpMethods) *RequestBuilder
+		expectedResult   map[string]string
+		expectedError    string
+	}{
+		{
+			name: "Successful Request",
+			setupClient: func() ClientHttpMethods {
+				return DefaultClient(server.URL)
+			},
+			configureRequest: func(client ClientHttpMethods) *RequestBuilder {
+				return client.GET("/test")
+			},
+			expectedResult: map[string]string{"message": "Success!"},
+		},
+		{
+			name: "ClientConfig Proxy URL Parser Error",
+			setupClient: func() ClientHttpMethods {
+				return NewClient("https://example.com").
+					Config().SetProxy(":%^:").
+					Build()
+			},
+			configureRequest: func(client ClientHttpMethods) *RequestBuilder {
+				return client.GET("/test")
+			},
+			expectedError: constant.ErrMsgClientValidation,
+		},
+		{
+			name: "JSON Marshalling Error",
+			setupClient: func() ClientHttpMethods {
+				return DefaultClient(server.URL)
+			},
+			configureRequest: func(client ClientHttpMethods) *RequestBuilder {
+				return client.GET("/test").Body().AsJSON(func() {})
+			},
+			expectedError: constant.ErrMsgRequestValidation,
+		},
+		{
+			name: "Request Creation Error",
+			setupClient: func() ClientHttpMethods {
+				return DefaultClient(server.URL)
+			},
+			configureRequest: func(client ClientHttpMethods) *RequestBuilder {
+				return newRequest(
+					newClientConfigBase(server.URL),
+					method.Parse(":%^:"),
+					"/test",
+				)
+			},
+			expectedError: constant.ErrMsgCreateRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			client := tt.setupClient()
+			req := tt.configureRequest(client)
+
+			// Act
+			resp, err := req.Send()
+
+			// Assert
+			if tt.expectedError != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError)
+				assert.Nil(t, resp)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, resp)
+				var result map[string]string
+				assert.NoError(t, resp.Body().AsJSON(&result))
+				assert.Equal(t, tt.expectedResult, result)
+			}
+		})
+	}
+}
+
+func TestRequest_WithLoadBalancer(t *testing.T) {
+	tests := []struct {
+		name                 string
+		numRequests          int
+		expectedServer1Count int
+		expectedServer2Count int
+	}{
+		{
+			name:                 "Load balancing with 10 requests",
+			numRequests:          10,
+			expectedServer1Count: 5,
+			expectedServer2Count: 5,
+		},
+		{
+			name:                 "Load balancing with 11 requests",
+			numRequests:          11,
+			expectedServer1Count: 6,
+			expectedServer2Count: 5,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte("Server 1"))
+			}))
+			defer server1.Close()
+
+			server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte("Server 2"))
+			}))
+			defer server2.Close()
+
+			client := NewClientLoadBalancer([]string{server1.URL, server2.URL}).Build()
+
+			// Act
+			responses := make([]string, tt.numRequests)
+			for i := 0; i < tt.numRequests; i++ {
+				resp, err := client.GET("/test").Send()
+				assert.NoError(t, err)
+
+				body, err := resp.Body().AsString()
+				assert.NoError(t, err)
+				responses[i] = body
+			}
+
+			// Assert
+			server1Count := 0
+			server2Count := 0
+			for _, response := range responses {
+				switch response {
+				case "Server 1":
+					server1Count++
+				case "Server 2":
+					server2Count++
+				default:
+					t.Errorf("Unexpected response: %s", response)
+				}
+			}
+
+			assert.Equal(t, tt.numRequests, server1Count+server2Count)
+			assert.Equal(t, tt.expectedServer1Count, server1Count)
+			assert.Equal(t, tt.expectedServer2Count, server2Count)
+		})
+	}
+}
+
+func TestRequest_Retry(t *testing.T) {
+	tests := []struct {
+		name             string
+		setupClient      func(string) ClientHttpMethods
+		request          func(ClientHttpMethods) *RequestBuilder
+		serverResponses  []int
+		expectedAttempts int
+		expectedStatus   int
+		expectedBody     string
+		expectError      bool
+	}{
+		{
+			name: "Success on third attempt (GET)",
+			setupClient: func(url string) ClientHttpMethods {
+				return DefaultClient(url)
+			},
+			request: func(client ClientHttpMethods) *RequestBuilder {
+				return client.GET("/test").
+					Retry().SetExponentialBackoff(10*time.Millisecond, 5, 2.0)
+			},
+			serverResponses: []int{
+				http.StatusInternalServerError,
+				http.StatusInternalServerError,
+				http.StatusOK,
+			},
+			expectedAttempts: 3,
+			expectedStatus:   http.StatusOK,
+			expectedBody:     "Success",
+		},
+		{
+			name: "Failure after max attempts (GET)",
+			setupClient: func(url string) ClientHttpMethods {
+				return DefaultClient(url)
+			},
+			request: func(client ClientHttpMethods) *RequestBuilder {
+				return client.GET("/test").
+					Retry().SetConstantBackoff(10*time.Millisecond, 3)
+			},
+			serverResponses: []int{
+				http.StatusInternalServerError,
+				http.StatusInternalServerError,
+				http.StatusInternalServerError,
+				http.StatusInternalServerError,
+			},
+			expectedAttempts: 3,
+			expectError:      true,
+		},
+		{
+			name: "Success on second attempt (POST with body)",
+			setupClient: func(url string) ClientHttpMethods {
+				return DefaultClient(url)
+			},
+			request: func(client ClientHttpMethods) *RequestBuilder {
+				return client.POST("/test").
+					Body().AsJSON(map[string]string{"key": "value"}).
+					Retry().SetConstantBackoffWithJitter(10*time.Millisecond, 3)
+			},
+			serverResponses: []int{
+				http.StatusInternalServerError,
+				http.StatusOK,
+			},
+			expectedAttempts: 2,
+			expectedStatus:   http.StatusOK,
+			expectedBody:     "Success",
+		},
+		{
+			name: "Custom retry condition (retry on 404)",
+			setupClient: func(url string) ClientHttpMethods {
+				return DefaultClient(url)
+			},
+			request: func(client ClientHttpMethods) *RequestBuilder {
+				return client.GET("/test").
+					Retry().SetConstantBackoff(10*time.Millisecond, 3).
+					Retry().WithRetryCondition(
+					func(resp *Response) bool {
+						return resp.Status().Code() == 404
+					})
+			},
+			serverResponses: []int{
+				http.StatusNotFound,
+				http.StatusNotFound,
+				http.StatusOK,
+			},
+			expectedAttempts: 3,
+			expectedStatus:   http.StatusOK,
+			expectedBody:     "Success",
+		},
+		{
+			name: "Max delay reached",
+			setupClient: func(url string) ClientHttpMethods {
+				return DefaultClient(url)
+			},
+			request: func(client ClientHttpMethods) *RequestBuilder {
+				return client.GET("/test").
+					Retry().SetExponentialBackoff(10*time.Millisecond, 5, 2.0).
+					Retry().WithMaxDelay(15 * time.Millisecond)
+			},
+			serverResponses: []int{
+				http.StatusInternalServerError,
+				http.StatusInternalServerError,
+				http.StatusInternalServerError,
+				http.StatusOK,
+			},
+			expectedAttempts: 4,
+			expectedStatus:   http.StatusOK,
+			expectedBody:     "Success",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			attemptCount := 0
+			requestBody := ""
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				defer func() { attemptCount++ }()
+				if attemptCount >= len(tt.serverResponses) {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				statusCode := tt.serverResponses[attemptCount]
+				w.WriteHeader(statusCode)
+
+				if r.Method == "POST" {
+					body, _ := io.ReadAll(r.Body)
+					requestBody = string(body)
+				}
+
+				if statusCode == http.StatusOK {
+					_, _ = w.Write([]byte("Success"))
+				}
+			}))
+			defer server.Close()
+
+			client := tt.setupClient(server.URL)
+
+			// Act
+			resp, err := tt.request(client).Send()
+
+			// Assert
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, resp)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, resp)
+				assert.Equal(t, tt.expectedStatus, resp.Status().Code())
+				body, _ := resp.Body().AsString()
+				assert.Equal(t, tt.expectedBody, body)
+			}
+			assert.Equal(t, tt.expectedAttempts, attemptCount)
+
+			if tt.request(client).request.config.Method() == method.POST {
+				assert.NotEmpty(t, requestBody)
+				var bodyMap map[string]string
+				err := json.Unmarshal([]byte(requestBody), &bodyMap)
+				assert.NoError(t, err)
+				assert.Equal(t, "value", bodyMap["key"])
+			}
+		})
 	}
 }

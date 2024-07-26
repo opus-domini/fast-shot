@@ -56,7 +56,7 @@ func (r RequestRetryBuilder) SetExponentialBackoffWithJitter(interval time.Durat
 }
 
 // WithRetryCondition sets the retry condition for the request.
-func (r RequestRetryBuilder) WithRetryCondition(shouldRetry func(response Response) bool) *RequestBuilder {
+func (r RequestRetryBuilder) WithRetryCondition(shouldRetry func(response *Response) bool) *RequestBuilder {
 	r.requestConfig.RetryConfig().SetShouldRetry(shouldRetry)
 	return r.parentBuilder
 }
