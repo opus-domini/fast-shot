@@ -78,6 +78,7 @@ func TestResponseFluentStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
 			response := &Response{
+				rawResponse: &http.Response{StatusCode: tt.statusCode},
 				status: &ResponseFluentStatus{
 					response: &http.Response{StatusCode: tt.statusCode},
 				},
@@ -89,6 +90,7 @@ func TestResponseFluentStatus(t *testing.T) {
 			// Assert
 			assert.Equal(t, tt.expectedCode, result.Code())
 			assert.Equal(t, tt.expectedText, result.Text())
+			assert.Equal(t, tt.expectedCode, response.Raw().StatusCode)
 			assert.Equal(t, tt.expectedInformation, result.Is1xxInformational())
 			assert.Equal(t, tt.expectedSuccess, result.Is2xxSuccessful())
 			assert.Equal(t, tt.expectedRedirection, result.Is3xxRedirection())
