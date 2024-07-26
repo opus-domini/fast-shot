@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBufferedBody(t *testing.T) {
+func TestWrapperBody_Buffered(t *testing.T) {
 	tests := []struct {
 		name          string
 		setup         func(*BufferedBody)
@@ -170,10 +170,11 @@ func TestBufferedBody(t *testing.T) {
 	}
 }
 
-func TestUnbufferedBody(t *testing.T) {
+func TestWrapperBody_Unbuffered(t *testing.T) {
 	tests := []struct {
 		name          string
 		reader        io.ReadCloser
+		setup         func(*UnbufferedBody)
 		method        func(*UnbufferedBody) (interface{}, error)
 		expected      interface{}
 		expectedError error
@@ -278,12 +279,51 @@ func TestUnbufferedBody(t *testing.T) {
 			expected:      "hello world",
 			expectedError: nil,
 		},
+		{
+			name:   "WriteAsJSON error",
+			reader: io.NopCloser(strings.NewReader("")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				return nil, b.WriteAsJSON(make(chan int))
+			},
+			expected:      nil,
+			expectedError: errors.New("json: unsupported type: chan int"),
+		},
+		{
+			name:   "ReadAsString error", // Covering "if err != nil"
+			reader: io.NopCloser(&errorReader{}),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				return b.ReadAsString()
+			},
+			expected:      "",
+			expectedError: errors.New("mock error"), // Expect the reader's error
+		},
+		{
+			name:   "Set with io.ReadCloser", // Covering "if closer, ok..."
+			reader: io.NopCloser(strings.NewReader("")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				return nil, b.Set(io.NopCloser(strings.NewReader("test")))
+			},
+			expected:      nil,
+			expectedError: nil,
+		},
+		{
+			name:   "Set with io.Reader", // Covering "else" block
+			reader: io.NopCloser(strings.NewReader("")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				return nil, b.Set(strings.NewReader("test"))
+			},
+			expected:      nil,
+			expectedError: nil,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
 			body := newUnbufferedBody(tt.reader)
+			if tt.setup != nil {
+				tt.setup(body)
+			}
 
 			// Act
 			result, err := tt.method(body)
@@ -296,4 +336,15 @@ func TestUnbufferedBody(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Helper type
+type errorReader struct{}
+
+func (r *errorReader) Read(_ []byte) (n int, err error) {
+	return 0, errors.New("mock error")
+}
+
+func (r *errorReader) Close() error {
+	return nil
 }
