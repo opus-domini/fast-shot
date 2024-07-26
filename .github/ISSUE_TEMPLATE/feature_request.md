@@ -2,8 +2,8 @@
 name: Feature request
 about: Suggest an idea for this project
 title: ''
-labels: ''
-assignees: ''
+labels: enhancement
+assignees: hugo-andrade
 
 ---
 
@@ -17,4 +17,10 @@ A clear and concise description of what you want to happen.
 A clear and concise description of any alternative solutions or features you've considered.
 
 **Additional context**
-Add any other context or screenshots about the feature request here.
+
+Add any other context or screenshots about the feature request here. For example:
+
+- **Use Cases**: Describe specific scenarios where this feature would be beneficial.
+- **Examples**: Provide code examples to illustrate how the feature would be used.
+- **Impact**:  Explain the potential impact of this feature on users or the project.
+- **Related Issues**: Link to any existing issues or discussions that are relevant to this feature request.
