@@ -96,7 +96,7 @@ func main() {
 }
 ```
 
-## Advanced Usage 🛠️
+## Advanced Usage 🤖
 
 ### Fluent API
 
@@ -237,3 +237,7 @@ We welcome contributions to Fast Shot! Here's how you can contribute:
 Please make sure to update tests as appropriate and adhere to the existing coding style.
 
 For more detailed information, check out our [CONTRIBUTING.md](https://github.com/opus-domini/fast-shot/blob/main/CONTRIBUTING.md) file.
+
+## Stargazers over time ⭐
+
+[![Stargazers over time](https://starchart.cc/opus-domini/fast-shot.svg?variant=adaptive)](https://starchart.cc/opus-domini/fast-shot)
