@@ -1,6 +1,7 @@
 package fastshot
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -71,7 +72,7 @@ func TestClientConfigBuilder(t *testing.T) {
 			if tt.expectedErrors != nil {
 				assert.Len(t, cb.client.Validations().Unwrap(), len(tt.expectedErrors))
 				for i, expectedErr := range tt.expectedErrors {
-					assert.ErrorContains(t, cb.client.Validations().Get(i), expectedErr.Error())
+					assert.True(t, errors.Is(cb.client.Validations().Get(i), expectedErr))
 				}
 			} else {
 				assert.Empty(t, cb.client.Validations().Unwrap())

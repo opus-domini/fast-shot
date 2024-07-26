@@ -11,10 +11,10 @@ import (
 
 func TestRequestQueryBuilder(t *testing.T) {
 	tests := []struct {
-		name           string
-		method         func(*RequestBuilder) *RequestBuilder
-		expectedQuery  url.Values
-		expectedErrors []error
+		name          string
+		method        func(*RequestBuilder) *RequestBuilder
+		expectedQuery url.Values
+		expectedError error
 	}{
 		{
 			name: "Add single parameter",
@@ -76,9 +76,7 @@ func TestRequestQueryBuilder(t *testing.T) {
 				return rb.Query().SetRawString("invalid=%%")
 			},
 			expectedQuery: url.Values{},
-			expectedErrors: []error{
-				errors.New(constant.ErrMsgParseQueryString),
-			},
+			expectedError: errors.Join(errors.New(constant.ErrMsgParseQueryString), url.EscapeError("%%")),
 		},
 		{
 			name: "Set empty raw query string",
@@ -105,11 +103,9 @@ func TestRequestQueryBuilder(t *testing.T) {
 			assert.Equal(t, rb, result)
 			assert.Equal(t, tt.expectedQuery, rb.request.config.QueryParams())
 
-			if tt.expectedErrors != nil {
-				assert.Len(t, rb.request.config.Validations().Unwrap(), len(tt.expectedErrors))
-				for i, expectedErr := range tt.expectedErrors {
-					assert.ErrorContains(t, rb.request.config.Validations().Get(i), expectedErr.Error())
-				}
+			if tt.expectedError != nil {
+				assert.Len(t, rb.request.config.Validations().Unwrap(), 1)
+				assert.Equal(t, tt.expectedError, rb.request.config.Validations().Get(0))
 			} else {
 				assert.Empty(t, rb.request.config.Validations().Unwrap())
 			}

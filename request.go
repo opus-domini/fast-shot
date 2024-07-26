@@ -122,7 +122,7 @@ func (b *RequestBuilder) executeWithRetry(req *http.Request) (*Response, error) 
 		time.Sleep(delay)
 	}
 
-	return response,
+	return nil,
 		fmt.Errorf(
 			"request failed after %d attempts: %w",
 			config.MaxAttempts(),
