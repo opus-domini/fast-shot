@@ -20,6 +20,9 @@ func main() {
 
 	// Get a user by ID.
 	getUser(client, "1")
+
+	// Get a user that does not exist.
+	getUser(client, "99")
 }
 
 func getUsers(client fastshot.ClientHttpMethods) {
@@ -30,32 +33,32 @@ func getUsers(client fastshot.ClientHttpMethods) {
 		slog.Error("Error getting response.", "error", err)
 		return
 	}
-
-	slog.Info("Response received.", "status", resp.Status().Text())
-
-	var users []model.User
-	if parseErr := resp.Body().AsJSON(&users); parseErr != nil {
-		slog.Error("Error parsing response.", "error", parseErr)
-	}
-
-	slog.Info("Users received!", "data", users)
+	handleResponse(resp, &[]model.User{})
 }
 
 func getUser(client fastshot.ClientHttpMethods, id string) {
-	slog.Info("Get User.", "id", id)
+	slog.Info("Get User:", "id", id)
 
 	resp, err := client.GET("/users/" + id).Send()
 	if err != nil {
 		slog.Error("Error getting response.", "error", err)
 		return
 	}
+	handleResponse(resp, &model.User{})
+}
 
-	slog.Info("Response received.", "status", resp.Status().Text())
+func handleResponse(resp *fastshot.Response, data interface{}) {
+	slog.Info("Response:", "status", resp.Status().Text())
 
-	var user model.User
-	if parseErr := resp.Body().AsJSON(&user); parseErr != nil {
-		slog.Error("Error parsing response.", "error", parseErr)
+	if resp.Status().IsError() {
+		slog.Error("Failed to get data.")
+		return
 	}
 
-	slog.Info("User received!", "data", user)
+	if parseErr := resp.Body().AsJSON(data); parseErr != nil {
+		slog.Error("Error parsing response.", "error", parseErr)
+		return
+	}
+
+	slog.Info("Data received!", "data", data)
 }
