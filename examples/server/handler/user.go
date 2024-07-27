@@ -37,7 +37,8 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repository.User().Create(user)
-	w.WriteHeader(http.StatusNoContent)
-	return
+	newUser := repository.User().Create(user)
+
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(newUser)
 }
