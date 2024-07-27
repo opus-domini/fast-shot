@@ -26,20 +26,22 @@ func main() {
 	resp, err := client.POST("/users").
 		Body().AsJSON(newUser).
 		Send()
-
+		// Check if there was an error sending the request.
 	if err != nil {
-		slog.Error("Error getting response.", "error", err)
+		slog.Error("Error sending the request.", "error", err)
+		return
 	}
-	defer resp.Body().Close()
 
 	// Check if the response is an error.
 	if resp.Status().Is5xxServerError() {
+		defer resp.Body().Close()
 		slog.Error("Failed to create user, server error.", "status", resp.Status().Text())
 		return
 	}
 
 	// Check if the response is a client error.
 	if resp.Status().Is4xxClientError() {
+		defer resp.Body().Close()
 		slog.Error("Failed to create user, some client error.", "status", resp.Status().Text())
 		return
 	}
@@ -49,6 +51,9 @@ func main() {
 
 	// Parse the response body.
 	var createdUser *model.User
+
+	// Don't need to close the response body here.
+	// It's done automatically when using AsBytes, AsString or AsJSON methods.
 	if parseErr := resp.Body().AsJSON(&createdUser); parseErr != nil {
 		slog.Error("Error parsing response.", "error", parseErr)
 		return
