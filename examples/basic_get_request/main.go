@@ -55,6 +55,8 @@ func handleResponse(resp *fastshot.Response, data interface{}) {
 		return
 	}
 
+	// Don't need to close the response body here.
+	// It's done automatically when using AsBytes, AsString or AsJSON methods.
 	if parseErr := resp.Body().AsJSON(data); parseErr != nil {
 		slog.Error("Error parsing response.", "error", parseErr)
 		return

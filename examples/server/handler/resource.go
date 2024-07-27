@@ -3,9 +3,10 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/opus-domini/fast-shot/examples/server/repository"
 	"net/http"
 	"time"
+
+	"github.com/opus-domini/fast-shot/examples/server/repository"
 )
 
 func GetResources(w http.ResponseWriter, _ *http.Request) {

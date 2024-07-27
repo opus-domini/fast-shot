@@ -2,8 +2,9 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/opus-domini/fast-shot/examples/server/repository"
 	"net/http"
+
+	"github.com/opus-domini/fast-shot/examples/server/repository"
 )
 
 func GetTuples(w http.ResponseWriter, _ *http.Request) {
