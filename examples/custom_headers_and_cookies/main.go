@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/opus-domini/fast-shot"
+	fastshot "github.com/opus-domini/fast-shot"
 	"github.com/opus-domini/fast-shot/constant/mime"
 	"github.com/opus-domini/fast-shot/examples/server"
 	"github.com/opus-domini/fast-shot/examples/server/model"
@@ -25,7 +25,8 @@ func main() {
 	resp, err := client.GET("/resources").
 		Header().AddAccept(mime.JSON).
 		Send()
-		// Check if there was an error sending the request.
+
+	// Check if there was an error sending the request.
 	if err != nil {
 		slog.Error("Error sending the request.", "error", err)
 	}

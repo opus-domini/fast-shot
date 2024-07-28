@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/opus-domini/fast-shot"
+	fastshot "github.com/opus-domini/fast-shot"
 	"github.com/opus-domini/fast-shot/examples/server"
 	"github.com/opus-domini/fast-shot/examples/server/model"
 )
@@ -22,6 +22,7 @@ func main() {
 	resp, err := client.GET("/tuples/2").
 		Retry().SetConstantBackoff(50*time.Millisecond, 10).
 		Send()
+
 	// Check if there was an error sending the request.
 	if err != nil {
 		slog.Error("Error sending the request.", "error", err)
