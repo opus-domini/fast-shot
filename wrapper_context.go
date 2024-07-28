@@ -22,12 +22,9 @@ func (c *DefaultContext) Set(ctx context.Context) {
 	}
 }
 
-// newDefaultContext initializes a new DefaultContext with a given context.
-func newDefaultContext(ctx context.Context) *DefaultContext {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+// newDefaultContext initializes a new DefaultContext.
+func newDefaultContext() *DefaultContext {
 	return &DefaultContext{
-		ctx: ctx,
+		ctx: context.Background(),
 	}
 }
