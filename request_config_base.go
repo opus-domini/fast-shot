@@ -1,6 +1,7 @@
 package fastshot
 
 import (
+	"context"
 	"net/url"
 	"time"
 
@@ -150,7 +151,7 @@ func (c *RetryConfig) SetJitterStrategy(strategy JitterStrategy) {
 // NewRequestConfigBase creates a new request configuration.
 func newRequestConfigBase(method method.Type, path string) *RequestConfigBase {
 	return &RequestConfigBase{
-		ctx:         newDefaultContext(nil),
+		ctx:         newDefaultContext(context.Background()),
 		httpHeader:  newDefaultHttpHeader(),
 		httpCookies: newDefaultHttpCookies(),
 		method:      method,

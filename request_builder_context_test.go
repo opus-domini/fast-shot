@@ -8,6 +8,8 @@ import (
 )
 
 func TestRequestContextBuilder(t *testing.T) {
+	type contextKey string
+
 	tests := []struct {
 		name string
 		ctx  context.Context
@@ -22,7 +24,7 @@ func TestRequestContextBuilder(t *testing.T) {
 		},
 		{
 			name: "Set context with value",
-			ctx:  context.WithValue(context.Background(), "key", "value"),
+			ctx:  context.WithValue(context.Background(), contextKey("key"), "value"),
 		},
 	}
 
