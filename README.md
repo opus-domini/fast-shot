@@ -80,19 +80,20 @@ func main() {
         Body().AsJSON(payload).
         Send()
 
+    // Check for request send problems.
     if err != nil {
-        // What happened? (¬_¬")
-        panic(err)
+        panic(err) // (¬_¬")
     }
 
+    // Check for (4xx || 5xx) errors response.
     if response.Status().IsError() {
-        // What's wrong here, server?! ¯\_(ツ)_/¯
-        panic(response.Body().AsString())
+        panic(response.Body().AsString()) // ¯\_(ツ)_/¯
     }
 	
     var result map[string]interface{}
-    _ := response.Body().AsJSON(&result)	
-    // Do something with the result (¬‿¬)
+    _ := response.Body().AsJSON(&result)
+
+    // Congrats! Do something awesome with the result (¬‿¬)
 }
 ```
 
