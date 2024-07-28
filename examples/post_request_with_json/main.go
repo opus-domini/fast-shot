@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/opus-domini/fast-shot"
+	fastshot "github.com/opus-domini/fast-shot"
 	"github.com/opus-domini/fast-shot/examples/server"
 	"github.com/opus-domini/fast-shot/examples/server/model"
 )
@@ -26,7 +26,8 @@ func main() {
 	resp, err := client.POST("/users").
 		Body().AsJSON(newUser).
 		Send()
-		// Check if there was an error sending the request.
+
+	// Check if there was an error sending the request.
 	if err != nil {
 		slog.Error("Error sending the request.", "error", err)
 		return

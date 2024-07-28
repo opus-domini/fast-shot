@@ -3,7 +3,7 @@ package main
 import (
 	"log/slog"
 
-	"github.com/opus-domini/fast-shot"
+	fastshot "github.com/opus-domini/fast-shot"
 	"github.com/opus-domini/fast-shot/examples/server"
 	"github.com/opus-domini/fast-shot/examples/server/model"
 )
