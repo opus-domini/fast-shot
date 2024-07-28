@@ -25,7 +25,8 @@ func (t *Tuple) GetID() uint {
 
 func (t *Tuple) String() string {
 	return fmt.Sprintf(
-		"Tuple{Key: %s, Value: %s}",
+		"Tuple{ID: %d, Key: %s, Value: %s}",
+		t.ID,
 		t.Key,
 		t.Value,
 	)

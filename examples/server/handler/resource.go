@@ -2,10 +2,10 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"time"
+	"strconv"
 
+	"github.com/opus-domini/fast-shot/examples/server/model"
 	"github.com/opus-domini/fast-shot/examples/server/repository"
 )
 
@@ -13,29 +13,32 @@ func GetResources(w http.ResponseWriter, _ *http.Request) {
 	_ = json.NewEncoder(w).Encode(repository.Resource().GetAll())
 }
 
-func handleResource(w http.ResponseWriter, _ *http.Request) {
-	// Simulate occasional server errors for retry examples
-	if time.Now().UnixNano()%2 == 0 {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+func GetResource(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || id < 0 {
+		errorResponse(w, ErrorMessage{Status: http.StatusBadRequest, Message: "Invalid Resource ID"})
 		return
 	}
-	// Simulate successful response
-	_ = json.NewEncoder(w).
-		Encode(
-			map[string]string{
-				"message": "Resource data",
-			},
-		)
+
+	resource, found := repository.Resource().GetById(uint(id))
+	if !found {
+		errorResponse(w, ErrorMessage{Status: http.StatusNotFound, Message: "Resource not found"})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(resource)
+	return
 }
 
-func handleLoadData(w http.ResponseWriter, _ *http.Request) {
-	// Simulate responses from different "servers" for load balancing
-	serverID := (time.Now().UnixNano() / 1e6) % 2
-	// Simulate data from different servers
-	_ = json.NewEncoder(w).
-		Encode(
-			map[string]string{
-				"message": fmt.Sprintf("Data from Server %d", serverID),
-			},
-		)
+func CreateResource(w http.ResponseWriter, r *http.Request) {
+	var resource *model.Resource
+	if err := json.NewDecoder(r.Body).Decode(&resource); err != nil {
+		errorResponse(w, ErrorMessage{Status: http.StatusUnprocessableEntity, Message: "Invalid Resource request body"})
+		return
+	}
+
+	newResource := repository.Resource().Create(resource)
+
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(newResource)
 }
