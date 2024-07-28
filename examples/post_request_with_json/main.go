@@ -26,8 +26,7 @@ func main() {
 	resp, err := client.POST("/users").
 		Body().AsJSON(newUser).
 		Send()
-
-	// Check if there was an error sending the request.
+		// Check if there was an error sending the request.
 	if err != nil {
 		slog.Error("Error sending the request.", "error", err)
 		return
