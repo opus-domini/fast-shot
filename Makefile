@@ -3,6 +3,7 @@ GOCMD ?= go
 GOBUILD = $(GOCMD) build
 GOTEST = $(GOCMD) test
 GOCLEAN = $(GOCMD) clean
+GOIMPORTS = goimports
 GOFMT = gofmt
 LINT = golangci-lint
 VULNCHECK = govulncheck
@@ -32,8 +33,14 @@ test-coverage: check-deps
 
 # Format code
 .PHONY: fmt
-fmt: check-deps
+fmt: check-deps goimports
 	$(GOFMT) -w .
+
+# Check for goimports
+.PHONY: goimports
+goimports:
+	@which $(GOIMPORTS) > /dev/null || (echo "goimports is not installed. Run 'go install golang.org/x/tools/cmd/goimports@latest' to install." && exit 1)
+	$(GOIMPORTS) -w .
 
 # Lint code
 .PHONY: lint
@@ -65,7 +72,7 @@ help:
 	@echo "Targets:"
 	@echo "  build       Compile the project"
 	@echo "  test        Run tests"
-	@echo "  fmt         Run gofmt on all source files"
+	@echo "  fmt         Run goimports and gofmt on all source files"
 	@echo "  lint        Run linter"
 	@echo "  security    Run security checks"
 	@echo "  ci          Run all checks"
