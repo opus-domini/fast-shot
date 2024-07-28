@@ -26,7 +26,8 @@ func (u *User) GetID() uint {
 
 func (u *User) String() string {
 	return fmt.Sprintf(
-		"User{Name: %s, Birthdate: %s}",
+		"User{ID: %d, Name: %s, Birthdate: %s}",
+		u.ID,
 		u.Name,
 		u.Birthdate,
 	)

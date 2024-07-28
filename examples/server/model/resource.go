@@ -27,7 +27,8 @@ func (r *Resource) GetID() uint {
 
 func (r *Resource) String() string {
 	return fmt.Sprintf(
-		"Resource{Type: %s, Data: %s, Timestamp: %s}",
+		"Resource{ID: %d, Type: %s, Data: %s, Timestamp: %s}",
+		r.ID,
 		r.Type,
 		r.Data,
 		r.Timestamp.Format(time.DateOnly),

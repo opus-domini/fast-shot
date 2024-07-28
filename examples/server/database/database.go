@@ -64,18 +64,18 @@ var Storage = map[Namespace]Table{
 	TupleNamespace: {
 		0: &model.Tuple{
 			ID:    0,
-			Key:   "key-1",
-			Value: "value-1",
+			Key:   "key-0",
+			Value: "value-0",
 		},
 		1: &model.Tuple{
 			ID:    1,
-			Key:   "key-2",
-			Value: "value-2",
+			Key:   "key-1",
+			Value: "value-1",
 		},
 		2: &model.Tuple{
 			ID:    2,
-			Key:   "key-3",
-			Value: "value-3",
+			Key:   "key-2",
+			Value: "value-2",
 		},
 	},
 }
