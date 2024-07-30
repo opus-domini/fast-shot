@@ -11,7 +11,8 @@ import (
 )
 
 func main() {
-	ts := server.Start()
+	// Start the test server
+	ts := server.NewManager().NewServer()
 	defer ts.Close()
 
 	// Create a custom client with the server URL.
@@ -33,8 +34,8 @@ func main() {
 
 	var data []model.Resource
 
-	// Don't need to close the response body here.
-	// It's done automatically when using AsBytes, AsString or AsJSON methods.
+	// Parse the response body as JSON
+	// Note: The response body is automatically closed when using AsBytes, AsString, or AsJSON methods
 	if parseErr := resp.Body().AsJSON(&data); parseErr != nil {
 		slog.Error("Error parsing response.", "error", parseErr)
 		return

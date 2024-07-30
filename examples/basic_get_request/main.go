@@ -9,7 +9,8 @@ import (
 )
 
 func main() {
-	ts := server.Start()
+	// Start the test server
+	ts := server.NewManager().NewServer()
 	defer ts.Close()
 
 	// Create a default client with the server URL.
