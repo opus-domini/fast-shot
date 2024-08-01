@@ -1,10 +1,10 @@
 package server
 
 import (
-	"github.com/opus-domini/fast-shot/examples/server/config"
 	"log/slog"
 	"net/http/httptest"
 
+	"github.com/opus-domini/fast-shot/examples/server/config"
 	"github.com/opus-domini/fast-shot/examples/server/database"
 	"github.com/opus-domini/fast-shot/examples/server/handler"
 	"github.com/opus-domini/fast-shot/examples/server/repository"

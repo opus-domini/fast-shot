@@ -2,13 +2,13 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/opus-domini/fast-shot/examples/server/config"
 	"log/slog"
 	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/opus-domini/fast-shot/examples/server/config"
 	"github.com/opus-domini/fast-shot/examples/server/model"
 	"github.com/opus-domini/fast-shot/examples/server/repository"
 )
