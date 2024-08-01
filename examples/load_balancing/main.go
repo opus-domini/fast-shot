@@ -16,7 +16,7 @@ func main() {
 	defer ts1.Close()
 
 	// Start Test Server #2
-	ts2 := serverManager.NewServer()
+	ts2 := serverManager.NewBusyServer()
 	defer ts2.Close()
 
 	// Start Test Server #3
@@ -28,7 +28,7 @@ func main() {
 	client := fastshot.NewClientLoadBalancer([]string{ts1.URL, ts2.URL, ts3.URL}).Build()
 
 	// Perform health checks on the servers
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 9; i++ {
 		healthcheck(client)
 	}
 }
@@ -40,6 +40,12 @@ func healthcheck(client fastshot.ClientHttpMethods) {
 	// Check if there was an error sending the request.
 	if err != nil {
 		slog.Error("Error sending the request.", "error", err)
+	}
+
+	// Check if the response is an error.
+	if resp.Status().Is5xxServerError() {
+		slog.Error("Health Check failed.", "status", resp.Status().Text())
+		return
 	}
 
 	var healthCheckResponse map[string]interface{}

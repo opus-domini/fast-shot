@@ -15,7 +15,6 @@ type (
 const (
 	UserNamespace     Namespace = "users"
 	ResourceNamespace Namespace = "resources"
-	TupleNamespace    Namespace = "tuples"
 )
 
 func NewState() *State {
@@ -60,23 +59,6 @@ func NewState() *State {
 				Type:      "music",
 				Data:      "The Dark Side of the Moon",
 				Timestamp: time.Date(1973, 3, 1, 0, 0, 0, 0, time.UTC),
-			},
-		},
-		TupleNamespace: {
-			0: &model.Tuple{
-				ID:    0,
-				Key:   "key-0",
-				Value: "value-0",
-			},
-			1: &model.Tuple{
-				ID:    1,
-				Key:   "key-1",
-				Value: "value-1",
-			},
-			2: &model.Tuple{
-				ID:    2,
-				Key:   "key-2",
-				Value: "value-2",
 			},
 		},
 	}
