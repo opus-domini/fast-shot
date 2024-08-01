@@ -3,6 +3,7 @@ package server
 import (
 	"log/slog"
 	"net/http/httptest"
+	"sync"
 
 	"github.com/opus-domini/fast-shot/examples/server/config"
 	"github.com/opus-domini/fast-shot/examples/server/database"
@@ -15,6 +16,7 @@ type (
 	Manager struct {
 		running    []config.Server
 		repository *repository.Provider
+		mutex      sync.Mutex
 	}
 )
 
@@ -30,7 +32,11 @@ func (m *Manager) generateServerID() int {
 }
 
 func (m *Manager) newServer(config *config.Server) *httptest.Server {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	ts := httptest.NewServer(handler.NewMux(config, m.repository))
+	config.ID = m.generateServerID()
 	config.URL = ts.URL
 	m.running = append(m.running, *config)
 	slog.Info("Test server created!", "config", config)
@@ -39,14 +45,12 @@ func (m *Manager) newServer(config *config.Server) *httptest.Server {
 
 func (m *Manager) NewServer() *httptest.Server {
 	return m.newServer(&config.Server{
-		ID:     m.generateServerID(),
 		IsBusy: false,
 	})
 }
 
 func (m *Manager) NewBusyServer() *httptest.Server {
 	return m.newServer(&config.Server{
-		ID:     m.generateServerID(),
 		IsBusy: true,
 	})
 }
