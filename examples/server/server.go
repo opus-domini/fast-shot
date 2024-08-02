@@ -3,17 +3,22 @@ package server
 import (
 	"log/slog"
 	"net/http/httptest"
+	"sync"
 
+	"github.com/opus-domini/fast-shot/examples/server/config"
 	"github.com/opus-domini/fast-shot/examples/server/database"
 	"github.com/opus-domini/fast-shot/examples/server/handler"
 	"github.com/opus-domini/fast-shot/examples/server/repository"
 )
 
-// Manager manages the shared database and the creation of test servers.
-type Manager struct {
-	serverCount int
-	repository  *repository.Provider
-}
+type (
+	// Manager manages the shared database and the creation of test servers.
+	Manager struct {
+		running    []config.Server
+		repository *repository.Provider
+		mutex      sync.Mutex
+	}
+)
 
 func NewManager() *Manager {
 	newState := database.NewState()
@@ -22,17 +27,30 @@ func NewManager() *Manager {
 	}
 }
 
-func (m *Manager) NewServer() *httptest.Server {
-	// Increment the server count and create a new server.
-	m.serverCount++
+func (m *Manager) generateServerID() int {
+	return len(m.running) + 1
+}
 
-	// Get the server ID.
-	serverID := m.serverCount
+func (m *Manager) newServer(config *config.Server) *httptest.Server {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
-	// Create a new test server.
-	ts := httptest.NewServer(handler.NewMux(serverID, m.repository))
-
-	slog.Info("Test server for examples created!", "url", ts.URL, "serverID", serverID)
-
+	ts := httptest.NewServer(handler.NewMux(config, m.repository))
+	config.ID = m.generateServerID()
+	config.URL = ts.URL
+	m.running = append(m.running, *config)
+	slog.Info("Test server created!", "config", config)
 	return ts
+}
+
+func (m *Manager) NewServer() *httptest.Server {
+	return m.newServer(&config.Server{
+		IsBusy: false,
+	})
+}
+
+func (m *Manager) NewBusyServer() *httptest.Server {
+	return m.newServer(&config.Server{
+		IsBusy: true,
+	})
 }

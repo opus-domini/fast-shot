@@ -18,7 +18,6 @@ type (
 	Provider struct {
 		User     Repository
 		Resource Repository
-		Tuple    Repository
 	}
 )
 
@@ -26,11 +25,9 @@ type (
 func NewProvider(state *database.State) *Provider {
 	userNamespace := (*state)[database.UserNamespace]
 	resourceNamespace := (*state)[database.ResourceNamespace]
-	tupleNamespace := (*state)[database.TupleNamespace]
 
 	return &Provider{
 		User:     newRepositoryImplementation(&userNamespace),
 		Resource: newRepositoryImplementation(&resourceNamespace),
-		Tuple:    newRepositoryImplementation(&tupleNamespace),
 	}
 }
