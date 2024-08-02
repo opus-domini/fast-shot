@@ -16,7 +16,7 @@ func main() {
 	defer ts1.Close()
 
 	// Start Test Server #2
-	ts2 := serverManager.NewBusyServer()
+	ts2 := serverManager.NewServerBuilder().EnableBusy().Build()
 	defer ts2.Close()
 
 	// Start Test Server #3
