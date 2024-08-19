@@ -18,6 +18,12 @@ type (
 		repository *repository.Provider
 		mutex      sync.Mutex
 	}
+
+	// ServerBuilder helps in building a server with custom configurations.
+	ServerBuilder struct {
+		manager *Manager
+		config  *config.Server
+	}
 )
 
 func NewManager() *Manager {
@@ -44,13 +50,30 @@ func (m *Manager) newServer(config *config.Server) *httptest.Server {
 }
 
 func (m *Manager) NewServer() *httptest.Server {
-	return m.newServer(&config.Server{
-		IsBusy: false,
-	})
+	return m.newServer(&config.Server{})
 }
 
-func (m *Manager) NewBusyServer() *httptest.Server {
-	return m.newServer(&config.Server{
-		IsBusy: true,
-	})
+// NewServerBuilder creates a new instance of ServerBuilder.
+func (m *Manager) NewServerBuilder() *ServerBuilder {
+	return &ServerBuilder{
+		manager: m,
+		config:  &config.Server{},
+	}
+}
+
+// EnableBusy sets the EnableBusy flag.
+func (b *ServerBuilder) EnableBusy() *ServerBuilder {
+	b.config.EnableBusy = true
+	return b
+}
+
+// EnableHeaderDebug sets the EnableHeaderDebug flag.
+func (b *ServerBuilder) EnableHeaderDebug() *ServerBuilder {
+	b.config.EnableHeaderDebug = true
+	return b
+}
+
+// Build creates a new server with the specified configurations.
+func (b *ServerBuilder) Build() *httptest.Server {
+	return b.manager.newServer(b.config)
 }

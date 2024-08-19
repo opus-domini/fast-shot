@@ -11,7 +11,11 @@ import (
 
 func main() {
 	// Start the test server
-	ts := server.NewManager().NewBusyServer()
+	ts := server.NewManager().
+		NewServerBuilder().
+		EnableBusy().
+		Build()
+	// Close the server when the function ends.
 	defer ts.Close()
 
 	// Create a default client with the server URL.

@@ -12,7 +12,11 @@ import (
 
 func main() {
 	// Start the test server
-	ts := server.NewManager().NewServer()
+	ts := server.NewManager().
+		NewServerBuilder().
+		EnableHeaderDebug().
+		Build()
+	// Close the server when the function ends.
 	defer ts.Close()
 
 	// Create a custom client with the server URL.
