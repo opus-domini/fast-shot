@@ -18,6 +18,7 @@
 !LICENSE
 
 !/.github/**/*
+!/docs/**/*
 
 !Makefile
 
