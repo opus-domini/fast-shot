@@ -3,6 +3,7 @@ package fastshot
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"io"
 	"strings"
 	"sync"
@@ -48,6 +49,19 @@ func (w *BufferedBody) WriteAsJSON(obj interface{}) error {
 	defer w.mutex.Unlock()
 	w.buffer.Reset()
 	return json.NewEncoder(w.buffer).Encode(obj)
+}
+
+func (w *BufferedBody) ReadAsXML(obj interface{}) error {
+	w.mutex.RLock()
+	defer w.mutex.RUnlock()
+	return xml.NewDecoder(bytes.NewReader(w.buffer.Bytes())).Decode(obj)
+}
+
+func (w *BufferedBody) WriteAsXML(obj interface{}) error {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	w.buffer.Reset()
+	return xml.NewEncoder(w.buffer).Encode(obj)
 }
 
 func (w *BufferedBody) ReadAsString() (string, error) {
@@ -106,6 +120,24 @@ func (w *UnbufferedBody) WriteAsJSON(obj interface{}) error {
 	defer w.mutex.Unlock()
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(obj)
+	if err != nil {
+		return err
+	}
+	w.reader = io.NopCloser(&buf)
+	return nil
+}
+
+func (w *UnbufferedBody) ReadAsXML(obj interface{}) error {
+	w.mutex.RLock()
+	defer w.mutex.RUnlock()
+	return xml.NewDecoder(w.reader).Decode(obj)
+}
+
+func (w *UnbufferedBody) WriteAsXML(obj interface{}) error {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	var buf bytes.Buffer
+	err := xml.NewEncoder(&buf).Encode(obj)
 	if err != nil {
 		return err
 	}
