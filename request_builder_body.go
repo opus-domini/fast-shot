@@ -55,7 +55,7 @@ func (b *RequestBodyBuilder) AsJSON(obj interface{}) *RequestBuilder {
 func (b *RequestBodyBuilder) AsXML(obj interface{}) *RequestBuilder {
 	err := b.requestConfig.Body().WriteAsXML(obj)
 	if err != nil {
-		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgMarshalJSON), err))
+		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgMarshalXML), err))
 	}
 	return b.parentBuilder
 }

@@ -91,6 +91,32 @@ func TestRequestBodyBuilder(t *testing.T) {
 			},
 			expectedError: errors.Join(errors.New(constant.ErrMsgMarshalJSON), mockedErr),
 		},
+		{
+			name: "AsXML success",
+			setup: func(rb *RequestBodyBuilder) {
+				mockBody := new(mock.BodyWrapper)
+				mockBody.On("WriteAsXML", tmock.Anything).Return(nil)
+				rb.requestConfig.body = mockBody
+			},
+			method: func(rb *RequestBodyBuilder) *RequestBuilder {
+				body := `<example><Key>value</Key></example>`
+				return rb.AsXML(&body)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "AsXML failure",
+			setup: func(rb *RequestBodyBuilder) {
+				mockBody := new(mock.BodyWrapper)
+				mockBody.On("WriteAsXML", tmock.Anything).Return(mockedErr)
+				rb.requestConfig.body = mockBody
+			},
+			method: func(rb *RequestBodyBuilder) *RequestBuilder {
+				body := `<example><Key>value</Key></example>`
+				return rb.AsXML(&body)
+			},
+			expectedError: errors.Join(errors.New(constant.ErrMsgMarshalXML), mockedErr),
+		},
 	}
 
 	for _, tt := range tests {
