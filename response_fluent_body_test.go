@@ -111,6 +111,53 @@ func TestResponseFluentBody(t *testing.T) {
 			expected:      map[string]string(nil),
 			expectedError: errors.New("json error"),
 		},
+		{
+			name: "AsXML success",
+			setup: func(m *mock.BodyWrapper) {
+				m.On("ReadAsXML", tmock.Anything).Run(func(args tmock.Arguments) {
+					arg := args.Get(0).(*struct {
+						Key string `xml:"Key"`
+					})
+					*arg = struct {
+						Key string `xml:"Key"`
+					}{
+						Key: "value",
+					}
+				}).Return(nil).Once()
+				m.On("Close").Return(nil).Once()
+			},
+			method: func(rb *ResponseFluentBody) (interface{}, error) {
+				result := struct {
+					Key string `xml:"Key"`
+				}{}
+				err := rb.AsXML(&result)
+				return result, err
+			},
+			expected: struct {
+				Key string `xml:"Key"`
+			}{
+				Key: "value",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "AsXML error",
+			setup: func(m *mock.BodyWrapper) {
+				m.On("ReadAsXML", tmock.Anything).Return(errors.New("xml error")).Once()
+				m.On("Close").Return(nil).Once()
+			},
+			method: func(rb *ResponseFluentBody) (interface{}, error) {
+				result := struct {
+					Key string `xml:"Key"`
+				}{}
+				err := rb.AsXML(&result)
+				return result, err
+			},
+			expected: struct {
+				Key string `xml:"Key"`
+			}{},
+			expectedError: errors.New("xml error"),
+		},
 	}
 
 	for _, tt := range tests {

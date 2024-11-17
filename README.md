@@ -39,6 +39,7 @@ Fast Shot is a robust, feature-rich, and highly configurable HTTP client for Go.
 * Advanced retry mechanism with customizable backoff strategies
 * Client-side load balancing for improved reliability
 * JSON request and response support
+* XML request and response support
 * Timeout and redirect control
 * Proxy support
 * Extensible and customizable for specific needs

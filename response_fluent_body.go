@@ -43,3 +43,9 @@ func (b *ResponseFluentBody) AsJSON(v interface{}) error {
 
 	return b.body.ReadAsJSON(v)
 }
+
+func (b *ResponseFluentBody) AsXML(v interface{}) error {
+	defer b.Close()
+
+	return b.body.ReadAsXML(v)
+}

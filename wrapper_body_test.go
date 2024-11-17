@@ -104,6 +104,56 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name: "ReadAsXML success",
+			setup: func(b *BufferedBody) {
+				b.buffer.WriteString(`<example><Key>value</Key></example>`)
+			},
+			method: func(b *BufferedBody) (interface{}, error) {
+				result := struct {
+					Key string `xml:"Key"`
+				}{}
+				err := b.ReadAsXML(&result)
+				return result, err
+			},
+			expected: struct {
+				Key string `xml:"Key"`
+			}{
+				Key: "value",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "ReadAsXML error",
+			setup: func(b *BufferedBody) {
+				b.buffer.WriteString(`<>invalid xml`)
+			},
+			method: func(b *BufferedBody) (interface{}, error) {
+				result := struct {
+					Key string `xml:"Key"`
+				}{}
+				err := b.ReadAsXML(&result)
+				return nil, err
+			},
+			expected:      nil,
+			expectedError: errors.New("XML syntax error on line 1: expected element name after <"),
+		},
+		{
+			name: "WriteAsXML success",
+			setup: func(b *BufferedBody) {
+				// No setup needed
+			},
+			method: func(b *BufferedBody) (interface{}, error) {
+				result := struct {
+					Key string `xml:"Key"`
+				}{
+					Key: "value",
+				}
+				return nil, b.WriteAsXML(&result)
+			},
+			expected:      nil,
+			expectedError: nil,
+		},
+		{
 			name: "ReadAsString success",
 			setup: func(b *BufferedBody) {
 				b.buffer.WriteString("hello world")

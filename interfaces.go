@@ -514,6 +514,8 @@ type BodyWrapper interface {
 	io.ReadCloser
 	ReadAsJSON(obj interface{}) error
 	WriteAsJSON(obj interface{}) error
+	ReadAsXML(obj interface{}) error
+	WriteAsXML(obj interface{}) error
 	ReadAsString() (string, error)
 	WriteAsString(body string) error
 	Set(body io.Reader) error

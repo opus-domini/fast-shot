@@ -50,3 +50,12 @@ func (b *RequestBodyBuilder) AsJSON(obj interface{}) *RequestBuilder {
 	}
 	return b.parentBuilder
 }
+
+// AsXML sets the body as XML.
+func (b *RequestBodyBuilder) AsXML(obj interface{}) *RequestBuilder {
+	err := b.requestConfig.Body().WriteAsXML(obj)
+	if err != nil {
+		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgMarshalXML), err))
+	}
+	return b.parentBuilder
+}

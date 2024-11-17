@@ -30,6 +30,16 @@ func (m *BodyWrapper) WriteAsJSON(obj interface{}) error {
 	return args.Error(0)
 }
 
+func (m *BodyWrapper) ReadAsXML(obj interface{}) error {
+	args := m.Called(obj)
+	return args.Error(0)
+}
+
+func (m *BodyWrapper) WriteAsXML(obj interface{}) error {
+	args := m.Called(obj)
+	return args.Error(0)
+}
+
 func (m *BodyWrapper) ReadAsString() (string, error) {
 	args := m.Called()
 	return args.String(0), args.Error(1)
