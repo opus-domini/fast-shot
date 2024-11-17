@@ -323,6 +323,7 @@ type BuilderRequestBody[T any] interface {
 	AsReader(body io.Reader) *T
 	AsString(body string) *T
 	AsJSON(obj interface{}) *T
+	AsXML(obj interface{}) *T
 }
 
 // BuilderRequestQuery is the interface that wraps the basic methods for setting query parameters.

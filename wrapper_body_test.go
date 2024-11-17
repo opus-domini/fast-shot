@@ -292,6 +292,45 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name:   "ReadAsXML success",
+			reader: io.NopCloser(strings.NewReader(`<example><Key>value</Key></example>`)),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				result := struct {
+					Key string `xml:"Key"`
+				}{}
+				err := b.ReadAsXML(&result)
+				return result, err
+			},
+			expected: struct {
+				Key string `xml:"Key"`
+			}{
+				Key: "value",
+			},
+			expectedError: nil,
+		},
+		{
+			name:   "ReadAsXML error",
+			reader: io.NopCloser(strings.NewReader(`<>invalid xml`)),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				result := struct {
+					Key string `xml:"Key"`
+				}{}
+				err := b.ReadAsXML(&result)
+				return nil, err
+			},
+			expected:      nil,
+			expectedError: errors.New("XML syntax error on line 1: expected element name after <"),
+		},
+		{
+			name:   "WriteAsXML success",
+			reader: io.NopCloser(strings.NewReader("")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				return nil, b.WriteAsXML(map[string]string{"key": "value"})
+			},
+			expected:      nil,
+			expectedError: nil,
+		},
+		{
 			name:   "ReadAsString success",
 			reader: io.NopCloser(strings.NewReader("hello world")),
 			method: func(b *UnbufferedBody) (interface{}, error) {
