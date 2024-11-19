@@ -23,6 +23,7 @@ const (
 	CSV                      Type = "text/csv"
 	CShellScript             Type = "application/x-csh"
 	EPUB                     Type = "application/epub+zip"
+	FormURLEncoded           Type = "application/x-www-form-urlencoded"
 	GIF                      Type = "image/gif"
 	GZipCompressedArchive    Type = "application/gzip"
 	HTML                     Type = "text/html"
