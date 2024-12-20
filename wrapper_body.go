@@ -73,6 +73,7 @@ func (w *BufferedBody) ReadAsString() (string, error) {
 func (w *BufferedBody) WriteAsString(s string) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
+	w.buffer.Reset()
 	_, err := w.buffer.WriteString(s)
 	return err
 }
@@ -152,7 +153,6 @@ func (w *UnbufferedBody) ReadAsString() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	w.reader = io.NopCloser(bytes.NewReader(stringBytes))
 	return string(stringBytes), nil
 }
 
