@@ -75,14 +75,14 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 	// Add Client Headers
 	for key, values := range *b.request.client.Header().Unwrap() {
 		for _, value := range values {
-			request.Header.Add(key, value)
+			request.Header.Set(key, value)
 		}
 	}
 
 	// Add Request Headers
 	for key, values := range *b.request.config.Header().Unwrap() {
 		for _, value := range values {
-			request.Header.Add(key, value)
+			request.Header.Set(key, value)
 		}
 	}
 
