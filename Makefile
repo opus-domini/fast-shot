@@ -19,7 +19,7 @@ check-deps:
 # Compile the project
 .PHONY: build
 build: check-deps
-	$(GOBUILD) -o build/fast-shop ./...
+	$(GOBUILD) -o build/examples/ ./examples/...
 
 # Run tests
 .PHONY: test
@@ -70,7 +70,7 @@ help:
 	@echo "Usage:"
 	@echo "  make <target>"
 	@echo "Targets:"
-	@echo "  build       Compile the project"
+	@echo "  build       Build the project examples"
 	@echo "  test        Run tests"
 	@echo "  fmt         Run goimports and gofmt on all source files"
 	@echo "  lint        Run linter"

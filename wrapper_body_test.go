@@ -404,6 +404,37 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 			expected:      nil,
 			expectedError: nil,
 		},
+		{
+			name:   "WriteAsJSON assigns reader contents",
+			reader: io.NopCloser(strings.NewReader("")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				// Use struct for deterministic JSON ordering
+				type payload struct {
+					Key string `json:"key"`
+				}
+				if err := b.WriteAsJSON(payload{Key: "value"}); err != nil {
+					return nil, err
+				}
+				return b.ReadAsString()
+			},
+			expected:      "{\"key\":\"value\"}\n",
+			expectedError: nil,
+		},
+		{
+			name:   "WriteAsXML assigns reader contents",
+			reader: io.NopCloser(strings.NewReader("")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				type payload struct { // deterministic root element name "payload"
+					Key string `xml:"Key"`
+				}
+				if err := b.WriteAsXML(payload{Key: "value"}); err != nil {
+					return nil, err
+				}
+				return b.ReadAsString()
+			},
+			expected:      "<payload><Key>value</Key></payload>",
+			expectedError: nil,
+		},
 	}
 
 	for _, tt := range tests {
