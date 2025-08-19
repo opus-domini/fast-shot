@@ -176,6 +176,33 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name: "WriteAsString twice to test buffer reset",
+			setup: func(b *BufferedBody) {
+				_ = b.WriteAsString("first")
+				_ = b.WriteAsString("second")
+			},
+			method: func(b *BufferedBody) (interface{}, error) {
+				buf := make([]byte, 6)
+				n, err := b.Read(buf)
+				return string(buf[:n]), err
+			},
+			expected:      "second",
+			expectedError: nil,
+		},
+		{
+			name: "ReadAsString twice to test buffer read",
+			setup: func(b *BufferedBody) {
+				_ = b.WriteAsString("body content")
+			},
+			method: func(b *BufferedBody) (interface{}, error) {
+				str, err := b.ReadAsString()
+				str, err = b.ReadAsString()
+				return str, err
+			},
+			expected:      "body content",
+			expectedError: nil,
+		},
+		{
 			name: "Set success",
 			setup: func(b *BufferedBody) {
 				// No setup needed
@@ -224,7 +251,6 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 	tests := []struct {
 		name          string
 		reader        io.ReadCloser
-		setup         func(*UnbufferedBody)
 		method        func(*UnbufferedBody) (interface{}, error)
 		expected      interface{}
 		expectedError error
@@ -292,6 +318,15 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name:   "WriteAsJSON error",
+			reader: io.NopCloser(strings.NewReader("")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				return nil, b.WriteAsJSON(make(chan int))
+			},
+			expected:      nil,
+			expectedError: errors.New("json: unsupported type: chan int"),
+		},
+		{
 			name:   "ReadAsXML success",
 			reader: io.NopCloser(strings.NewReader(`<example><Key>value</Key></example>`)),
 			method: func(b *UnbufferedBody) (interface{}, error) {
@@ -331,12 +366,31 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name:   "WriteAsXML error",
+			reader: io.NopCloser(strings.NewReader("")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				return nil, b.WriteAsXML(make(chan int))
+			},
+			expected:      nil,
+			expectedError: errors.New("xml: unsupported type: chan int"),
+		},
+		{
 			name:   "ReadAsString success",
 			reader: io.NopCloser(strings.NewReader("hello world")),
 			method: func(b *UnbufferedBody) (interface{}, error) {
 				return b.ReadAsString()
 			},
 			expected:      "hello world",
+			expectedError: nil,
+		},
+		{
+			name:   "ReadAsString twice to test empty reader",
+			reader: io.NopCloser(strings.NewReader("hello world")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				_, _ = b.ReadAsString()
+				return b.ReadAsString()
+			},
+			expected:      "",
 			expectedError: nil,
 		},
 		{
@@ -441,9 +495,6 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
 			body := newUnbufferedBody(tt.reader)
-			if tt.setup != nil {
-				tt.setup(body)
-			}
 
 			// Act
 			result, err := tt.method(body)

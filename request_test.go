@@ -452,6 +452,21 @@ func TestRequest_Retry(t *testing.T) {
 			expectError:      true,
 		},
 		{
+			name: "When max attempts is 0, no retries are made (GET)",
+			setupClient: func(url string) ClientHttpMethods {
+				return DefaultClient(url)
+			},
+			request: func(client ClientHttpMethods) *RequestBuilder {
+				return client.GET("/test").
+					Retry().SetConstantBackoff(10*time.Millisecond, 0)
+			},
+			serverResponses: []int{
+				http.StatusInternalServerError,
+			},
+			expectedAttempts: 1,
+			expectedStatus:   http.StatusInternalServerError,
+		},
+		{
 			name: "Success on second attempt (POST with body)",
 			setupClient: func(url string) ClientHttpMethods {
 				return DefaultClient(url)
@@ -492,7 +507,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectedBody:     "Success",
 		},
 		{
-			name: "Max delay reached",
+			name: "Max delay reached using exponential backoff",
 			setupClient: func(url string) ClientHttpMethods {
 				return DefaultClient(url)
 			},
@@ -500,6 +515,60 @@ func TestRequest_Retry(t *testing.T) {
 				return client.GET("/test").
 					Retry().SetExponentialBackoff(10*time.Millisecond, 5, 2.0).
 					Retry().WithMaxDelay(15 * time.Millisecond)
+			},
+			serverResponses: []int{
+				http.StatusInternalServerError,
+				http.StatusInternalServerError,
+				http.StatusInternalServerError,
+				http.StatusOK,
+			},
+			expectedAttempts: 4,
+			expectedStatus:   http.StatusOK,
+			expectedBody:     "Success",
+		},
+		{
+			name: "Max delay reached using constant backoff",
+			setupClient: func(url string) ClientHttpMethods {
+				return DefaultClient(url)
+			},
+			request: func(client ClientHttpMethods) *RequestBuilder {
+				return client.GET("/test").
+					Retry().SetConstantBackoff(10*time.Millisecond, 5).
+					Retry().WithMaxDelay(15 * time.Millisecond)
+			},
+			serverResponses: []int{
+				http.StatusInternalServerError,
+				http.StatusInternalServerError,
+				http.StatusInternalServerError,
+				http.StatusOK,
+			},
+			expectedAttempts: 4,
+			expectedStatus:   http.StatusOK,
+			expectedBody:     "Success",
+		},
+		{
+			name: "Success on first attempt with no retry",
+			setupClient: func(url string) ClientHttpMethods {
+				return DefaultClient(url)
+			},
+			request: func(client ClientHttpMethods) *RequestBuilder {
+				return client.GET("/test")
+			},
+			serverResponses: []int{
+				http.StatusOK,
+			},
+			expectedAttempts: 1,
+			expectedStatus:   http.StatusOK,
+			expectedBody:     "Success",
+		},
+		{
+			name: "Success after 3 retries with exponential backoff and jitter",
+			setupClient: func(url string) ClientHttpMethods {
+				return DefaultClient(url)
+			},
+			request: func(client ClientHttpMethods) *RequestBuilder {
+				return client.GET("/test").
+					Retry().SetExponentialBackoffWithJitter(10*time.Millisecond, 5, 2.0)
 			},
 			serverResponses: []int{
 				http.StatusInternalServerError,

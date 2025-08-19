@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/opus-domini/fast-shot/constant/method"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewClient(t *testing.T) {
@@ -34,9 +35,14 @@ func TestNewClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			clientBuilder := NewClient(tt.baseURL)
-			if !clientBuilder.client.Validations().IsEmpty() != tt.expectError {
-				t.Errorf("NewClient() error = %v, expectError %v", clientBuilder.client.Validations().Count() > 0, tt.expectError)
-			}
+			assert.Equal(
+				t,
+				!clientBuilder.client.Validations().IsEmpty(),
+				tt.expectError,
+				"NewClient() error = %v, expectError %v",
+				!clientBuilder.client.Validations().IsEmpty(),
+				tt.expectError,
+			)
 		})
 	}
 }
