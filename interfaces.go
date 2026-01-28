@@ -303,7 +303,8 @@ type BuilderRequestContext[T any] interface {
 // BuilderRequestBody is the interface that wraps the basic methods for setting the request body.
 //
 // This interface is essential for sending data in requests (e.g., POST, PUT). It provides
-// flexibility in how the body can be set, supporting raw io.Reader, string, and JSON serialization.
+// flexibility in how the body can be set, supporting raw io.Reader, string, JSON serialization,
+// and multipart/form-data.
 //
 // Example usage:
 //
@@ -317,13 +318,23 @@ type BuilderRequestContext[T any] interface {
 //		Body().AsJSON(user).
 //		Send()
 //
-// The ability to set the body as JSON directly is particularly useful for API interactions,
-// reducing boilerplate code for JSON serialization.
+// Example usage with form data:
+//
+//	response, err := client.POST("/login").
+//		Body().AsFormData(map[string]string{
+//			"username": "user",
+//			"password": "pass",
+//		}).
+//		Send()
+//
+// The ability to set the body as JSON or form data directly is particularly useful for API interactions,
+// reducing boilerplate code for serialization.
 type BuilderRequestBody[T any] interface {
 	AsReader(body io.Reader) *T
 	AsString(body string) *T
 	AsJSON(obj interface{}) *T
 	AsXML(obj interface{}) *T
+	AsFormData(fields map[string]string) *T
 }
 
 // BuilderRequestQuery is the interface that wraps the basic methods for setting query parameters.

@@ -117,6 +117,37 @@ func TestRequestBodyBuilder(t *testing.T) {
 			},
 			expectedError: errors.Join(errors.New(constant.ErrMsgMarshalXML), mockedErr),
 		},
+		{
+			name: "AsFormData success",
+			setup: func(rb *RequestBodyBuilder) {
+				mockBody := new(mock.BodyWrapper)
+				mockBody.On("Set", tmock.Anything).Return(nil)
+				rb.requestConfig.body = mockBody
+				rb.requestConfig.httpHeader = newDefaultHttpHeader()
+			},
+			method: func(rb *RequestBodyBuilder) *RequestBuilder {
+				return rb.AsFormData(map[string]string{
+					"key1": "value1",
+					"key2": "value2",
+				})
+			},
+			expectedError: nil,
+		},
+		{
+			name: "AsFormData failure on Set",
+			setup: func(rb *RequestBodyBuilder) {
+				mockBody := new(mock.BodyWrapper)
+				mockBody.On("Set", tmock.Anything).Return(mockedErr)
+				rb.requestConfig.body = mockBody
+				rb.requestConfig.httpHeader = newDefaultHttpHeader()
+			},
+			method: func(rb *RequestBodyBuilder) *RequestBuilder {
+				return rb.AsFormData(map[string]string{
+					"key1": "value1",
+				})
+			},
+			expectedError: errors.Join(errors.New(constant.ErrMsgSetBody), mockedErr),
+		},
 	}
 
 	for _, tt := range tests {
