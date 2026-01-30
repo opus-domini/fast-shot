@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/opus-domini/fast-shot/constant"
+	"github.com/opus-domini/fast-shot/constant/header"
 	"github.com/opus-domini/fast-shot/mock"
 	"github.com/stretchr/testify/assert"
 	tmock "github.com/stretchr/testify/mock"
@@ -121,7 +122,7 @@ func TestRequestBodyBuilder(t *testing.T) {
 			name: "AsFormData success",
 			setup: func(rb *RequestBodyBuilder) {
 				mockBody := new(mock.BodyWrapper)
-				mockBody.On("Set", tmock.Anything).Return(nil)
+				mockBody.On("WriteAsFormData", tmock.Anything).Return("multipart/form-data; boundary=test", nil)
 				rb.requestConfig.body = mockBody
 				rb.requestConfig.httpHeader = newDefaultHttpHeader()
 			},
@@ -134,10 +135,23 @@ func TestRequestBodyBuilder(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "AsFormData failure on Set",
+			name: "AsFormData success with empty fields",
 			setup: func(rb *RequestBodyBuilder) {
 				mockBody := new(mock.BodyWrapper)
-				mockBody.On("Set", tmock.Anything).Return(mockedErr)
+				mockBody.On("WriteAsFormData", tmock.Anything).Return("multipart/form-data; boundary=test", nil)
+				rb.requestConfig.body = mockBody
+				rb.requestConfig.httpHeader = newDefaultHttpHeader()
+			},
+			method: func(rb *RequestBodyBuilder) *RequestBuilder {
+				return rb.AsFormData(map[string]string{})
+			},
+			expectedError: nil,
+		},
+		{
+			name: "AsFormData failure",
+			setup: func(rb *RequestBodyBuilder) {
+				mockBody := new(mock.BodyWrapper)
+				mockBody.On("WriteAsFormData", tmock.Anything).Return("", mockedErr)
 				rb.requestConfig.body = mockBody
 				rb.requestConfig.httpHeader = newDefaultHttpHeader()
 			},
@@ -175,4 +189,80 @@ func TestRequestBodyBuilder(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAsFormData_ContentType(t *testing.T) {
+	tests := []struct {
+		name           string
+		fields         map[string]string
+		expectHeader   bool
+		headerContains string
+	}{
+		{
+			name: "sets Content-Type header on success",
+			fields: map[string]string{
+				"field1": "value1",
+				"field2": "value2",
+			},
+			expectHeader:   true,
+			headerContains: "multipart/form-data",
+		},
+		{
+			name:           "sets Content-Type header with empty fields",
+			fields:         map[string]string{},
+			expectHeader:   true,
+			headerContains: "multipart/form-data",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			rb := &RequestBodyBuilder{
+				parentBuilder: &RequestBuilder{},
+				requestConfig: &RequestConfigBase{
+					validations: newDefaultValidations(nil),
+					body:        newBufferedBody(),
+					httpHeader:  newDefaultHttpHeader(),
+				},
+			}
+
+			// Act
+			rb.AsFormData(tt.fields)
+
+			// Assert
+			if tt.expectHeader {
+				contentType := rb.requestConfig.httpHeader.Get(header.ContentType)
+				assert.NotEmpty(t, contentType)
+				assert.Contains(t, contentType, tt.headerContains)
+			}
+			assert.Empty(t, rb.requestConfig.validations.Unwrap())
+		})
+	}
+}
+
+func TestAsFormData_NoContentTypeOnError(t *testing.T) {
+	// Arrange
+	mockedErr := errors.New("mock error")
+	rb := &RequestBodyBuilder{
+		parentBuilder: &RequestBuilder{},
+		requestConfig: &RequestConfigBase{
+			validations: newDefaultValidations(nil),
+			httpHeader:  newDefaultHttpHeader(),
+		},
+	}
+	mockBody := new(mock.BodyWrapper)
+	mockBody.On("WriteAsFormData", tmock.Anything).Return("", mockedErr)
+	rb.requestConfig.body = mockBody
+
+	// Act
+	rb.AsFormData(map[string]string{
+		"key1": "value1",
+	})
+
+	// Assert
+	contentType := rb.requestConfig.httpHeader.Get(header.ContentType)
+	assert.Empty(t, contentType, "Content-Type should not be set when WriteAsFormData fails")
+	err := rb.requestConfig.validations.Get(0)
+	assert.Error(t, err)
 }

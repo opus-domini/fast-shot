@@ -1,10 +1,8 @@
 package fastshot
 
 import (
-	"bytes"
 	"errors"
 	"io"
-	"mime/multipart"
 
 	"github.com/opus-domini/fast-shot/constant"
 	"github.com/opus-domini/fast-shot/constant/header"
@@ -65,29 +63,11 @@ func (b *RequestBodyBuilder) AsXML(obj interface{}) *RequestBuilder {
 
 // AsFormData sets the body as multipart/form-data.
 func (b *RequestBodyBuilder) AsFormData(fields map[string]string) *RequestBuilder {
-	var body bytes.Buffer
-	writer := multipart.NewWriter(&body)
-
-	for key, value := range fields {
-		if err := writer.WriteField(key, value); err != nil {
-			b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgSetBody), err))
-			writer.Close()
-			return b.parentBuilder
-		}
-	}
-
-	contentType := writer.FormDataContentType()
-	if err := writer.Close(); err != nil {
-		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgSetBody), err))
-		return b.parentBuilder
-	}
-
-	err := b.requestConfig.Body().Set(&body)
+	contentType, err := b.requestConfig.Body().WriteAsFormData(fields)
 	if err != nil {
 		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgSetBody), err))
 	} else {
 		b.requestConfig.httpHeader.Set(header.ContentType, contentType)
 	}
-
 	return b.parentBuilder
 }

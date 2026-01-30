@@ -530,6 +530,7 @@ type BodyWrapper interface {
 	WriteAsXML(obj interface{}) error
 	ReadAsString() (string, error)
 	WriteAsString(body string) error
+	WriteAsFormData(fields map[string]string) (contentType string, err error)
 	Set(body io.Reader) error
 	Unwrap() io.Reader
 }
