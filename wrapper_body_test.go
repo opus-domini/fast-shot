@@ -195,8 +195,8 @@ func TestWrapperBody_Buffered(t *testing.T) {
 				_ = b.WriteAsString("body content")
 			},
 			method: func(b *BufferedBody) (interface{}, error) {
+				_, _ = b.ReadAsString()
 				str, err := b.ReadAsString()
-				str, err = b.ReadAsString()
 				return str, err
 			},
 			expected:      "body content",

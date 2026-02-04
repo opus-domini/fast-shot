@@ -91,6 +91,7 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 
 func (b *RequestBuilder) execute(request *http.Request) (*Response, error) {
 	// Execute request
+	//nolint:bodyclose // Response body is closed by the caller via Response APIs.
 	response, err := b.request.client.HttpClient().Do(request)
 	if err != nil {
 		return nil, err

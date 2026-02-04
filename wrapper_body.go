@@ -218,7 +218,7 @@ func writeFormData(dst io.Writer, fields map[string]string) (string, error) {
 
 	for key, value := range fields {
 		if err := writer.WriteField(key, value); err != nil {
-			writer.Close()
+			_ = writer.Close()
 			return "", err
 		}
 	}
