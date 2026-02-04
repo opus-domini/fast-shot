@@ -417,9 +417,7 @@ func TestRequest_Retry(t *testing.T) {
 	}{
 		{
 			name: "Success on third attempt (GET)",
-			setupClient: func(url string) ClientHttpMethods {
-				return DefaultClient(url)
-			},
+			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetExponentialBackoff(10*time.Millisecond, 5, 2.0)
@@ -435,9 +433,7 @@ func TestRequest_Retry(t *testing.T) {
 		},
 		{
 			name: "Failure after max attempts (GET)",
-			setupClient: func(url string) ClientHttpMethods {
-				return DefaultClient(url)
-			},
+			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetConstantBackoff(10*time.Millisecond, 3)
@@ -453,9 +449,7 @@ func TestRequest_Retry(t *testing.T) {
 		},
 		{
 			name: "When max attempts is 0, no retries are made (GET)",
-			setupClient: func(url string) ClientHttpMethods {
-				return DefaultClient(url)
-			},
+			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetConstantBackoff(10*time.Millisecond, 0)
@@ -468,9 +462,7 @@ func TestRequest_Retry(t *testing.T) {
 		},
 		{
 			name: "Success on second attempt (POST with body)",
-			setupClient: func(url string) ClientHttpMethods {
-				return DefaultClient(url)
-			},
+			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.POST("/test").
 					Body().AsJSON(map[string]string{"key": "value"}).
@@ -486,9 +478,7 @@ func TestRequest_Retry(t *testing.T) {
 		},
 		{
 			name: "Custom retry condition (retry on 404)",
-			setupClient: func(url string) ClientHttpMethods {
-				return DefaultClient(url)
-			},
+			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetConstantBackoff(10*time.Millisecond, 3).
@@ -508,9 +498,7 @@ func TestRequest_Retry(t *testing.T) {
 		},
 		{
 			name: "Max delay reached using exponential backoff",
-			setupClient: func(url string) ClientHttpMethods {
-				return DefaultClient(url)
-			},
+			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetExponentialBackoff(10*time.Millisecond, 5, 2.0).
@@ -528,9 +516,7 @@ func TestRequest_Retry(t *testing.T) {
 		},
 		{
 			name: "Max delay reached using constant backoff",
-			setupClient: func(url string) ClientHttpMethods {
-				return DefaultClient(url)
-			},
+			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetConstantBackoff(10*time.Millisecond, 5).
@@ -548,9 +534,7 @@ func TestRequest_Retry(t *testing.T) {
 		},
 		{
 			name: "Success on first attempt with no retry",
-			setupClient: func(url string) ClientHttpMethods {
-				return DefaultClient(url)
-			},
+			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test")
 			},
@@ -563,9 +547,7 @@ func TestRequest_Retry(t *testing.T) {
 		},
 		{
 			name: "Success after 3 retries with exponential backoff and jitter",
-			setupClient: func(url string) ClientHttpMethods {
-				return DefaultClient(url)
-			},
+			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetExponentialBackoffWithJitter(10*time.Millisecond, 5, 2.0)

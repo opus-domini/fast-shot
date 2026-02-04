@@ -1,0 +1,4 @@
+ignore:
+  - "constant/**"
+  - "examples/**"
+  - "mock/**"
