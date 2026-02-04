@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/opus-domini/fast-shot/constant"
+	"github.com/opus-domini/fast-shot/constant/header"
 )
 
 // BuilderRequestBody is the interface that wraps the basic methods for setting custom HTTP Body's.
@@ -56,6 +57,17 @@ func (b *RequestBodyBuilder) AsXML(obj interface{}) *RequestBuilder {
 	err := b.requestConfig.Body().WriteAsXML(obj)
 	if err != nil {
 		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgMarshalXML), err))
+	}
+	return b.parentBuilder
+}
+
+// AsFormData sets the body as multipart/form-data.
+func (b *RequestBodyBuilder) AsFormData(fields map[string]string) *RequestBuilder {
+	contentType, err := b.requestConfig.Body().WriteAsFormData(fields)
+	if err != nil {
+		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgSetBody), err))
+	} else {
+		b.requestConfig.httpHeader.Set(header.ContentType, contentType)
 	}
 	return b.parentBuilder
 }

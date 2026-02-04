@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"io"
+	"mime/multipart"
 	"strings"
 	"sync"
 )
@@ -76,6 +77,30 @@ func (w *BufferedBody) WriteAsString(s string) error {
 	w.buffer.Reset()
 	_, err := w.buffer.WriteString(s)
 	return err
+}
+
+func (w *BufferedBody) WriteAsFormData(fields map[string]string) (string, error) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	w.buffer.Reset()
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			writer.Close()
+			return "", err
+		}
+	}
+
+	contentType := writer.FormDataContentType()
+	if err := writer.Close(); err != nil {
+		return "", err
+	}
+
+	_, err := io.Copy(w.buffer, &body)
+	return contentType, err
 }
 
 func (w *BufferedBody) Set(body io.Reader) error {
@@ -161,6 +186,29 @@ func (w *UnbufferedBody) WriteAsString(s string) error {
 	defer w.mutex.Unlock()
 	w.reader = io.NopCloser(strings.NewReader(s))
 	return nil
+}
+
+func (w *UnbufferedBody) WriteAsFormData(fields map[string]string) (string, error) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			writer.Close()
+			return "", err
+		}
+	}
+
+	contentType := writer.FormDataContentType()
+	if err := writer.Close(); err != nil {
+		return "", err
+	}
+
+	w.reader = io.NopCloser(&body)
+	return contentType, nil
 }
 
 func (w *UnbufferedBody) Set(body io.Reader) error {

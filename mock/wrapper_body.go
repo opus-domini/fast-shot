@@ -50,6 +50,11 @@ func (m *BodyWrapper) WriteAsString(body string) error {
 	return args.Error(0)
 }
 
+func (m *BodyWrapper) WriteAsFormData(fields map[string]string) (string, error) {
+	args := m.Called(fields)
+	return args.String(0), args.Error(1)
+}
+
 func (m *BodyWrapper) Set(body io.Reader) error {
 	args := m.Called(body)
 	return args.Error(0)
