@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-// DefaultHttpCookies implements CookiesWrapper interface and provides a default HTTP cookies.
+// Compile-time check that DefaultHttpCookies implements CookiesWrapper.
 var _ CookiesWrapper = (*DefaultHttpCookies)(nil)
 
 // DefaultHttpCookies implements CookiesWrapper interface and provides a default HTTP cookies.
@@ -24,6 +24,9 @@ func (c *DefaultHttpCookies) Count() int {
 
 // Get will return the cookie at the specified index
 func (c *DefaultHttpCookies) Get(index int) *http.Cookie {
+	if index < 0 || index >= len(c.cookies) {
+		return nil
+	}
 	return c.cookies[index]
 }
 

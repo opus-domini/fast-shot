@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// DefaultHttpClient implements HttpClientComponent interface and provides a default HTTP client.
+// Compile-time check that DefaultHttpClient implements HttpClientComponent.
 var _ HttpClientComponent = (*DefaultHttpClient)(nil)
 
 // DefaultHttpClient implements HttpClientComponent interface and provides a default HTTP client.

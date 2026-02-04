@@ -1,6 +1,6 @@
 package fastshot
 
-// DefaultValidations implements ValidationsWrapper interface and provides a default HTTP validations.
+// Compile-time check that DefaultValidations implements ValidationsWrapper.
 var _ ValidationsWrapper = (*DefaultValidations)(nil)
 
 // DefaultValidations implements ValidationsWrapper interface and provides a default HTTP validations.
@@ -15,12 +15,15 @@ func (c *DefaultValidations) Unwrap() []error {
 
 // Get will return the validation at the specified index
 func (c *DefaultValidations) Get(index int) error {
+	if index < 0 || index >= len(c.validations) {
+		return nil
+	}
 	return c.validations[index]
 }
 
 // IsEmpty will return the underlying validations
 func (c *DefaultValidations) IsEmpty() bool {
-	return c.validations == nil || len(c.validations) == 0
+	return len(c.validations) == 0
 }
 
 // Count will return the number of validations

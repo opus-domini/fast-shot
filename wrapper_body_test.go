@@ -203,6 +203,50 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name: "WriteAsFormData success",
+			setup: func(b *BufferedBody) {
+				// No setup needed
+			},
+			method: func(b *BufferedBody) (interface{}, error) {
+				contentType, err := b.WriteAsFormData(map[string]string{"field": "value"})
+				if err != nil {
+					return nil, err
+				}
+				return contentType != "", nil
+			},
+			expected:      true,
+			expectedError: nil,
+		},
+		{
+			name: "WriteAsFormData empty fields",
+			setup: func(b *BufferedBody) {
+				// No setup needed
+			},
+			method: func(b *BufferedBody) (interface{}, error) {
+				contentType, err := b.WriteAsFormData(map[string]string{})
+				if err != nil {
+					return nil, err
+				}
+				return contentType != "", nil
+			},
+			expected:      true,
+			expectedError: nil,
+		},
+		{
+			name: "WriteAsFormData error",
+			setup: func(b *BufferedBody) {
+				writeFormDataFn = func(_ io.Writer, _ map[string]string) (string, error) {
+					return "", errors.New("form data error")
+				}
+			},
+			method: func(b *BufferedBody) (interface{}, error) {
+				defer func() { writeFormDataFn = writeFormData }()
+				return b.WriteAsFormData(map[string]string{"k": "v"})
+			},
+			expected:      "",
+			expectedError: errors.New("form data error"),
+		},
+		{
 			name: "Set success",
 			setup: func(b *BufferedBody) {
 				// No setup needed
@@ -441,6 +485,45 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 			expectedError: errors.New("mock error"), // Expect the reader's error
 		},
 		{
+			name:   "WriteAsFormData success",
+			reader: io.NopCloser(strings.NewReader("")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				contentType, err := b.WriteAsFormData(map[string]string{"field": "value"})
+				if err != nil {
+					return nil, err
+				}
+				return contentType != "", nil
+			},
+			expected:      true,
+			expectedError: nil,
+		},
+		{
+			name:   "WriteAsFormData empty fields",
+			reader: io.NopCloser(strings.NewReader("")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				contentType, err := b.WriteAsFormData(map[string]string{})
+				if err != nil {
+					return nil, err
+				}
+				return contentType != "", nil
+			},
+			expected:      true,
+			expectedError: nil,
+		},
+		{
+			name:   "WriteAsFormData error",
+			reader: io.NopCloser(strings.NewReader("")),
+			method: func(b *UnbufferedBody) (interface{}, error) {
+				writeFormDataFn = func(_ io.Writer, _ map[string]string) (string, error) {
+					return "", errors.New("form data error")
+				}
+				defer func() { writeFormDataFn = writeFormData }()
+				return b.WriteAsFormData(map[string]string{"k": "v"})
+			},
+			expected:      "",
+			expectedError: errors.New("form data error"),
+		},
+		{
 			name:   "Set with io.ReadCloser", // Covering "if closer, ok..."
 			reader: io.NopCloser(strings.NewReader("")),
 			method: func(b *UnbufferedBody) (interface{}, error) {
@@ -507,6 +590,46 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWriteFormData(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		var buf bytes.Buffer
+		contentType, err := writeFormData(&buf, map[string]string{"key": "value"})
+		assert.NoError(t, err)
+		assert.Contains(t, contentType, "multipart/form-data")
+		assert.True(t, buf.Len() > 0)
+	})
+
+	t.Run("writer error on WriteField", func(t *testing.T) {
+		w := &errorWriter{failAfter: 0}
+		contentType, err := writeFormData(w, map[string]string{"key": "value"})
+		assert.Error(t, err)
+		assert.Empty(t, contentType)
+	})
+
+	t.Run("writer error on Close", func(t *testing.T) {
+		// Allow enough bytes for the field write (~110 bytes) but fail
+		// when Close writes the closing boundary (~68 more bytes).
+		w := &errorWriter{failAfter: 150}
+		contentType, err := writeFormData(w, map[string]string{"k": "v"})
+		assert.Error(t, err)
+		assert.Empty(t, contentType)
+	})
+}
+
+// errorWriter fails after writing failAfter bytes.
+type errorWriter struct {
+	written   int
+	failAfter int
+}
+
+func (w *errorWriter) Write(p []byte) (int, error) {
+	if w.written+len(p) > w.failAfter {
+		return 0, errors.New("write error")
+	}
+	w.written += len(p)
+	return len(p), nil
 }
 
 // Helper type

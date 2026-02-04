@@ -190,14 +190,47 @@ func TestResponseFluentBody(t *testing.T) {
 }
 
 func TestResponseFluentBodyClose(t *testing.T) {
-	mockBody := new(mock.BodyWrapper)
-	mockBody.On("Close").Return(nil).Once()
+	t.Run("Close ignores error", func(t *testing.T) {
+		mockBody := new(mock.BodyWrapper)
+		mockBody.On("Close").Return(errors.New("close error")).Once()
 
-	rb := &ResponseFluentBody{
-		body: mockBody,
-	}
+		rb := &ResponseFluentBody{
+			body: mockBody,
+		}
 
-	rb.Close()
+		rb.Close()
 
-	mockBody.AssertExpectations(t)
+		mockBody.AssertExpectations(t)
+	})
+}
+
+func TestResponseFluentBodyCloseErr(t *testing.T) {
+	t.Run("CloseErr success", func(t *testing.T) {
+		mockBody := new(mock.BodyWrapper)
+		mockBody.On("Close").Return(nil).Once()
+
+		rb := &ResponseFluentBody{
+			body: mockBody,
+		}
+
+		err := rb.CloseErr()
+
+		assert.NoError(t, err)
+		mockBody.AssertExpectations(t)
+	})
+
+	t.Run("CloseErr error", func(t *testing.T) {
+		mockBody := new(mock.BodyWrapper)
+		mockBody.On("Close").Return(errors.New("close error")).Once()
+
+		rb := &ResponseFluentBody{
+			body: mockBody,
+		}
+
+		err := rb.CloseErr()
+
+		assert.Error(t, err)
+		assert.Equal(t, "close error", err.Error())
+		mockBody.AssertExpectations(t)
+	})
 }
