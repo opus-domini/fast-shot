@@ -2,7 +2,7 @@ package fastshot
 
 import "context"
 
-// DefaultContext implements ContextWrapper interface and provides a default HTTP context.
+// Compile-time check that DefaultContext implements ContextWrapper.
 var _ ContextWrapper = (*DefaultContext)(nil)
 
 // DefaultContext implements ContextWrapper interface and provides a default HTTP context.

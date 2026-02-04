@@ -29,7 +29,7 @@ test: check-deps
 # Run tests with coverage
 .PHONY: test-coverage
 test-coverage: check-deps
-	$(GOTEST) -race -covermode=atomic
+	$(GOTEST) -race -covermode=atomic -coverprofile=coverage.txt ./...
 
 # Format code
 .PHONY: fmt

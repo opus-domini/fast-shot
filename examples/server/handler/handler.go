@@ -106,7 +106,6 @@ func GetByID(repository repository.Repository) func(w http.ResponseWriter, _ *ht
 		}
 
 		_ = json.NewEncoder(w).Encode(resource)
-		return
 	}
 }
 

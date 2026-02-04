@@ -25,10 +25,8 @@ func (c *DefaultBaseURL) BaseURL() *url.URL {
 
 // BaseURL for BalancedBaseURL returns the next base URL in the list.
 func (c *BalancedBaseURL) BaseURL() *url.URL {
-	currentIndex := atomic.LoadUint32(&c.currentBaseURL)
-	atomic.AddUint32(&c.currentBaseURL, 1)
-	c.currentBaseURL = c.currentBaseURL % uint32(len(c.baseURLs))
-	return c.baseURLs[currentIndex]
+	index := atomic.AddUint32(&c.currentBaseURL, 1) - 1
+	return c.baseURLs[index%uint32(len(c.baseURLs))]
 }
 
 // newDefaultBaseURL initializes a new DefaultBaseURL with a given base URL.

@@ -1,7 +1,9 @@
 package fastshot
 
 import (
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -78,9 +80,15 @@ func TestResponseFluentStatus(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
 			response := &Response{
-				rawResponse: &http.Response{StatusCode: tt.statusCode},
+				rawResponse: &http.Response{
+					StatusCode: tt.statusCode,
+					Body:       io.NopCloser(strings.NewReader("")),
+				},
 				status: &ResponseFluentStatus{
-					response: &http.Response{StatusCode: tt.statusCode},
+					response: &http.Response{
+						StatusCode: tt.statusCode,
+						Body:       io.NopCloser(strings.NewReader("")),
+					},
 				},
 			}
 
@@ -90,7 +98,10 @@ func TestResponseFluentStatus(t *testing.T) {
 			// Assert
 			assert.Equal(t, tt.expectedCode, result.Code())
 			assert.Equal(t, tt.expectedText, result.Text())
-			assert.Equal(t, tt.expectedCode, response.Raw().StatusCode)
+			rawResp := response.Raw()
+			assert.Equal(t, tt.expectedCode, rawResp.StatusCode)
+			_ = rawResp.Body.Close()
+			_ = response.status.response.Body.Close()
 			assert.Equal(t, tt.expectedInformation, result.Is1xxInformational())
 			assert.Equal(t, tt.expectedSuccess, result.Is2xxSuccessful())
 			assert.Equal(t, tt.expectedRedirection, result.Is3xxRedirection())

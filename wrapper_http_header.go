@@ -6,7 +6,7 @@ import (
 	"github.com/opus-domini/fast-shot/constant/header"
 )
 
-// DefaultHttpHeader implements HeaderWrapper interface and provides a default HTTP header.
+// Compile-time check that DefaultHttpHeader implements HeaderWrapper.
 var _ HeaderWrapper = (*DefaultHttpHeader)(nil)
 
 // DefaultHttpHeader implements HeaderWrapper interface and provides a default HTTP header.

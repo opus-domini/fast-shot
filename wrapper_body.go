@@ -10,10 +10,10 @@ import (
 	"sync"
 )
 
-// BufferedBody implements BodyWrapper interface and provides a default HTTP context.
+// Compile-time check that BufferedBody implements BodyWrapper.
 var _ BodyWrapper = (*BufferedBody)(nil)
 
-// UnbufferedBody implements BodyWrapper interface and provides a default HTTP context.
+// Compile-time check that UnbufferedBody implements BodyWrapper.
 var _ BodyWrapper = (*UnbufferedBody)(nil)
 
 type (
@@ -85,21 +85,12 @@ func (w *BufferedBody) WriteAsFormData(fields map[string]string) (string, error)
 	w.buffer.Reset()
 
 	var body bytes.Buffer
-	writer := multipart.NewWriter(&body)
-
-	for key, value := range fields {
-		if err := writer.WriteField(key, value); err != nil {
-			writer.Close()
-			return "", err
-		}
-	}
-
-	contentType := writer.FormDataContentType()
-	if err := writer.Close(); err != nil {
+	contentType, err := writeFormDataFn(&body, fields)
+	if err != nil {
 		return "", err
 	}
 
-	_, err := io.Copy(w.buffer, &body)
+	_, err = io.Copy(w.buffer, &body)
 	return contentType, err
 }
 
@@ -193,17 +184,8 @@ func (w *UnbufferedBody) WriteAsFormData(fields map[string]string) (string, erro
 	defer w.mutex.Unlock()
 
 	var body bytes.Buffer
-	writer := multipart.NewWriter(&body)
-
-	for key, value := range fields {
-		if err := writer.WriteField(key, value); err != nil {
-			writer.Close()
-			return "", err
-		}
-	}
-
-	contentType := writer.FormDataContentType()
-	if err := writer.Close(); err != nil {
+	contentType, err := writeFormDataFn(&body, fields)
+	if err != nil {
 		return "", err
 	}
 
@@ -226,6 +208,27 @@ func (w *UnbufferedBody) Unwrap() io.Reader {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
 	return w.reader
+}
+
+// writeFormDataFn is the function used to write form data. It can be swapped in tests.
+var writeFormDataFn = writeFormData
+
+func writeFormData(dst io.Writer, fields map[string]string) (string, error) {
+	writer := multipart.NewWriter(dst)
+
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			_ = writer.Close()
+			return "", err
+		}
+	}
+
+	contentType := writer.FormDataContentType()
+	if err := writer.Close(); err != nil {
+		return "", err
+	}
+
+	return contentType, nil
 }
 
 func newUnbufferedBody(reader io.ReadCloser) *UnbufferedBody {

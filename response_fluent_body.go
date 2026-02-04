@@ -21,6 +21,10 @@ func (b *ResponseFluentBody) Close() {
 	_ = b.body.Close()
 }
 
+func (b *ResponseFluentBody) CloseErr() error {
+	return b.body.Close()
+}
+
 func (b *ResponseFluentBody) AsBytes() ([]byte, error) {
 	defer b.Close()
 
