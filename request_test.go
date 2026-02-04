@@ -416,7 +416,7 @@ func TestRequest_Retry(t *testing.T) {
 		expectError      bool
 	}{
 		{
-			name: "Success on third attempt (GET)",
+			name:        "Success on third attempt (GET)",
 			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
@@ -432,7 +432,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectedBody:     "Success",
 		},
 		{
-			name: "Failure after max attempts (GET)",
+			name:        "Failure after max attempts (GET)",
 			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
@@ -448,7 +448,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectError:      true,
 		},
 		{
-			name: "When max attempts is 0, no retries are made (GET)",
+			name:        "When max attempts is 0, no retries are made (GET)",
 			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
@@ -461,7 +461,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
-			name: "Success on second attempt (POST with body)",
+			name:        "Success on second attempt (POST with body)",
 			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.POST("/test").
@@ -477,7 +477,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectedBody:     "Success",
 		},
 		{
-			name: "Custom retry condition (retry on 404)",
+			name:        "Custom retry condition (retry on 404)",
 			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
@@ -497,7 +497,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectedBody:     "Success",
 		},
 		{
-			name: "Max delay reached using exponential backoff",
+			name:        "Max delay reached using exponential backoff",
 			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
@@ -515,7 +515,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectedBody:     "Success",
 		},
 		{
-			name: "Max delay reached using constant backoff",
+			name:        "Max delay reached using constant backoff",
 			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
@@ -533,7 +533,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectedBody:     "Success",
 		},
 		{
-			name: "Success on first attempt with no retry",
+			name:        "Success on first attempt with no retry",
 			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test")
@@ -546,7 +546,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectedBody:     "Success",
 		},
 		{
-			name: "Success after 3 retries with exponential backoff and jitter",
+			name:        "Success after 3 retries with exponential backoff and jitter",
 			setupClient: DefaultClient,
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").

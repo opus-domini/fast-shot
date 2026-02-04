@@ -13,3 +13,8 @@ linters:
     - unused
     - whitespace
     - bodyclose
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
