@@ -27,7 +27,12 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
 
-    - name: Run Tests
+    - name: Run Tests (no coverage)
+      if: matrix.go-version != '1.25'
+      run: go test -race ./...
+
+    - name: Run Tests (with coverage)
+      if: matrix.go-version == '1.25'
       run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
 
     - name: Upload coverage to Codecov
@@ -48,6 +53,8 @@ jobs:
 
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v6
+      with:
+        version: latest
 
   security:
     runs-on: ubuntu-latest
