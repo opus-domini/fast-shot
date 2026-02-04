@@ -6,6 +6,5 @@ linters:
     - govet
     - staticcheck
     - unused
-    - gosimple
     - ineffassign
     - bodyclose
