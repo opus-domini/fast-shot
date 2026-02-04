@@ -4,7 +4,12 @@ linters:
   enable:
     - errcheck
     - govet
+    - ineffassign
     - staticcheck
     - unused
-    - ineffassign
+    - gocritic
+    - govet
+    - goconst
+    - unused
+    - whitespace
     - bodyclose

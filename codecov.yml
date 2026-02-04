@@ -1,4 +1,10 @@
+coverage:
+  precision: 2
+  round: up
+  range: "90...100"
+
 ignore:
-  - "constant/**"
-  - "examples/**"
-  - "mock/**"
+  - constant/**
+  - docs/**
+  - examples/**
+  - mock/**
