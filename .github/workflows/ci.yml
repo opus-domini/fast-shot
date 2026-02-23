@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ['1.23', '1.24', '1.25']
+        go-version: ['1.25', '1.26']
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -25,31 +25,31 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Run golangci-lint
-        if: matrix.go-version == '1.25'
+        if: matrix.go-version == '1.26'
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
         with:
           version: v2.10.1
 
       - name: Verify go.mod is tidy
-        if: matrix.go-version == '1.25'
+        if: matrix.go-version == '1.26'
         run: go mod tidy && git diff --exit-code go.mod go.sum
 
       - name: Run tests
-        if: matrix.go-version != '1.25'
+        if: matrix.go-version != '1.26'
         run: go test -race ./...
 
       - name: Run tests with coverage
-        if: matrix.go-version == '1.25'
+        if: matrix.go-version == '1.26'
         run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
 
       - name: Upload coverage to Codecov
-        if: matrix.go-version == '1.25'
+        if: matrix.go-version == '1.26'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Run govulncheck
-        if: matrix.go-version == '1.25'
+        if: matrix.go-version == '1.26'
         run: go install golang.org/x/vuln/cmd/govulncheck@latest && govulncheck ./...
 
   ci-full:
