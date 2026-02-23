@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/opus-domini/fast-shot/compare/v1.2.1...v1.3.0) (2026-02-23)
+
+
+### Features
+
+* add pre-request and post-response hooks ([592fc47](https://github.com/opus-domini/fast-shot/commit/592fc4779d88ef21137df36758c794c2ef735077))
+
+
+### Bug Fixes
+
+* update CI badge URL and fix typo in README ([662a4ce](https://github.com/opus-domini/fast-shot/commit/662a4ce1103ac5430c9534776e3a2b2ade9cdd9c))
+
 ## [1.2.1](https://github.com/opus-domini/fast-shot/compare/v1.2.0...v1.2.1) (2026-02-23)
 
 
