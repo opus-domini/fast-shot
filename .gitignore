@@ -15,6 +15,7 @@
 !go.mod
 
 !README.md
+!CHANGELOG.md
 !LICENSE
 
 !/.github/**/*

@@ -1,0 +1,66 @@
+name: Feature request
+description: Suggest an improvement for fast-shot
+title: "[feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for new features and substantial improvements.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short feature title
+      placeholder: Add support for streaming responses
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What pain point does this solve?
+      placeholder: I cannot consume server-sent events or large streaming responses efficiently.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe your ideal approach
+      placeholder: Add a `.Stream()` method that returns an io.Reader for chunked consumption.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you evaluate?
+      placeholder: Using raw net/http client, third-party streaming libraries, etc.
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: API impact
+      description: Mention any expected API changes or breaking behavior changes
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Links, references, code examples, or use cases
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: This request is scoped to one clear improvement.
+          required: false

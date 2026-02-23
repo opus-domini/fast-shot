@@ -1,72 +1,87 @@
-# Variables with default values
-GOCMD ?= go
-GOBUILD = $(GOCMD) build
-GOTEST = $(GOCMD) test
-GOCLEAN = $(GOCMD) clean
-LINT = golangci-lint
-VULNCHECK = govulncheck
+GOCMD        ?= go
+LINT          = golangci-lint
+VULNCHECK     = govulncheck
+LINT_GOCACHE ?= /tmp/go-cache
+LINT_CACHE   ?= /tmp/golangci-lint-cache
 
-default: help
+.DEFAULT_GOAL := help
 
-# Targets
+# ─── Quality ──────────────────────────────────────────────────
 
-# Check for required commands
-check-deps:
-	@which $(GOCMD) > /dev/null || (echo "Go is not installed. Visit https://golang.org/doc/install for instructions." && exit 1)
-
-# Compile the project
-.PHONY: build
-build: check-deps
-	$(GOBUILD) -o build/examples/ ./examples/...
-
-# Run tests
 .PHONY: test
-test: check-deps
-	$(GOTEST) -v ./...
+test: check-go ## Run tests
+	$(GOCMD) test ./...
 
-# Run tests with coverage
 .PHONY: test-coverage
-test-coverage: check-deps
-	$(GOTEST) -race -covermode=atomic -coverprofile=coverage.txt ./...
+test-coverage: check-go ## Run tests with race detection and coverage
+	$(GOCMD) test -race -covermode=atomic -coverprofile=coverage.txt ./...
 
-# Format code
+.PHONY: benchmark
+benchmark: check-go ## Run benchmarks
+	$(GOCMD) test -run=^$$ -bench=. -benchmem ./...
+
 .PHONY: fmt
-fmt: check-deps
-	@which $(LINT) > /dev/null || (echo "golangci-lint is not installed. Run 'go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest' to install." && exit 1)
-	$(LINT) fmt
+fmt: check-go check-lint ## Format code
+	GOCACHE=$(LINT_GOCACHE) GOLANGCI_LINT_CACHE=$(LINT_CACHE) $(LINT) fmt
 
-# Lint code
 .PHONY: lint
-lint: check-deps
-	@which $(LINT) > /dev/null || (echo "golangci-lint is not installed. Run 'go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest' to install." && exit 1)
-	$(LINT) run
+lint: check-go check-lint ## Lint code
+	GOCACHE=$(LINT_GOCACHE) GOLANGCI_LINT_CACHE=$(LINT_CACHE) $(LINT) run
 
-# Run security checks
+.PHONY: tidy
+tidy: check-go ## Tidy go.mod and go.sum
+	$(GOCMD) mod tidy
+
 .PHONY: security
-security: check-deps
-	@which $(VULNCHECK) > /dev/null || (echo "govulncheck is not installed. Run 'go install golang.org/x/vuln/cmd/govulncheck@latest' to install." && exit 1)
+security: check-go check-vuln ## Run vulnerability scanner
 	$(VULNCHECK) ./...
 
-# Run all checks
+# ─── Build ────────────────────────────────────────────────────
+
+.PHONY: build
+build: check-go ## Build project examples
+	$(GOCMD) build -o build/examples/ ./examples/...
+
+# ─── CI ───────────────────────────────────────────────────────
+
+.PHONY: ci-fast
+ci-fast: fmt lint tidy test security ## Fast PR gate
+
+.PHONY: ci-full
+ci-full: ci-fast test-coverage benchmark ## Full mainline gate
+
 .PHONY: ci
-ci: check-deps fmt lint test security
+ci: ci-full ## Run full CI pipeline
 
-# Remove build artifacts
+# ─── Maintenance ──────────────────────────────────────────────
+
 .PHONY: clean
-clean:
-	$(GOCLEAN)
-	rm -rf build
+clean: ## Remove build artifacts
+	$(GOCMD) clean
+	rm -rf build coverage.txt
 
-# Show help
 .PHONY: help
-help:
-	@echo "Usage:"
-	@echo "  make <target>"
-	@echo "Targets:"
-	@echo "  build       Build the project examples"
-	@echo "  test        Run tests"
-	@echo "  fmt         Run golangci-lint formatter"
-	@echo "  lint        Run linter"
-	@echo "  security    Run security checks"
-	@echo "  ci          Run all checks"
-	@echo "  clean       Remove any build artifacts"
+help: ## Show available targets
+	@awk '\
+		/^# ─── / { printf "\n\033[1m%s\033[0m\n", substr($$0, 7) } \
+		/^[a-zA-Z_-]+:.*## / { \
+			target = $$0; \
+			sub(/:.*/, "", target); \
+			desc = $$0; \
+			sub(/.*## /, "", desc); \
+			printf "  \033[36m%-18s\033[0m %s\n", target, desc; \
+		}' $(MAKEFILE_LIST)
+	@echo
+
+# Dependency checks (internal)
+
+.PHONY: check-go check-lint check-vuln
+
+check-go:
+	@command -v $(GOCMD) >/dev/null 2>&1 || { echo "error: go is not installed — https://golang.org/doc/install"; exit 1; }
+
+check-lint:
+	@command -v $(LINT) >/dev/null 2>&1 || { echo "error: $(LINT) is not installed — go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest"; exit 1; }
+
+check-vuln:
+	@command -v $(VULNCHECK) >/dev/null 2>&1 || { echo "error: $(VULNCHECK) is not installed — go install golang.org/x/vuln/cmd/govulncheck@latest"; exit 1; }

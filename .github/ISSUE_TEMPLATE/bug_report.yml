@@ -1,0 +1,89 @@
+name: Bug report
+description: Report a reproducible problem in fast-shot
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please provide enough detail to reproduce the issue. Include logs and steps whenever possible.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the bug
+      placeholder: POST request body is empty when using SetBody with retries enabled
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide exact steps, including code snippets
+      placeholder: |
+        1. Create a client with `fastshot.NewClient("https://example.com")`
+        2. Configure retry with `.Retry().Set(3)`
+        3. Send a POST request with `.SetBody(payload)`
+        4. Observe the request body on the server side
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: Request body should be sent correctly on each retry attempt.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: Request body is empty on retry attempts after the first one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste relevant logs, stack traces, or screenshots
+      render: shell
+
+  - type: input
+    id: fastshot_version
+    attributes:
+      label: fast-shot version
+      placeholder: v1.2.0
+    validations:
+      required: true
+
+  - type: input
+    id: go_version
+    attributes:
+      label: Go version
+      placeholder: go1.25.0
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: Ubuntu 24.04 / macOS 15.0 / Windows 11
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I can reproduce this on the latest release.
+          required: false

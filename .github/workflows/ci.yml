@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci-fast:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.23', '1.24', '1.25']
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Run golangci-lint
+        if: matrix.go-version == '1.25'
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: v2.10.1
+
+      - name: Verify go.mod is tidy
+        if: matrix.go-version == '1.25'
+        run: go mod tidy && git diff --exit-code go.mod go.sum
+
+      - name: Run tests
+        if: matrix.go-version != '1.25'
+        run: go test -race ./...
+
+      - name: Run tests with coverage
+        if: matrix.go-version == '1.25'
+        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - name: Upload coverage to Codecov
+        if: matrix.go-version == '1.25'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Run govulncheck
+        if: matrix.go-version == '1.25'
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest && govulncheck ./...
+
+  ci-full:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: ci-fast
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: go.mod
+
+      - name: Run benchmarks
+        run: go test -run=^$ -bench=. -benchmem ./...
