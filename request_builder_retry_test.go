@@ -3,8 +3,6 @@ package fastshot
 import (
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRequestRetryBuilder(t *testing.T) {
@@ -96,8 +94,12 @@ func TestRequestRetryBuilder(t *testing.T) {
 			result := tt.method(rb)
 
 			// Assert
-			assert.Equal(t, rb, result)
-			assert.True(t, tt.expectedConfig(rb.request.config.RetryConfig()))
+			if result != rb {
+				t.Errorf("got different builder, want same")
+			}
+			if !tt.expectedConfig(rb.request.config.RetryConfig()) {
+				t.Errorf("expectedConfig returned false")
+			}
 		})
 	}
 }

@@ -4,8 +4,6 @@ import (
 	"net/url"
 	"sync"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultBaseURL(t *testing.T) {
@@ -14,8 +12,12 @@ func TestDefaultBaseURL(t *testing.T) {
 	base := newDefaultBaseURL(u)
 
 	// Act & Assert
-	assert.Equal(t, u, base.BaseURL())
-	assert.Equal(t, u, base.BaseURL())
+	if got := base.BaseURL(); got != u {
+		t.Errorf("got %v, want %v", got, u)
+	}
+	if got := base.BaseURL(); got != u {
+		t.Errorf("got %v, want %v", got, u)
+	}
 }
 
 func TestBalancedBaseURL_RoundRobin(t *testing.T) {
@@ -26,11 +28,21 @@ func TestBalancedBaseURL_RoundRobin(t *testing.T) {
 	base := newBalancedBaseURL([]*url.URL{u1, u2, u3})
 
 	// Act & Assert
-	assert.Equal(t, u1, base.BaseURL())
-	assert.Equal(t, u2, base.BaseURL())
-	assert.Equal(t, u3, base.BaseURL())
-	assert.Equal(t, u1, base.BaseURL()) // wraps around
-	assert.Equal(t, u2, base.BaseURL())
+	if got := base.BaseURL(); got != u1 {
+		t.Errorf("got %v, want %v", got, u1)
+	}
+	if got := base.BaseURL(); got != u2 {
+		t.Errorf("got %v, want %v", got, u2)
+	}
+	if got := base.BaseURL(); got != u3 {
+		t.Errorf("got %v, want %v", got, u3)
+	}
+	if got := base.BaseURL(); got != u1 { // wraps around
+		t.Errorf("got %v, want %v", got, u1)
+	}
+	if got := base.BaseURL(); got != u2 {
+		t.Errorf("got %v, want %v", got, u2)
+	}
 }
 
 func TestBalancedBaseURL_Concurrent(t *testing.T) {
@@ -56,6 +68,15 @@ func TestBalancedBaseURL_Concurrent(t *testing.T) {
 
 	// Assert - all returned URLs must be one of the valid base URLs
 	for u := range results {
-		assert.Contains(t, urls, u)
+		found := false
+		for _, valid := range urls {
+			if u == valid {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("got %v, want one of %v", u, urls)
+		}
 	}
 }

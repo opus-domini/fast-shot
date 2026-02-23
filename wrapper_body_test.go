@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestWrapperBody_Buffered(t *testing.T) {
@@ -282,10 +281,15 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			result, err := tt.method(body)
 
 			// Assert
-			assert.Equal(t, tt.expected, result)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("got %v, want %v", result, tt.expected)
+			}
 			if tt.expectedError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.expectedError.Error(), err.Error())
+				if err == nil {
+					t.Error("expected error, got nil")
+				} else if err.Error() != tt.expectedError.Error() {
+					t.Errorf("error got %q, want %q", err.Error(), tt.expectedError.Error())
+				}
 			}
 		})
 	}
@@ -583,10 +587,15 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 			result, err := tt.method(body)
 
 			// Assert
-			assert.Equal(t, tt.expected, result)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("got %v, want %v", result, tt.expected)
+			}
 			if tt.expectedError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.expectedError.Error(), err.Error())
+				if err == nil {
+					t.Error("expected error, got nil")
+				} else if err.Error() != tt.expectedError.Error() {
+					t.Errorf("error got %q, want %q", err.Error(), tt.expectedError.Error())
+				}
 			}
 		})
 	}
@@ -596,16 +605,26 @@ func TestWriteFormData(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		var buf bytes.Buffer
 		contentType, err := writeFormData(&buf, map[string]string{"key": "value"})
-		assert.NoError(t, err)
-		assert.Contains(t, contentType, "multipart/form-data")
-		assert.True(t, buf.Len() > 0)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(contentType, "multipart/form-data") {
+			t.Errorf("contentType %q does not contain %q", contentType, "multipart/form-data")
+		}
+		if buf.Len() == 0 {
+			t.Error("buffer is empty, want non-empty")
+		}
 	})
 
 	t.Run("writer error on WriteField", func(t *testing.T) {
 		w := &errorWriter{failAfter: 0}
 		contentType, err := writeFormData(w, map[string]string{"key": "value"})
-		assert.Error(t, err)
-		assert.Empty(t, contentType)
+		if err == nil {
+			t.Error("expected error, got nil")
+		}
+		if contentType != "" {
+			t.Errorf("contentType got %q, want empty", contentType)
+		}
 	})
 
 	t.Run("writer error on Close", func(t *testing.T) {
@@ -613,8 +632,12 @@ func TestWriteFormData(t *testing.T) {
 		// when Close writes the closing boundary (~68 more bytes).
 		w := &errorWriter{failAfter: 150}
 		contentType, err := writeFormData(w, map[string]string{"k": "v"})
-		assert.Error(t, err)
-		assert.Empty(t, contentType)
+		if err == nil {
+			t.Error("expected error, got nil")
+		}
+		if contentType != "" {
+			t.Errorf("contentType got %q, want empty", contentType)
+		}
 	})
 }
 

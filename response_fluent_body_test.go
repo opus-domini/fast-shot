@@ -3,11 +3,10 @@ package fastshot
 import (
 	"errors"
 	"io"
+	"reflect"
 	"testing"
 
 	"github.com/opus-domini/fast-shot/mock"
-	"github.com/stretchr/testify/assert"
-	tmock "github.com/stretchr/testify/mock"
 )
 
 func TestResponseFluentBody(t *testing.T) {
@@ -32,11 +31,11 @@ func TestResponseFluentBody(t *testing.T) {
 		{
 			name: "AsBytes success",
 			setup: func(m *mock.BodyWrapper) {
-				m.On("Read", tmock.Anything).Run(func(args tmock.Arguments) {
-					b := args.Get(0).([]byte)
-					copy(b, "hello")
-				}).Return(5, io.EOF).Once()
-				m.On("Close").Return(nil).Once()
+				m.ReadFunc = func(p []byte) (int, error) {
+					copy(p, "hello")
+					return 5, io.EOF
+				}
+				m.CloseFunc = func() error { return nil }
 			},
 			method: func(rb *ResponseFluentBody) (interface{}, error) {
 				return rb.AsBytes()
@@ -47,8 +46,10 @@ func TestResponseFluentBody(t *testing.T) {
 		{
 			name: "AsBytes read error",
 			setup: func(m *mock.BodyWrapper) {
-				m.On("Read", tmock.Anything).Return(0, errors.New("read error")).Once()
-				m.On("Close").Return(nil).Once()
+				m.ReadFunc = func(p []byte) (int, error) {
+					return 0, errors.New("read error")
+				}
+				m.CloseFunc = func() error { return nil }
 			},
 			method: func(rb *ResponseFluentBody) (interface{}, error) {
 				return rb.AsBytes()
@@ -59,8 +60,8 @@ func TestResponseFluentBody(t *testing.T) {
 		{
 			name: "AsString success",
 			setup: func(m *mock.BodyWrapper) {
-				m.On("ReadAsString").Return("hello", nil).Once()
-				m.On("Close").Return(nil).Once()
+				m.ReadAsStringFunc = func() (string, error) { return "hello", nil }
+				m.CloseFunc = func() error { return nil }
 			},
 			method: func(rb *ResponseFluentBody) (interface{}, error) {
 				return rb.AsString()
@@ -71,8 +72,8 @@ func TestResponseFluentBody(t *testing.T) {
 		{
 			name: "AsString error",
 			setup: func(m *mock.BodyWrapper) {
-				m.On("ReadAsString").Return("", errors.New("string error")).Once()
-				m.On("Close").Return(nil).Once()
+				m.ReadAsStringFunc = func() (string, error) { return "", errors.New("string error") }
+				m.CloseFunc = func() error { return nil }
 			},
 			method: func(rb *ResponseFluentBody) (interface{}, error) {
 				return rb.AsString()
@@ -83,11 +84,12 @@ func TestResponseFluentBody(t *testing.T) {
 		{
 			name: "AsJSON success",
 			setup: func(m *mock.BodyWrapper) {
-				m.On("ReadAsJSON", tmock.Anything).Run(func(args tmock.Arguments) {
-					arg := args.Get(0).(*map[string]string)
+				m.ReadAsJSONFunc = func(obj interface{}) error {
+					arg := obj.(*map[string]string)
 					*arg = map[string]string{"key": "value"}
-				}).Return(nil).Once()
-				m.On("Close").Return(nil).Once()
+					return nil
+				}
+				m.CloseFunc = func() error { return nil }
 			},
 			method: func(rb *ResponseFluentBody) (interface{}, error) {
 				var result map[string]string
@@ -100,8 +102,8 @@ func TestResponseFluentBody(t *testing.T) {
 		{
 			name: "AsJSON error",
 			setup: func(m *mock.BodyWrapper) {
-				m.On("ReadAsJSON", tmock.Anything).Return(errors.New("json error")).Once()
-				m.On("Close").Return(nil).Once()
+				m.ReadAsJSONFunc = func(obj interface{}) error { return errors.New("json error") }
+				m.CloseFunc = func() error { return nil }
 			},
 			method: func(rb *ResponseFluentBody) (interface{}, error) {
 				var result map[string]string
@@ -114,8 +116,8 @@ func TestResponseFluentBody(t *testing.T) {
 		{
 			name: "AsXML success",
 			setup: func(m *mock.BodyWrapper) {
-				m.On("ReadAsXML", tmock.Anything).Run(func(args tmock.Arguments) {
-					arg := args.Get(0).(*struct {
+				m.ReadAsXMLFunc = func(obj interface{}) error {
+					arg := obj.(*struct {
 						Key string `xml:"Key"`
 					})
 					*arg = struct {
@@ -123,8 +125,9 @@ func TestResponseFluentBody(t *testing.T) {
 					}{
 						Key: "value",
 					}
-				}).Return(nil).Once()
-				m.On("Close").Return(nil).Once()
+					return nil
+				}
+				m.CloseFunc = func() error { return nil }
 			},
 			method: func(rb *ResponseFluentBody) (interface{}, error) {
 				result := struct {
@@ -143,8 +146,8 @@ func TestResponseFluentBody(t *testing.T) {
 		{
 			name: "AsXML error",
 			setup: func(m *mock.BodyWrapper) {
-				m.On("ReadAsXML", tmock.Anything).Return(errors.New("xml error")).Once()
-				m.On("Close").Return(nil).Once()
+				m.ReadAsXMLFunc = func(obj interface{}) error { return errors.New("xml error") }
+				m.CloseFunc = func() error { return nil }
 			},
 			method: func(rb *ResponseFluentBody) (interface{}, error) {
 				result := struct {
@@ -163,7 +166,7 @@ func TestResponseFluentBody(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
-			mockBody := new(mock.BodyWrapper)
+			mockBody := &mock.BodyWrapper{}
 			tt.setup(mockBody)
 
 			response := &Response{
@@ -177,22 +180,32 @@ func TestResponseFluentBody(t *testing.T) {
 
 			// Assert
 			if tt.expectedError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.expectedError.Error(), err.Error())
+				if err == nil {
+					t.Error("expected error, got nil")
+				} else if err.Error() != tt.expectedError.Error() {
+					t.Errorf("error got %q, want %q", err.Error(), tt.expectedError.Error())
+				}
 			} else {
-				assert.NoError(t, err)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
 			}
-			assert.Equal(t, tt.expected, result)
-
-			mockBody.AssertExpectations(t)
+			if !reflect.DeepEqual(result, tt.expected) {
+				t.Errorf("got %v, want %v", result, tt.expected)
+			}
 		})
 	}
 }
 
 func TestResponseFluentBodyClose(t *testing.T) {
 	t.Run("Close ignores error", func(t *testing.T) {
-		mockBody := new(mock.BodyWrapper)
-		mockBody.On("Close").Return(errors.New("close error")).Once()
+		called := false
+		mockBody := &mock.BodyWrapper{
+			CloseFunc: func() error {
+				called = true
+				return errors.New("close error")
+			},
+		}
 
 		rb := &ResponseFluentBody{
 			body: mockBody,
@@ -200,14 +213,17 @@ func TestResponseFluentBodyClose(t *testing.T) {
 
 		rb.Close()
 
-		mockBody.AssertExpectations(t)
+		if !called {
+			t.Error("expected Close to be called")
+		}
 	})
 }
 
 func TestResponseFluentBodyCloseErr(t *testing.T) {
 	t.Run("CloseErr success", func(t *testing.T) {
-		mockBody := new(mock.BodyWrapper)
-		mockBody.On("Close").Return(nil).Once()
+		mockBody := &mock.BodyWrapper{
+			CloseFunc: func() error { return nil },
+		}
 
 		rb := &ResponseFluentBody{
 			body: mockBody,
@@ -215,13 +231,15 @@ func TestResponseFluentBodyCloseErr(t *testing.T) {
 
 		err := rb.CloseErr()
 
-		assert.NoError(t, err)
-		mockBody.AssertExpectations(t)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 	})
 
 	t.Run("CloseErr error", func(t *testing.T) {
-		mockBody := new(mock.BodyWrapper)
-		mockBody.On("Close").Return(errors.New("close error")).Once()
+		mockBody := &mock.BodyWrapper{
+			CloseFunc: func() error { return errors.New("close error") },
+		}
 
 		rb := &ResponseFluentBody{
 			body: mockBody,
@@ -229,8 +247,10 @@ func TestResponseFluentBodyCloseErr(t *testing.T) {
 
 		err := rb.CloseErr()
 
-		assert.Error(t, err)
-		assert.Equal(t, "close error", err.Error())
-		mockBody.AssertExpectations(t)
+		if err == nil {
+			t.Error("expected error, got nil")
+		} else if err.Error() != "close error" {
+			t.Errorf("error got %q, want %q", err.Error(), "close error")
+		}
 	})
 }

@@ -3,8 +3,6 @@ package fastshot
 import (
 	"net/http"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultHttpCookies_Get_OutOfBounds(t *testing.T) {
@@ -21,7 +19,9 @@ func TestDefaultHttpCookies_Get_OutOfBounds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Nil(t, c.Get(tt.index))
+			if got := c.Get(tt.index); got != nil {
+				t.Errorf("got %v, want nil", got)
+			}
 		})
 	}
 }
@@ -31,5 +31,7 @@ func TestDefaultHttpCookies_Get_Valid(t *testing.T) {
 	cookie := &http.Cookie{Name: "test", Value: "value"}
 	c.Add(cookie)
 
-	assert.Equal(t, cookie, c.Get(0))
+	if got := c.Get(0); got != cookie {
+		t.Errorf("got %v, want %v", got, cookie)
+	}
 }

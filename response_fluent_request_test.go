@@ -3,9 +3,8 @@ package fastshot
 import (
 	"net/http"
 	"net/url"
+	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestResponseFluentRequest(t *testing.T) {
@@ -92,10 +91,18 @@ func TestResponseFluentRequest(t *testing.T) {
 			result := response.Request()
 
 			// Assert
-			assert.Equal(t, tt.request, result.Raw())
-			assert.Equal(t, tt.expectedMethod, result.Method())
-			assert.Equal(t, tt.expectedURL, result.URL())
-			assert.Equal(t, tt.expectedHeader, result.Headers())
+			if result.Raw() != tt.request {
+				t.Errorf("Raw() got different request")
+			}
+			if got := result.Method(); got != tt.expectedMethod {
+				t.Errorf("Method() got %q, want %q", got, tt.expectedMethod)
+			}
+			if got := result.URL(); got != tt.expectedURL {
+				t.Errorf("URL() got %q, want %q", got, tt.expectedURL)
+			}
+			if got := result.Headers(); !reflect.DeepEqual(got, tt.expectedHeader) {
+				t.Errorf("Headers() got %v, want %v", got, tt.expectedHeader)
+			}
 		})
 	}
 }

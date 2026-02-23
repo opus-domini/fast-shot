@@ -3,8 +3,6 @@ package fastshot
 import (
 	"errors"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultValidations_Get_OutOfBounds(t *testing.T) {
@@ -21,7 +19,9 @@ func TestDefaultValidations_Get_OutOfBounds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Nil(t, v.Get(tt.index))
+			if got := v.Get(tt.index); got != nil {
+				t.Errorf("got %v, want nil", got)
+			}
 		})
 	}
 }
@@ -30,5 +30,7 @@ func TestDefaultValidations_Get_Valid(t *testing.T) {
 	err := errors.New("test error")
 	v := newDefaultValidations([]error{err})
 
-	assert.Equal(t, err, v.Get(0))
+	if got := v.Get(0); got != err {
+		t.Errorf("got %v, want %v", got, err)
+	}
 }

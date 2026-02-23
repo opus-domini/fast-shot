@@ -3,13 +3,13 @@ package fastshot
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/opus-domini/fast-shot/constant/header"
 	"github.com/opus-domini/fast-shot/constant/mime"
 )
 
 func TestClientHeaderBuilder(t *testing.T) {
+	const testAgent = "TestAgent"
+
 	tests := []struct {
 		name       string
 		setup      func(*ClientBuilder)
@@ -21,7 +21,9 @@ func TestClientHeaderBuilder(t *testing.T) {
 				cb.Header().Add(header.ContentType, mime.JSON.String())
 			},
 			assertFunc: func(t *testing.T, cb *ClientBuilder) {
-				assert.Equal(t, mime.JSON.String(), cb.client.Header().Get(header.ContentType))
+				if got := cb.client.Header().Get(header.ContentType); got != mime.JSON.String() {
+					t.Errorf("got %q, want %q", got, mime.JSON.String())
+				}
 			},
 		},
 		{
@@ -29,12 +31,16 @@ func TestClientHeaderBuilder(t *testing.T) {
 			setup: func(cb *ClientBuilder) {
 				cb.Header().AddAll(map[header.Type]string{
 					header.ContentType: mime.JSON.String(),
-					header.UserAgent:   "TestAgent",
+					header.UserAgent:   testAgent,
 				})
 			},
 			assertFunc: func(t *testing.T, cb *ClientBuilder) {
-				assert.Equal(t, mime.JSON.String(), cb.client.Header().Get(header.ContentType))
-				assert.Equal(t, "TestAgent", cb.client.Header().Get(header.UserAgent))
+				if got := cb.client.Header().Get(header.ContentType); got != mime.JSON.String() {
+					t.Errorf("ContentType got %q, want %q", got, mime.JSON.String())
+				}
+				if got := cb.client.Header().Get(header.UserAgent); got != testAgent {
+					t.Errorf("UserAgent got %q, want %q", got, testAgent)
+				}
 			},
 		},
 		{
@@ -43,7 +49,9 @@ func TestClientHeaderBuilder(t *testing.T) {
 				cb.Header().Set(header.ContentType, mime.JSON.String())
 			},
 			assertFunc: func(t *testing.T, cb *ClientBuilder) {
-				assert.Equal(t, mime.JSON.String(), cb.client.Header().Get(header.ContentType))
+				if got := cb.client.Header().Get(header.ContentType); got != mime.JSON.String() {
+					t.Errorf("got %q, want %q", got, mime.JSON.String())
+				}
 			},
 		},
 		{
@@ -51,12 +59,16 @@ func TestClientHeaderBuilder(t *testing.T) {
 			setup: func(cb *ClientBuilder) {
 				cb.Header().SetAll(map[header.Type]string{
 					header.ContentType: mime.JSON.String(),
-					header.UserAgent:   "TestAgent",
+					header.UserAgent:   testAgent,
 				})
 			},
 			assertFunc: func(t *testing.T, cb *ClientBuilder) {
-				assert.Equal(t, mime.JSON.String(), cb.client.Header().Get(header.ContentType))
-				assert.Equal(t, "TestAgent", cb.client.Header().Get(header.UserAgent))
+				if got := cb.client.Header().Get(header.ContentType); got != mime.JSON.String() {
+					t.Errorf("ContentType got %q, want %q", got, mime.JSON.String())
+				}
+				if got := cb.client.Header().Get(header.UserAgent); got != testAgent {
+					t.Errorf("UserAgent got %q, want %q", got, testAgent)
+				}
 			},
 		},
 		{
@@ -65,7 +77,9 @@ func TestClientHeaderBuilder(t *testing.T) {
 				cb.Header().AddAccept(mime.JSON)
 			},
 			assertFunc: func(t *testing.T, cb *ClientBuilder) {
-				assert.Equal(t, mime.JSON.String(), cb.client.Header().Get(header.Accept))
+				if got := cb.client.Header().Get(header.Accept); got != mime.JSON.String() {
+					t.Errorf("got %q, want %q", got, mime.JSON.String())
+				}
 			},
 		},
 		{
@@ -74,16 +88,20 @@ func TestClientHeaderBuilder(t *testing.T) {
 				cb.Header().AddContentType(mime.JSON)
 			},
 			assertFunc: func(t *testing.T, cb *ClientBuilder) {
-				assert.Equal(t, mime.JSON.String(), cb.client.Header().Get(header.ContentType))
+				if got := cb.client.Header().Get(header.ContentType); got != mime.JSON.String() {
+					t.Errorf("got %q, want %q", got, mime.JSON.String())
+				}
 			},
 		},
 		{
 			name: "Add User-Agent header",
 			setup: func(cb *ClientBuilder) {
-				cb.Header().AddUserAgent("TestAgent")
+				cb.Header().AddUserAgent(testAgent)
 			},
 			assertFunc: func(t *testing.T, cb *ClientBuilder) {
-				assert.Equal(t, "TestAgent", cb.client.Header().Get(header.UserAgent))
+				if got := cb.client.Header().Get(header.UserAgent); got != testAgent {
+					t.Errorf("got %q, want %q", got, testAgent)
+				}
 			},
 		},
 	}

@@ -3,10 +3,10 @@ package fastshot
 import (
 	"errors"
 	"net/url"
+	"reflect"
 	"testing"
 
 	"github.com/opus-domini/fast-shot/constant"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRequestQueryBuilder(t *testing.T) {
@@ -100,14 +100,24 @@ func TestRequestQueryBuilder(t *testing.T) {
 			result := tt.method(rb)
 
 			// Assert
-			assert.Equal(t, rb, result)
-			assert.Equal(t, tt.expectedQuery, rb.request.config.QueryParams())
+			if result != rb {
+				t.Errorf("got different builder, want same")
+			}
+			if got := rb.request.config.QueryParams(); !reflect.DeepEqual(got, tt.expectedQuery) {
+				t.Errorf("QueryParams() got %v, want %v", got, tt.expectedQuery)
+			}
 
 			if tt.expectedError != nil {
-				assert.Len(t, rb.request.config.Validations().Unwrap(), 1)
-				assert.Equal(t, tt.expectedError, rb.request.config.Validations().Get(0))
+				if got := len(rb.request.config.Validations().Unwrap()); got != 1 {
+					t.Errorf("validations count got %d, want 1", got)
+				}
+				if got := rb.request.config.Validations().Get(0); got.Error() != tt.expectedError.Error() {
+					t.Errorf("validation got %q, want %q", got.Error(), tt.expectedError.Error())
+				}
 			} else {
-				assert.Empty(t, rb.request.config.Validations().Unwrap())
+				if got := rb.request.config.Validations().Unwrap(); len(got) != 0 {
+					t.Errorf("validations got %v, want empty", got)
+				}
 			}
 		})
 	}

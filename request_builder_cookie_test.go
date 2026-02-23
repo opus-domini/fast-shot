@@ -2,10 +2,9 @@ package fastshot
 
 import (
 	"net/http"
+	"reflect"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRequestCookieBuilder(t *testing.T) {
@@ -49,9 +48,15 @@ func TestRequestCookieBuilder(t *testing.T) {
 			result := rb.Cookie().Add(tt.cookie)
 
 			// Assert
-			assert.Equal(t, rb, result)
-			assert.Equal(t, 1, rb.request.config.Cookies().Count())
-			assert.Equal(t, tt.cookie, rb.request.config.Cookies().Get(0))
+			if result != rb {
+				t.Errorf("got different builder, want same")
+			}
+			if got := rb.request.config.Cookies().Count(); got != 1 {
+				t.Errorf("cookie count got %d, want 1", got)
+			}
+			if got := rb.request.config.Cookies().Get(0); !reflect.DeepEqual(got, tt.cookie) {
+				t.Errorf("cookie got %v, want %v", got, tt.cookie)
+			}
 		})
 	}
 }

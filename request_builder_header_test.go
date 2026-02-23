@@ -3,8 +3,6 @@ package fastshot
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/opus-domini/fast-shot/constant/header"
 	"github.com/opus-domini/fast-shot/constant/mime"
 )
@@ -101,9 +99,13 @@ func TestRequestHeaderBuilder(t *testing.T) {
 			result := tt.method(rb)
 
 			// Assert
-			assert.Equal(t, rb, result)
+			if result != rb {
+				t.Errorf("got different builder, want same")
+			}
 			for key, value := range tt.expectedHeader {
-				assert.Equal(t, value, rb.request.config.Header().Get(key))
+				if got := rb.request.config.Header().Get(key); got != value {
+					t.Errorf("header %s got %q, want %q", key, got, value)
+				}
 			}
 		})
 	}

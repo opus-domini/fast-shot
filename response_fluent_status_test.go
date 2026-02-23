@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestResponseFluentStatus(t *testing.T) {
@@ -96,22 +94,48 @@ func TestResponseFluentStatus(t *testing.T) {
 			result := response.Status()
 
 			// Assert
-			assert.Equal(t, tt.expectedCode, result.Code())
-			assert.Equal(t, tt.expectedText, result.Text())
+			if got := result.Code(); got != tt.expectedCode {
+				t.Errorf("Code() got %d, want %d", got, tt.expectedCode)
+			}
+			if got := result.Text(); got != tt.expectedText {
+				t.Errorf("Text() got %q, want %q", got, tt.expectedText)
+			}
 			rawResp := response.Raw()
-			assert.Equal(t, tt.expectedCode, rawResp.StatusCode)
+			if rawResp.StatusCode != tt.expectedCode {
+				t.Errorf("Raw().StatusCode got %d, want %d", rawResp.StatusCode, tt.expectedCode)
+			}
 			_ = rawResp.Body.Close()
 			_ = response.status.response.Body.Close()
-			assert.Equal(t, tt.expectedInformation, result.Is1xxInformational())
-			assert.Equal(t, tt.expectedSuccess, result.Is2xxSuccessful())
-			assert.Equal(t, tt.expectedRedirection, result.Is3xxRedirection())
-			assert.Equal(t, tt.expectedClientError, result.Is4xxClientError())
-			assert.Equal(t, tt.expectedServerError, result.Is5xxServerError())
-			assert.Equal(t, tt.expectedOK, result.IsOK())
-			assert.Equal(t, tt.expectedNotFound, result.IsNotFound())
-			assert.Equal(t, tt.expectedUnauthorized, result.IsUnauthorized())
-			assert.Equal(t, tt.expectedForbidden, result.IsForbidden())
-			assert.Equal(t, tt.expectedError, result.IsError())
+			if got := result.Is1xxInformational(); got != tt.expectedInformation {
+				t.Errorf("Is1xxInformational() got %v, want %v", got, tt.expectedInformation)
+			}
+			if got := result.Is2xxSuccessful(); got != tt.expectedSuccess {
+				t.Errorf("Is2xxSuccessful() got %v, want %v", got, tt.expectedSuccess)
+			}
+			if got := result.Is3xxRedirection(); got != tt.expectedRedirection {
+				t.Errorf("Is3xxRedirection() got %v, want %v", got, tt.expectedRedirection)
+			}
+			if got := result.Is4xxClientError(); got != tt.expectedClientError {
+				t.Errorf("Is4xxClientError() got %v, want %v", got, tt.expectedClientError)
+			}
+			if got := result.Is5xxServerError(); got != tt.expectedServerError {
+				t.Errorf("Is5xxServerError() got %v, want %v", got, tt.expectedServerError)
+			}
+			if got := result.IsOK(); got != tt.expectedOK {
+				t.Errorf("IsOK() got %v, want %v", got, tt.expectedOK)
+			}
+			if got := result.IsNotFound(); got != tt.expectedNotFound {
+				t.Errorf("IsNotFound() got %v, want %v", got, tt.expectedNotFound)
+			}
+			if got := result.IsUnauthorized(); got != tt.expectedUnauthorized {
+				t.Errorf("IsUnauthorized() got %v, want %v", got, tt.expectedUnauthorized)
+			}
+			if got := result.IsForbidden(); got != tt.expectedForbidden {
+				t.Errorf("IsForbidden() got %v, want %v", got, tt.expectedForbidden)
+			}
+			if got := result.IsError(); got != tt.expectedError {
+				t.Errorf("IsError() got %v, want %v", got, tt.expectedError)
+			}
 		})
 	}
 }

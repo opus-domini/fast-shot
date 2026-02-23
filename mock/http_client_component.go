@@ -3,37 +3,37 @@ package mock
 import (
 	"net/http"
 	"time"
-
-	"github.com/stretchr/testify/mock"
 )
 
 type HttpClientComponent struct {
-	mock.Mock
+	DoFunc                 func(req *http.Request) (*http.Response, error)
+	TransportFunc          func() http.RoundTripper
+	SetTransportFunc       func(transport http.RoundTripper)
+	TimeoutFunc            func() time.Duration
+	SetTimeoutFunc         func(duration time.Duration)
+	SetFollowRedirectsFunc func(follow bool)
 }
 
 func (m *HttpClientComponent) Do(req *http.Request) (*http.Response, error) {
-	args := m.Called(req)
-	return args.Get(0).(*http.Response), args.Error(1)
+	return m.DoFunc(req)
 }
 
 func (m *HttpClientComponent) Transport() http.RoundTripper {
-	args := m.Called()
-	return args.Get(0).(http.RoundTripper)
+	return m.TransportFunc()
 }
 
 func (m *HttpClientComponent) SetTransport(transport http.RoundTripper) {
-	m.Called(transport)
+	m.SetTransportFunc(transport)
 }
 
 func (m *HttpClientComponent) Timeout() time.Duration {
-	args := m.Called()
-	return args.Get(0).(time.Duration)
+	return m.TimeoutFunc()
 }
 
 func (m *HttpClientComponent) SetTimeout(duration time.Duration) {
-	m.Called(duration)
+	m.SetTimeoutFunc(duration)
 }
 
 func (m *HttpClientComponent) SetFollowRedirects(follow bool) {
-	m.Called(follow)
+	m.SetFollowRedirectsFunc(follow)
 }

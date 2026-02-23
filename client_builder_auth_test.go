@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/opus-domini/fast-shot/constant/header"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestClientAuthBuilder(t *testing.T) {
@@ -48,8 +47,12 @@ func TestClientAuthBuilder(t *testing.T) {
 			result := tt.method(cb)
 
 			// Assert
-			assert.Equal(t, cb, result)
-			assert.Equal(t, tt.expectedHeader, cb.client.Header().Get(header.Authorization))
+			if result != cb {
+				t.Errorf("got different builder, want same")
+			}
+			if got := cb.client.Header().Get(header.Authorization); got != tt.expectedHeader {
+				t.Errorf("Authorization got %q, want %q", got, tt.expectedHeader)
+			}
 		})
 	}
 }

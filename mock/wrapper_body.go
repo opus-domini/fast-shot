@@ -2,65 +2,62 @@ package mock
 
 import (
 	"io"
-
-	"github.com/stretchr/testify/mock"
 )
 
 type BodyWrapper struct {
-	mock.Mock
+	ReadFunc            func(p []byte) (int, error)
+	CloseFunc           func() error
+	ReadAsJSONFunc      func(obj interface{}) error
+	WriteAsJSONFunc     func(obj interface{}) error
+	ReadAsXMLFunc       func(obj interface{}) error
+	WriteAsXMLFunc      func(obj interface{}) error
+	ReadAsStringFunc    func() (string, error)
+	WriteAsStringFunc   func(body string) error
+	WriteAsFormDataFunc func(fields map[string]string) (string, error)
+	SetFunc             func(body io.Reader) error
+	UnwrapFunc          func() io.Reader
 }
 
-func (m *BodyWrapper) Read(p []byte) (n int, err error) {
-	args := m.Called(p)
-	return args.Int(0), args.Error(1)
+func (m *BodyWrapper) Read(p []byte) (int, error) {
+	return m.ReadFunc(p)
 }
 
 func (m *BodyWrapper) Close() error {
-	args := m.Called()
-	return args.Error(0)
+	return m.CloseFunc()
 }
 
 func (m *BodyWrapper) ReadAsJSON(obj interface{}) error {
-	args := m.Called(obj)
-	return args.Error(0)
+	return m.ReadAsJSONFunc(obj)
 }
 
 func (m *BodyWrapper) WriteAsJSON(obj interface{}) error {
-	args := m.Called(obj)
-	return args.Error(0)
+	return m.WriteAsJSONFunc(obj)
 }
 
 func (m *BodyWrapper) ReadAsXML(obj interface{}) error {
-	args := m.Called(obj)
-	return args.Error(0)
+	return m.ReadAsXMLFunc(obj)
 }
 
 func (m *BodyWrapper) WriteAsXML(obj interface{}) error {
-	args := m.Called(obj)
-	return args.Error(0)
+	return m.WriteAsXMLFunc(obj)
 }
 
 func (m *BodyWrapper) ReadAsString() (string, error) {
-	args := m.Called()
-	return args.String(0), args.Error(1)
+	return m.ReadAsStringFunc()
 }
 
 func (m *BodyWrapper) WriteAsString(body string) error {
-	args := m.Called(body)
-	return args.Error(0)
+	return m.WriteAsStringFunc(body)
 }
 
 func (m *BodyWrapper) WriteAsFormData(fields map[string]string) (string, error) {
-	args := m.Called(fields)
-	return args.String(0), args.Error(1)
+	return m.WriteAsFormDataFunc(fields)
 }
 
 func (m *BodyWrapper) Set(body io.Reader) error {
-	args := m.Called(body)
-	return args.Error(0)
+	return m.SetFunc(body)
 }
 
 func (m *BodyWrapper) Unwrap() io.Reader {
-	args := m.Called()
-	return args.Get(0).(io.Reader)
+	return m.UnwrapFunc()
 }

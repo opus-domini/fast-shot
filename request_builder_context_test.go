@@ -2,9 +2,8 @@ package fastshot
 
 import (
 	"context"
+	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRequestContextBuilder(t *testing.T) {
@@ -41,11 +40,17 @@ func TestRequestContextBuilder(t *testing.T) {
 			result := rb.Context().Set(tt.ctx)
 
 			// Assert
-			assert.Equal(t, rb, result)
+			if result != rb {
+				t.Errorf("got different builder, want same")
+			}
 			if tt.ctx == nil {
-				assert.NotNil(t, rb.request.config.Context().Unwrap())
+				if rb.request.config.Context().Unwrap() == nil {
+					t.Error("context got nil, want non-nil")
+				}
 			} else {
-				assert.Equal(t, tt.ctx, rb.request.config.Context().Unwrap())
+				if got := rb.request.config.Context().Unwrap(); !reflect.DeepEqual(got, tt.ctx) {
+					t.Errorf("context got %v, want %v", got, tt.ctx)
+				}
 			}
 		})
 	}

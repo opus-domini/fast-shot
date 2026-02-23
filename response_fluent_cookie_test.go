@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestResponseFluentCookie(t *testing.T) {
@@ -76,7 +74,9 @@ func TestResponseFluentCookie(t *testing.T) {
 			result := response.Cookie().GetAll()
 
 			// Assert
-			assert.Equal(t, len(tt.expected), len(result))
+			if len(result) != len(tt.expected) {
+				t.Fatalf("cookie count got %d, want %d", len(result), len(tt.expected))
+			}
 			for i, expectedCookie := range tt.expected {
 				assertCookiesEqual(t, expectedCookie, result[i])
 			}
@@ -85,16 +85,35 @@ func TestResponseFluentCookie(t *testing.T) {
 }
 
 func assertCookiesEqual(t *testing.T, expected, actual *http.Cookie) {
-	assert.Equal(t, expected.Name, actual.Name)
-	assert.Equal(t, expected.Value, actual.Value)
-	assert.Equal(t, expected.Path, actual.Path)
-	assert.Equal(t, expected.Domain, actual.Domain)
-	assert.Equal(t, expected.MaxAge, actual.MaxAge)
-	assert.Equal(t, expected.Secure, actual.Secure)
-	assert.Equal(t, expected.HttpOnly, actual.HttpOnly)
-	assert.Equal(t, expected.SameSite, actual.SameSite)
+	t.Helper()
+	if actual.Name != expected.Name {
+		t.Errorf("Name got %q, want %q", actual.Name, expected.Name)
+	}
+	if actual.Value != expected.Value {
+		t.Errorf("Value got %q, want %q", actual.Value, expected.Value)
+	}
+	if actual.Path != expected.Path {
+		t.Errorf("Path got %q, want %q", actual.Path, expected.Path)
+	}
+	if actual.Domain != expected.Domain {
+		t.Errorf("Domain got %q, want %q", actual.Domain, expected.Domain)
+	}
+	if actual.MaxAge != expected.MaxAge {
+		t.Errorf("MaxAge got %d, want %d", actual.MaxAge, expected.MaxAge)
+	}
+	if actual.Secure != expected.Secure {
+		t.Errorf("Secure got %v, want %v", actual.Secure, expected.Secure)
+	}
+	if actual.HttpOnly != expected.HttpOnly {
+		t.Errorf("HttpOnly got %v, want %v", actual.HttpOnly, expected.HttpOnly)
+	}
+	if actual.SameSite != expected.SameSite {
+		t.Errorf("SameSite got %v, want %v", actual.SameSite, expected.SameSite)
+	}
 
 	if !expected.Expires.IsZero() {
-		assert.WithinDuration(t, expected.Expires, actual.Expires, time.Second)
+		if diff := expected.Expires.Sub(actual.Expires).Abs(); diff > time.Second {
+			t.Errorf("Expires diff %v exceeds %v", diff, time.Second)
+		}
 	}
 }

@@ -2,14 +2,13 @@ package fastshot
 
 import (
 	"errors"
+	"io"
 	"strings"
 	"testing"
 
 	"github.com/opus-domini/fast-shot/constant"
 	"github.com/opus-domini/fast-shot/constant/header"
 	"github.com/opus-domini/fast-shot/mock"
-	"github.com/stretchr/testify/assert"
-	tmock "github.com/stretchr/testify/mock"
 )
 
 func TestRequestBodyBuilder(t *testing.T) {
@@ -23,9 +22,9 @@ func TestRequestBodyBuilder(t *testing.T) {
 		{
 			name: "AsReader success",
 			setup: func(rb *RequestBodyBuilder) {
-				mockBody := new(mock.BodyWrapper)
-				mockBody.On("Set", tmock.Anything).Return(nil)
-				rb.requestConfig.body = mockBody
+				rb.requestConfig.body = &mock.BodyWrapper{
+					SetFunc: func(body io.Reader) error { return nil },
+				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
 				return rb.AsReader(strings.NewReader("test"))
@@ -35,9 +34,9 @@ func TestRequestBodyBuilder(t *testing.T) {
 		{
 			name: "AsReader failure",
 			setup: func(rb *RequestBodyBuilder) {
-				mockBody := new(mock.BodyWrapper)
-				mockBody.On("Set", tmock.Anything).Return(mockedErr)
-				rb.requestConfig.body = mockBody
+				rb.requestConfig.body = &mock.BodyWrapper{
+					SetFunc: func(body io.Reader) error { return mockedErr },
+				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
 				return rb.AsReader(strings.NewReader("test"))
@@ -47,9 +46,9 @@ func TestRequestBodyBuilder(t *testing.T) {
 		{
 			name: "AsString success",
 			setup: func(rb *RequestBodyBuilder) {
-				mockBody := new(mock.BodyWrapper)
-				mockBody.On("WriteAsString", "test").Return(nil)
-				rb.requestConfig.body = mockBody
+				rb.requestConfig.body = &mock.BodyWrapper{
+					WriteAsStringFunc: func(body string) error { return nil },
+				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
 				return rb.AsString("test")
@@ -59,9 +58,9 @@ func TestRequestBodyBuilder(t *testing.T) {
 		{
 			name: "AsString failure",
 			setup: func(rb *RequestBodyBuilder) {
-				mockBody := new(mock.BodyWrapper)
-				mockBody.On("WriteAsString", "test").Return(mockedErr)
-				rb.requestConfig.body = mockBody
+				rb.requestConfig.body = &mock.BodyWrapper{
+					WriteAsStringFunc: func(body string) error { return mockedErr },
+				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
 				return rb.AsString("test")
@@ -71,9 +70,9 @@ func TestRequestBodyBuilder(t *testing.T) {
 		{
 			name: "AsJSON success",
 			setup: func(rb *RequestBodyBuilder) {
-				mockBody := new(mock.BodyWrapper)
-				mockBody.On("WriteAsJSON", tmock.Anything).Return(nil)
-				rb.requestConfig.body = mockBody
+				rb.requestConfig.body = &mock.BodyWrapper{
+					WriteAsJSONFunc: func(obj interface{}) error { return nil },
+				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
 				return rb.AsJSON(map[string]string{"key": "value"})
@@ -83,9 +82,9 @@ func TestRequestBodyBuilder(t *testing.T) {
 		{
 			name: "AsJSON failure",
 			setup: func(rb *RequestBodyBuilder) {
-				mockBody := new(mock.BodyWrapper)
-				mockBody.On("WriteAsJSON", tmock.Anything).Return(mockedErr)
-				rb.requestConfig.body = mockBody
+				rb.requestConfig.body = &mock.BodyWrapper{
+					WriteAsJSONFunc: func(obj interface{}) error { return mockedErr },
+				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
 				return rb.AsJSON(map[string]string{"key": "value"})
@@ -95,9 +94,9 @@ func TestRequestBodyBuilder(t *testing.T) {
 		{
 			name: "AsXML success",
 			setup: func(rb *RequestBodyBuilder) {
-				mockBody := new(mock.BodyWrapper)
-				mockBody.On("WriteAsXML", tmock.Anything).Return(nil)
-				rb.requestConfig.body = mockBody
+				rb.requestConfig.body = &mock.BodyWrapper{
+					WriteAsXMLFunc: func(obj interface{}) error { return nil },
+				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
 				body := `<example><Key>value</Key></example>`
@@ -108,9 +107,9 @@ func TestRequestBodyBuilder(t *testing.T) {
 		{
 			name: "AsXML failure",
 			setup: func(rb *RequestBodyBuilder) {
-				mockBody := new(mock.BodyWrapper)
-				mockBody.On("WriteAsXML", tmock.Anything).Return(mockedErr)
-				rb.requestConfig.body = mockBody
+				rb.requestConfig.body = &mock.BodyWrapper{
+					WriteAsXMLFunc: func(obj interface{}) error { return mockedErr },
+				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
 				body := `<example><Key>value</Key></example>`
@@ -121,9 +120,11 @@ func TestRequestBodyBuilder(t *testing.T) {
 		{
 			name: "AsFormData success",
 			setup: func(rb *RequestBodyBuilder) {
-				mockBody := new(mock.BodyWrapper)
-				mockBody.On("WriteAsFormData", tmock.Anything).Return("multipart/form-data; boundary=test", nil)
-				rb.requestConfig.body = mockBody
+				rb.requestConfig.body = &mock.BodyWrapper{
+					WriteAsFormDataFunc: func(fields map[string]string) (string, error) {
+						return "multipart/form-data; boundary=test", nil
+					},
+				}
 				rb.requestConfig.httpHeader = newDefaultHttpHeader()
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
@@ -137,9 +138,11 @@ func TestRequestBodyBuilder(t *testing.T) {
 		{
 			name: "AsFormData success with empty fields",
 			setup: func(rb *RequestBodyBuilder) {
-				mockBody := new(mock.BodyWrapper)
-				mockBody.On("WriteAsFormData", tmock.Anything).Return("multipart/form-data; boundary=test", nil)
-				rb.requestConfig.body = mockBody
+				rb.requestConfig.body = &mock.BodyWrapper{
+					WriteAsFormDataFunc: func(fields map[string]string) (string, error) {
+						return "multipart/form-data; boundary=test", nil
+					},
+				}
 				rb.requestConfig.httpHeader = newDefaultHttpHeader()
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
@@ -150,9 +153,11 @@ func TestRequestBodyBuilder(t *testing.T) {
 		{
 			name: "AsFormData failure",
 			setup: func(rb *RequestBodyBuilder) {
-				mockBody := new(mock.BodyWrapper)
-				mockBody.On("WriteAsFormData", tmock.Anything).Return("", mockedErr)
-				rb.requestConfig.body = mockBody
+				rb.requestConfig.body = &mock.BodyWrapper{
+					WriteAsFormDataFunc: func(fields map[string]string) (string, error) {
+						return "", mockedErr
+					},
+				}
 				rb.requestConfig.httpHeader = newDefaultHttpHeader()
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
@@ -179,13 +184,20 @@ func TestRequestBodyBuilder(t *testing.T) {
 			result := tt.method(rb)
 
 			// Assert
-			assert.Equal(t, rb.parentBuilder, result)
+			if result != rb.parentBuilder {
+				t.Errorf("got different builder, want same")
+			}
 			if tt.expectedError != nil {
 				err := rb.requestConfig.validations.Get(0)
-				assert.Error(t, err)
-				assert.Equal(t, err, tt.expectedError)
+				if err == nil {
+					t.Error("expected error, got nil")
+				} else if err.Error() != tt.expectedError.Error() {
+					t.Errorf("error got %q, want %q", err.Error(), tt.expectedError.Error())
+				}
 			} else {
-				assert.Empty(t, rb.requestConfig.validations.Unwrap())
+				if got := rb.requestConfig.validations.Unwrap(); len(got) != 0 {
+					t.Errorf("validations got %v, want empty", got)
+				}
 			}
 		})
 	}
@@ -233,10 +245,16 @@ func TestAsFormData_ContentType(t *testing.T) {
 			// Assert
 			if tt.expectHeader {
 				contentType := rb.requestConfig.httpHeader.Get(header.ContentType)
-				assert.NotEmpty(t, contentType)
-				assert.Contains(t, contentType, tt.headerContains)
+				if contentType == "" {
+					t.Error("Content-Type is empty, want non-empty")
+				}
+				if !strings.Contains(contentType, tt.headerContains) {
+					t.Errorf("Content-Type %q does not contain %q", contentType, tt.headerContains)
+				}
 			}
-			assert.Empty(t, rb.requestConfig.validations.Unwrap())
+			if got := rb.requestConfig.validations.Unwrap(); len(got) != 0 {
+				t.Errorf("validations got %v, want empty", got)
+			}
 		})
 	}
 }
@@ -251,9 +269,11 @@ func TestAsFormData_NoContentTypeOnError(t *testing.T) {
 			httpHeader:  newDefaultHttpHeader(),
 		},
 	}
-	mockBody := new(mock.BodyWrapper)
-	mockBody.On("WriteAsFormData", tmock.Anything).Return("", mockedErr)
-	rb.requestConfig.body = mockBody
+	rb.requestConfig.body = &mock.BodyWrapper{
+		WriteAsFormDataFunc: func(fields map[string]string) (string, error) {
+			return "", mockedErr
+		},
+	}
 
 	// Act
 	rb.AsFormData(map[string]string{
@@ -262,7 +282,11 @@ func TestAsFormData_NoContentTypeOnError(t *testing.T) {
 
 	// Assert
 	contentType := rb.requestConfig.httpHeader.Get(header.ContentType)
-	assert.Empty(t, contentType, "Content-Type should not be set when WriteAsFormData fails")
+	if contentType != "" {
+		t.Errorf("Content-Type should not be set when WriteAsFormData fails, got %q", contentType)
+	}
 	err := rb.requestConfig.validations.Get(0)
-	assert.Error(t, err)
+	if err == nil {
+		t.Error("expected error, got nil")
+	}
 }

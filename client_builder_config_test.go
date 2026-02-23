@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/opus-domini/fast-shot/mock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestClientConfigBuilder(t *testing.T) {
@@ -23,7 +22,7 @@ func TestClientConfigBuilder(t *testing.T) {
 		{
 			name: "Set custom HTTP client",
 			method: func(cb *ClientBuilder) *ClientBuilder {
-				mockClient := new(mock.HttpClientComponent)
+				mockClient := &mock.HttpClientComponent{}
 				return cb.Config().SetCustomHttpClient(mockClient)
 			},
 			expectedConfig: func(ccb *ClientConfigBase) bool {
@@ -66,16 +65,26 @@ func TestClientConfigBuilder(t *testing.T) {
 			result := tt.method(cb)
 
 			// Assert
-			assert.Equal(t, cb, result)
-			assert.True(t, tt.expectedConfig(cb.client.(*ClientConfigBase)))
+			if result != cb {
+				t.Errorf("got different builder, want same")
+			}
+			if !tt.expectedConfig(cb.client.(*ClientConfigBase)) {
+				t.Errorf("expectedConfig returned false")
+			}
 
 			if tt.expectedErrors != nil {
-				assert.Len(t, cb.client.Validations().Unwrap(), len(tt.expectedErrors))
+				if got := len(cb.client.Validations().Unwrap()); got != len(tt.expectedErrors) {
+					t.Errorf("validations count got %d, want %d", got, len(tt.expectedErrors))
+				}
 				for i, expectedErr := range tt.expectedErrors {
-					assert.True(t, errors.Is(cb.client.Validations().Get(i), expectedErr))
+					if !errors.Is(cb.client.Validations().Get(i), expectedErr) {
+						t.Errorf("validation[%d] got %v, want %v", i, cb.client.Validations().Get(i), expectedErr)
+					}
 				}
 			} else {
-				assert.Empty(t, cb.client.Validations().Unwrap())
+				if got := cb.client.Validations().Unwrap(); len(got) != 0 {
+					t.Errorf("validations got %v, want empty", got)
+				}
 			}
 		})
 	}
@@ -122,11 +131,17 @@ func TestClientConfigBuilder_SetFollowRedirects(t *testing.T) {
 			resp, err := client.GET("/redirect").Send()
 
 			// Assert
-			assert.NoError(t, err)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 			defer resp.Body().Close()
 
-			assert.Equal(t, tt.wantFinalURL, resp.Request().URL())
-			assert.Equal(t, tt.wantStatusCode, resp.Status().Code())
+			if got := resp.Request().URL(); got != tt.wantFinalURL {
+				t.Errorf("URL got %q, want %q", got, tt.wantFinalURL)
+			}
+			if got := resp.Status().Code(); got != tt.wantStatusCode {
+				t.Errorf("StatusCode got %d, want %d", got, tt.wantStatusCode)
+			}
 		})
 	}
 }
@@ -145,8 +160,12 @@ func TestClientConfigBuilder_SetProxy(t *testing.T) {
 			proxyURL: "http://localhost:8080",
 			assertFunc: func(t *testing.T, builder *ClientBuilder) {
 				transport, ok := builder.client.HttpClient().Transport().(*http.Transport)
-				assert.True(t, ok, "Transport should be of type *http.Transport")
-				assert.NotNil(t, transport.Proxy, "Proxy function should be set")
+				if !ok {
+					t.Fatal("Transport should be of type *http.Transport")
+				}
+				if transport.Proxy == nil {
+					t.Fatal("Proxy function should be set")
+				}
 			},
 		},
 		{
@@ -163,11 +182,17 @@ func TestClientConfigBuilder_SetProxy(t *testing.T) {
 			},
 			assertFunc: func(t *testing.T, builder *ClientBuilder) {
 				transport, ok := builder.client.HttpClient().Transport().(*http.Transport)
-				assert.True(t, ok, "Transport should be of type *http.Transport")
-				assert.NotNil(t, transport.Proxy, "Proxy function should be set")
+				if !ok {
+					t.Fatal("Transport should be of type *http.Transport")
+				}
+				if transport.Proxy == nil {
+					t.Fatal("Proxy function should be set")
+				}
 
 				proxyURL, _ := transport.Proxy(&http.Request{URL: &url.URL{Scheme: "http", Host: "example.com"}})
-				assert.Equal(t, "localhost:8080", proxyURL.Host, "Proxy URL should be updated to the new value")
+				if proxyURL.Host != "localhost:8080" {
+					t.Errorf("Proxy URL host got %q, want %q", proxyURL.Host, "localhost:8080")
+				}
 			},
 		},
 	}

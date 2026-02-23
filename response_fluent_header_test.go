@@ -2,9 +2,9 @@ package fastshot
 
 import (
 	"net/http"
+	"reflect"
+	"sort"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestResponseFluentHeader(t *testing.T) {
@@ -97,9 +97,19 @@ func TestResponseFluentHeader(t *testing.T) {
 			result := response.Header()
 
 			// Assert
-			assert.Equal(t, tt.expectedGet, result.Get(tt.getKey))
-			assert.Equal(t, tt.expectedGetAll, result.GetAll(tt.getAllKey))
-			assert.ElementsMatch(t, tt.expectedKeys, result.Keys())
+			if got := result.Get(tt.getKey); got != tt.expectedGet {
+				t.Errorf("Get(%q) got %q, want %q", tt.getKey, got, tt.expectedGet)
+			}
+			if got := result.GetAll(tt.getAllKey); !reflect.DeepEqual(got, tt.expectedGetAll) {
+				t.Errorf("GetAll(%q) got %v, want %v", tt.getAllKey, got, tt.expectedGetAll)
+			}
+			got := result.Keys()
+			want := tt.expectedKeys
+			sort.Strings(got)
+			sort.Strings(want)
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("Keys() got %v, want %v", got, want)
+			}
 		})
 	}
 }

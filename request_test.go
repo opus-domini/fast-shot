@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,7 +17,6 @@ import (
 	"github.com/opus-domini/fast-shot/constant/header"
 	"github.com/opus-domini/fast-shot/constant/method"
 	"github.com/opus-domini/fast-shot/mock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRequest_createFullURL(t *testing.T) {
@@ -62,7 +63,9 @@ func TestRequest_createFullURL(t *testing.T) {
 			fullURL := rb.createFullURL()
 
 			// Assert
-			assert.Equal(t, tt.expectedURLStr, fullURL.String())
+			if got := fullURL.String(); got != tt.expectedURLStr {
+				t.Errorf("got %q, want %q", got, tt.expectedURLStr)
+			}
 		})
 	}
 }
@@ -125,7 +128,7 @@ func TestRequest_createHTTPRequest(t *testing.T) {
 			clientBuilder := NewClient(tt.baseURL)
 
 			if tt.setupMock != nil {
-				mockClient := new(mock.HttpClientComponent)
+				mockClient := &mock.HttpClientComponent{}
 				tt.setupMock(mockClient)
 				clientBuilder.Config().SetCustomHttpClient(mockClient)
 			}
@@ -156,14 +159,27 @@ func TestRequest_createHTTPRequest(t *testing.T) {
 
 			// Assert
 			if tt.expectError != nil {
-				assert.Error(t, err)
-				assert.Equal(t, tt.expectError, err)
-				assert.Nil(t, httpReq)
+				if err == nil {
+					t.Error("expected error, got nil")
+				} else if err.Error() != tt.expectError.Error() {
+					t.Errorf("error got %q, want %q", err.Error(), tt.expectError.Error())
+				}
+				if httpReq != nil {
+					t.Errorf("httpReq got %v, want nil", httpReq)
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, httpReq)
-				assert.Equal(t, tt.method.String(), httpReq.Method)
-				assert.Equal(t, tt.baseURL+tt.path, httpReq.URL.String())
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if httpReq == nil {
+					t.Fatal("httpReq got nil, want non-nil")
+				}
+				if got := httpReq.Method; got != tt.method.String() {
+					t.Errorf("Method got %q, want %q", got, tt.method.String())
+				}
+				if got := httpReq.URL.String(); got != tt.baseURL+tt.path {
+					t.Errorf("URL got %q, want %q", got, tt.baseURL+tt.path)
+				}
 
 				// Check cookies
 				cookies := httpReq.Cookies()
@@ -173,18 +189,26 @@ func TestRequest_createHTTPRequest(t *testing.T) {
 				}
 
 				if tt.clientCookie != nil {
-					assert.Equal(t, tt.clientCookie.Value, cookieMap[tt.clientCookie.Name])
+					if got := cookieMap[tt.clientCookie.Name]; got != tt.clientCookie.Value {
+						t.Errorf("client cookie %q got %q, want %q", tt.clientCookie.Name, got, tt.clientCookie.Value)
+					}
 				}
 				if tt.requestCookie != nil {
-					assert.Equal(t, tt.requestCookie.Value, cookieMap[tt.requestCookie.Name])
+					if got := cookieMap[tt.requestCookie.Name]; got != tt.requestCookie.Value {
+						t.Errorf("request cookie %q got %q, want %q", tt.requestCookie.Name, got, tt.requestCookie.Value)
+					}
 				}
 
 				// Check headers
 				for k, v := range tt.requestHeader {
-					assert.Equal(t, v, httpReq.Header.Get(k.String()))
+					if got := httpReq.Header.Get(k.String()); got != v {
+						t.Errorf("request header %q got %q, want %q", k, got, v)
+					}
 				}
 				for k, v := range tt.clientHeader {
-					assert.Equal(t, v, httpReq.Header.Get(k.String()))
+					if got := httpReq.Header.Get(k.String()); got != v {
+						t.Errorf("client header %q got %q, want %q", k, got, v)
+					}
 				}
 			}
 		})
@@ -239,9 +263,15 @@ func TestRequest_execute_Error(t *testing.T) {
 			resp, err := req.Send()
 
 			// Assert
-			assert.Error(t, err)
-			assert.Nil(t, resp)
-			assert.Contains(t, err.Error(), tt.expectedError)
+			if err == nil {
+				t.Error("expected error, got nil")
+			}
+			if resp != nil {
+				t.Errorf("resp got %v, want nil", resp)
+			}
+			if !strings.Contains(err.Error(), tt.expectedError) {
+				t.Errorf("error %q does not contain %q", err.Error(), tt.expectedError)
+			}
 		})
 	}
 }
@@ -320,15 +350,28 @@ func TestRequest_Send(t *testing.T) {
 
 			// Assert
 			if tt.expectedError != "" {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectedError)
-				assert.Nil(t, resp)
+				if err == nil {
+					t.Error("expected error, got nil")
+				} else if !strings.Contains(err.Error(), tt.expectedError) {
+					t.Errorf("error %q does not contain %q", err.Error(), tt.expectedError)
+				}
+				if resp != nil {
+					t.Errorf("resp got %v, want nil", resp)
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, resp)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if resp == nil {
+					t.Fatal("resp got nil, want non-nil")
+				}
 				var result map[string]string
-				assert.NoError(t, resp.Body().AsJSON(&result))
-				assert.Equal(t, tt.expectedResult, result)
+				if err := resp.Body().AsJSON(&result); err != nil {
+					t.Fatalf("unexpected error reading body: %v", err)
+				}
+				if !reflect.DeepEqual(result, tt.expectedResult) {
+					t.Errorf("body got %v, want %v", result, tt.expectedResult)
+				}
 			}
 		})
 	}
@@ -376,10 +419,14 @@ func TestRequest_WithLoadBalancer(t *testing.T) {
 			responses := make([]string, tt.numRequests)
 			for i := 0; i < tt.numRequests; i++ {
 				resp, err := client.GET("/test").Send()
-				assert.NoError(t, err)
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
 
 				body, err := resp.Body().AsString()
-				assert.NoError(t, err)
+				if err != nil {
+					t.Fatalf("unexpected error reading body: %v", err)
+				}
 				responses[i] = body
 			}
 
@@ -397,9 +444,15 @@ func TestRequest_WithLoadBalancer(t *testing.T) {
 				}
 			}
 
-			assert.Equal(t, tt.numRequests, server1Count+server2Count)
-			assert.Equal(t, tt.expectedServer1Count, server1Count)
-			assert.Equal(t, tt.expectedServer2Count, server2Count)
+			if got := server1Count + server2Count; got != tt.numRequests {
+				t.Errorf("total requests got %d, want %d", got, tt.numRequests)
+			}
+			if server1Count != tt.expectedServer1Count {
+				t.Errorf("server1 count got %d, want %d", server1Count, tt.expectedServer1Count)
+			}
+			if server2Count != tt.expectedServer2Count {
+				t.Errorf("server2 count got %d, want %d", server2Count, tt.expectedServer2Count)
+			}
 		})
 	}
 }
@@ -597,23 +650,42 @@ func TestRequest_Retry(t *testing.T) {
 
 			// Assert
 			if tt.expectError {
-				assert.Error(t, err)
-				assert.Nil(t, resp)
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+				if resp != nil {
+					t.Errorf("resp got %v, want nil", resp)
+				}
 			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, resp)
-				assert.Equal(t, tt.expectedStatus, resp.Status().Code())
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if resp == nil {
+					t.Fatal("resp got nil, want non-nil")
+				}
+				if got := resp.Status().Code(); got != tt.expectedStatus {
+					t.Errorf("status got %d, want %d", got, tt.expectedStatus)
+				}
 				body, _ := resp.Body().AsString()
-				assert.Equal(t, tt.expectedBody, body)
+				if body != tt.expectedBody {
+					t.Errorf("body got %q, want %q", body, tt.expectedBody)
+				}
 			}
-			assert.Equal(t, tt.expectedAttempts, attemptCount)
+			if attemptCount != tt.expectedAttempts {
+				t.Errorf("attempts got %d, want %d", attemptCount, tt.expectedAttempts)
+			}
 
 			if tt.request(client).request.config.Method() == method.POST {
-				assert.NotEmpty(t, requestBody)
+				if requestBody == "" {
+					t.Error("request body is empty, want non-empty")
+				}
 				var bodyMap map[string]string
-				err := json.Unmarshal([]byte(requestBody), &bodyMap)
-				assert.NoError(t, err)
-				assert.Equal(t, "value", bodyMap["key"])
+				if err := json.Unmarshal([]byte(requestBody), &bodyMap); err != nil {
+					t.Fatalf("unexpected error unmarshalling body: %v", err)
+				}
+				if bodyMap["key"] != "value" {
+					t.Errorf("body[key] got %q, want %q", bodyMap["key"], "value")
+				}
 			}
 		})
 	}
