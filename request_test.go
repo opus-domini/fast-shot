@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -689,4 +690,272 @@ func TestRequest_Retry(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRequest_Hooks(t *testing.T) {
+	t.Run("BeforeRequest hook modifies header", func(t *testing.T) {
+		// Arrange
+		var receivedHeader string
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			receivedHeader = r.Header.Get("X-Hook-Header")
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		client := NewClient(server.URL).
+			Hook().OnBeforeRequest(func(req *http.Request) error {
+			req.Header.Set("X-Hook-Header", "injected-value")
+			return nil
+		}).
+			Build()
+
+		// Act
+		_, err := client.GET("/test").Send()
+
+		// Assert
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if receivedHeader != "injected-value" {
+			t.Errorf("header got %q, want %q", receivedHeader, "injected-value")
+		}
+	})
+
+	t.Run("BeforeRequest hook error aborts request", func(t *testing.T) {
+		// Arrange
+		serverCalled := false
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			serverCalled = true
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		hookErr := errors.New("hook rejected request")
+		client := NewClient(server.URL).
+			Hook().OnBeforeRequest(func(req *http.Request) error {
+			return hookErr
+		}).
+			Build()
+
+		// Act
+		resp, err := client.GET("/test").Send()
+
+		// Assert
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), constant.ErrMsgBeforeRequestHook) {
+			t.Errorf("error %q does not contain %q", err.Error(), constant.ErrMsgBeforeRequestHook)
+		}
+		if !strings.Contains(err.Error(), hookErr.Error()) {
+			t.Errorf("error %q does not contain %q", err.Error(), hookErr.Error())
+		}
+		if resp != nil {
+			t.Errorf("resp got %v, want nil", resp)
+		}
+		if serverCalled {
+			t.Error("server was called, want not called")
+		}
+	})
+
+	t.Run("AfterResponse hook records status code", func(t *testing.T) {
+		// Arrange
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusTeapot)
+		}))
+		defer server.Close()
+
+		var capturedStatus int
+		client := NewClient(server.URL).
+			Hook().OnAfterResponse(func(req *http.Request, resp *http.Response) {
+			capturedStatus = resp.StatusCode
+		}).
+			Build()
+
+		// Act
+		_, err := client.GET("/test").Send()
+
+		// Assert
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if capturedStatus != http.StatusTeapot {
+			t.Errorf("captured status got %d, want %d", capturedStatus, http.StatusTeapot)
+		}
+	})
+
+	t.Run("Client hooks run before request hooks", func(t *testing.T) {
+		// Arrange
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		var order []string
+		client := NewClient(server.URL).
+			Hook().OnBeforeRequest(func(req *http.Request) error {
+			order = append(order, "client")
+			return nil
+		}).
+			Build()
+
+		// Act
+		_, err := client.GET("/test").
+			Hook().OnBeforeRequest(func(req *http.Request) error {
+			order = append(order, "request")
+			return nil
+		}).
+			Send()
+
+		// Assert
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(order) != 2 {
+			t.Fatalf("order length got %d, want 2", len(order))
+		}
+		if order[0] != "client" {
+			t.Errorf("order[0] got %q, want %q", order[0], "client")
+		}
+		if order[1] != "request" {
+			t.Errorf("order[1] got %q, want %q", order[1], "request")
+		}
+	})
+
+	t.Run("Multiple hooks execute in registration order", func(t *testing.T) {
+		// Arrange
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		var order []int
+		client := NewClient(server.URL).
+			Hook().OnBeforeRequest(func(req *http.Request) error {
+			order = append(order, 1)
+			return nil
+		}).
+			Hook().OnBeforeRequest(func(req *http.Request) error {
+			order = append(order, 2)
+			return nil
+		}).
+			Hook().OnBeforeRequest(func(req *http.Request) error {
+			order = append(order, 3)
+			return nil
+		}).
+			Build()
+
+		// Act
+		_, err := client.GET("/test").Send()
+
+		// Assert
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		expected := []int{1, 2, 3}
+		if !reflect.DeepEqual(order, expected) {
+			t.Errorf("order got %v, want %v", order, expected)
+		}
+	})
+
+	t.Run("Hooks run on each retry attempt", func(t *testing.T) {
+		// Arrange
+		attemptCount := 0
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			attemptCount++
+			if attemptCount < 3 {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		var beforeCount atomic.Int32
+		var afterCount atomic.Int32
+		client := NewClient(server.URL).
+			Hook().OnBeforeRequest(func(req *http.Request) error {
+			beforeCount.Add(1)
+			return nil
+		}).
+			Hook().OnAfterResponse(func(req *http.Request, resp *http.Response) {
+			afterCount.Add(1)
+		}).
+			Build()
+
+		// Act
+		_, err := client.GET("/test").
+			Retry().SetConstantBackoff(10*time.Millisecond, 3).
+			Send()
+
+		// Assert
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got := beforeCount.Load(); got != 3 {
+			t.Errorf("before hook count got %d, want 3", got)
+		}
+		if got := afterCount.Load(); got != 3 {
+			t.Errorf("after hook count got %d, want 3", got)
+		}
+	})
+
+	t.Run("AfterResponse does not run when BeforeRequest aborts", func(t *testing.T) {
+		// Arrange
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		afterCalled := false
+		client := NewClient(server.URL).
+			Hook().OnBeforeRequest(func(req *http.Request) error {
+			return errors.New("abort")
+		}).
+			Hook().OnAfterResponse(func(req *http.Request, resp *http.Response) {
+			afterCalled = true
+		}).
+			Build()
+
+		// Act
+		_, _ = client.GET("/test").Send()
+
+		// Assert
+		if afterCalled {
+			t.Error("after response hook was called, want not called")
+		}
+	})
+
+	t.Run("Request-level hook on single request only", func(t *testing.T) {
+		// Arrange
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		var hookCount atomic.Int32
+		client := NewClient(server.URL).Build()
+
+		// Act - first request with hook
+		_, err := client.GET("/test").
+			Hook().OnBeforeRequest(func(req *http.Request) error {
+			hookCount.Add(1)
+			return nil
+		}).
+			Send()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Act - second request without hook
+		_, err = client.GET("/test").Send()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Assert
+		if got := hookCount.Load(); got != 1 {
+			t.Errorf("hook count got %d, want 1", got)
+		}
+	})
 }

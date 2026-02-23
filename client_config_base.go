@@ -3,6 +3,7 @@ package fastshot
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	"github.com/opus-domini/fast-shot/constant"
@@ -11,10 +12,12 @@ import (
 
 // ClientConfigBase serves as the main entry point for configuring HTTP clients.
 type ClientConfigBase struct {
-	httpClient  HttpClientComponent
-	httpHeader  HeaderWrapper
-	httpCookies CookiesWrapper
-	validations ValidationsWrapper
+	httpClient    HttpClientComponent
+	httpHeader    HeaderWrapper
+	httpCookies   CookiesWrapper
+	validations   ValidationsWrapper
+	beforeRequest []func(*http.Request) error
+	afterResponse []func(*http.Request, *http.Response)
 	ConfigBaseURL
 }
 
@@ -41,6 +44,27 @@ func (c *ClientConfigBase) Cookies() CookiesWrapper {
 // Validations for ClientConfigBase returns the ValidationsWrapper.
 func (c *ClientConfigBase) Validations() ValidationsWrapper {
 	return c.validations
+}
+
+// BeforeRequestHooks returns the before-request hooks.
+func (c *ClientConfigBase) BeforeRequestHooks() []func(*http.Request) error {
+	return c.beforeRequest
+}
+
+// AfterResponseHooks returns the after-response hooks.
+func (c *ClientConfigBase) AfterResponseHooks() []func(*http.Request, *http.Response) {
+	return c.afterResponse
+}
+
+// AddBeforeRequestHook appends a before-request hook.
+func (c *ClientConfigBase) AddBeforeRequestHook(hook func(*http.Request) error) {
+	c.beforeRequest = append(c.beforeRequest, hook)
+}
+
+// AddAfterResponseHook appends an after-response hook.
+func (c *ClientConfigBase) AddAfterResponseHook(hook func(*http.Request, *http.Response)) {
+	//nolint:bodyclose // False positive: appending a hook function, not handling a response body.
+	c.afterResponse = append(c.afterResponse, hook)
 }
 
 // GET is a shortcut for NewRequest(c, method.GET, path).

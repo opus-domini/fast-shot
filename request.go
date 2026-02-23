@@ -89,13 +89,46 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 	return request, nil
 }
 
+func (b *RequestBuilder) runBeforeRequestHooks(req *http.Request) error {
+	for _, hook := range b.request.client.BeforeRequestHooks() {
+		if err := hook(req); err != nil {
+			return err
+		}
+	}
+	for _, hook := range b.request.config.BeforeRequestHooks() {
+		if err := hook(req); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *RequestBuilder) runAfterResponseHooks(req *http.Request, resp *http.Response) {
+	//nolint:bodyclose // False positive: iterating hook functions, not handling a response body.
+	for _, hook := range b.request.client.AfterResponseHooks() {
+		hook(req, resp)
+	}
+	//nolint:bodyclose // False positive: iterating hook functions, not handling a response body.
+	for _, hook := range b.request.config.AfterResponseHooks() {
+		hook(req, resp)
+	}
+}
+
 func (b *RequestBuilder) execute(request *http.Request) (*Response, error) {
+	// Run before-request hooks
+	if err := b.runBeforeRequestHooks(request); err != nil {
+		return nil, errors.Join(errors.New(constant.ErrMsgBeforeRequestHook), err)
+	}
+
 	// Execute request
 	//nolint:bodyclose // Response body is closed by the caller via Response APIs.
 	response, err := b.request.client.HttpClient().Do(request)
 	if err != nil {
 		return nil, err
 	}
+
+	// Run after-response hooks
+	b.runAfterResponseHooks(request, response)
 
 	return newResponse(response), nil
 }

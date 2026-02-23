@@ -1,6 +1,7 @@
 package fastshot
 
 import (
+	"net/http"
 	"net/url"
 	"time"
 
@@ -10,15 +11,17 @@ import (
 type (
 	// RequestConfigBase encapsulates all configurations for a request.
 	RequestConfigBase struct {
-		ctx         ContextWrapper
-		httpHeader  HeaderWrapper
-		httpCookies CookiesWrapper
-		method      method.Type
-		path        string
-		queryParams url.Values
-		body        BodyWrapper
-		validations ValidationsWrapper
-		retryConfig *RetryConfig
+		ctx           ContextWrapper
+		httpHeader    HeaderWrapper
+		httpCookies   CookiesWrapper
+		method        method.Type
+		path          string
+		queryParams   url.Values
+		body          BodyWrapper
+		validations   ValidationsWrapper
+		retryConfig   *RetryConfig
+		beforeRequest []func(*http.Request) error
+		afterResponse []func(*http.Request, *http.Response)
 	}
 
 	// JitterStrategy represents the strategy for jitter.
@@ -85,6 +88,27 @@ func (c *RequestConfigBase) Validations() ValidationsWrapper {
 // RetryConfig returns the retry configuration for the request.
 func (c *RequestConfigBase) RetryConfig() *RetryConfig {
 	return c.retryConfig
+}
+
+// BeforeRequestHooks returns the before-request hooks for the request.
+func (c *RequestConfigBase) BeforeRequestHooks() []func(*http.Request) error {
+	return c.beforeRequest
+}
+
+// AfterResponseHooks returns the after-response hooks for the request.
+func (c *RequestConfigBase) AfterResponseHooks() []func(*http.Request, *http.Response) {
+	return c.afterResponse
+}
+
+// AddBeforeRequestHook appends a before-request hook to the request.
+func (c *RequestConfigBase) AddBeforeRequestHook(hook func(*http.Request) error) {
+	c.beforeRequest = append(c.beforeRequest, hook)
+}
+
+// AddAfterResponseHook appends an after-response hook to the request.
+func (c *RequestConfigBase) AddAfterResponseHook(hook func(*http.Request, *http.Response)) {
+	//nolint:bodyclose // False positive: appending a hook function, not handling a response body.
+	c.afterResponse = append(c.afterResponse, hook)
 }
 
 // ShouldRetry returns the retry condition for the request.

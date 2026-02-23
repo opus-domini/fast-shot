@@ -55,6 +55,10 @@ type ClientConfig interface {
 	Cookies() CookiesWrapper
 	Validations() ValidationsWrapper
 	ConfigBaseURL
+	BeforeRequestHooks() []func(*http.Request) error
+	AfterResponseHooks() []func(*http.Request, *http.Response)
+	AddBeforeRequestHook(func(*http.Request) error)
+	AddAfterResponseHook(func(*http.Request, *http.Response))
 }
 
 // ConfigHttpClient is the interface that wraps the basic methods for configuring the underlying HTTP client.
@@ -227,6 +231,32 @@ type BuilderHeader[T any] interface {
 // persistent cookies across all requests and one-time cookies for specific requests.
 type BuilderCookie[T any] interface {
 	Add(cookie *http.Cookie) *T
+}
+
+// BuilderHook is the interface that wraps the basic methods for setting request hooks.
+//
+// This interface enables users to inject custom logic before sending a request
+// and after receiving a response. Pre-request hooks can inspect or modify the
+// *http.Request and optionally abort by returning an error. Post-response hooks
+// are observational and receive both the request and response.
+//
+// Example usage for client-level hooks:
+//
+//	client := fastshot.NewClient("https://api.example.com").
+//		Hook().OnBeforeRequest(func(req *http.Request) error {
+//			req.Header.Set("X-Request-ID", uuid.New().String())
+//			return nil
+//		}).
+//		Hook().OnAfterResponse(func(req *http.Request, resp *http.Response) {
+//			log.Printf("%s %s → %d", req.Method, req.URL, resp.StatusCode)
+//		}).
+//		Build()
+//
+// The generic type parameter T allows this interface to be used with both ClientBuilder
+// and RequestBuilder, enabling hook configuration at both the client and request level.
+type BuilderHook[T any] interface {
+	OnBeforeRequest(hook func(*http.Request) error) *T
+	OnAfterResponse(hook func(*http.Request, *http.Response)) *T
 }
 
 // BuilderAuth is the interface that wraps the basic methods for setting HTTP authentication.

@@ -37,6 +37,7 @@ Fast Shot is a robust, feature-rich, and highly configurable HTTP client for Go.
 * Flexible authentication options (Bearer Token, Basic Auth, Custom)
 * Easy manipulation of headers, cookies, and query parameters
 * Advanced retry mechanism with customizable backoff strategies
+* Pre-request and post-response hooks for observability and custom logic
 * Client-side load balancing for improved reliability
 * JSON request and response support
 * XML request and response support
@@ -127,6 +128,39 @@ This new retry feature supports:
 - Full jitter for both constant and exponential backoff
 - Custom retry conditions
 - Maximum delay setting
+
+### Request Hooks
+
+Inject custom logic before sending requests and after receiving responses. Useful for logging, metrics, tracing, request signing, and audit logs:
+
+```go
+client := fastshot.NewClient("https://api.example.com").
+    Hook().OnBeforeRequest(func(req *http.Request) error {
+        req.Header.Set("X-Request-ID", generateID())
+        return nil
+    }).
+    Hook().OnAfterResponse(func(req *http.Request, resp *http.Response) {
+        log.Printf("%s %s → %d", req.Method, req.URL, resp.StatusCode)
+    }).
+    Build()
+```
+
+Hooks can also be set per-request:
+
+```go
+client.GET("/resource").
+    Hook().OnBeforeRequest(func(req *http.Request) error {
+        // Only for this request
+        return nil
+    }).
+    Send()
+```
+
+Key behaviors:
+- Client hooks run before request hooks (same ordering as headers and cookies)
+- Hooks run on every attempt, including retries
+- A before-request hook returning an error aborts the request
+- After-response hooks are observational and do not return errors
 
 ### Out-of-the-Box Support for Client Load Balancing
 

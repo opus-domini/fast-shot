@@ -10,5 +10,6 @@ const (
 	ErrMsgParseQueryString  = "failed to parse query string"
 	ErrMsgParseURL          = "failed to parse URL"
 	ErrMsgRequestValidation = "invalid request attributes"
+	ErrMsgBeforeRequestHook = "before request hook failed"
 	ErrMsgSetBody           = "failed to set body"
 )
