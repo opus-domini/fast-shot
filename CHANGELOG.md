@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.1](https://github.com/opus-domini/fast-shot/compare/v1.3.0...v1.3.1) (2026-02-25)
+
+
+### Bug Fixes
+
+* bump Go minimum version to 1.25.7 to resolve crypto/tls vulnerability (GO-2026-4337) ([13bd90f](https://github.com/opus-domini/fast-shot/commit/13bd90f74b325e79996f913c8936854d4a667d57))
+* pin Go 1.25.7 in CI matrix to match go.mod minimum version ([5f7cbfe](https://github.com/opus-domini/fast-shot/commit/5f7cbfe06ed5b262a5bdc9a1d5ef42e34fbf1ad4))
+* resolve intrange linter issues and update golangci-lint config ([67bff04](https://github.com/opus-domini/fast-shot/commit/67bff04c941b42faf5beab1bba59020aac9853ae))
+
 ## [1.3.0](https://github.com/opus-domini/fast-shot/compare/v1.2.1...v1.3.0) (2026-02-23)
 
 
