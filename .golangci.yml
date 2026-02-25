@@ -2,17 +2,25 @@ version: "2"
 
 linters:
   enable:
+    - asasalint
+    - bidichk
+    - bodyclose
     - errcheck
+    - gocheckcompilerdirectives
     - govet
     - ineffassign
+    - intrange
+    - makezero
+    - misspell
+    - nilerr
+    - nolintlint
+    - nosprintfhostport
     - staticcheck
+    - unconvert
     - unused
-    - gocritic
-    - govet
-    - goconst
-    - unused
+    - usetesting
+    - wastedassign
     - whitespace
-    - bodyclose
 
 formatters:
   enable:

@@ -418,7 +418,7 @@ func TestRequest_WithLoadBalancer(t *testing.T) {
 
 			// Act
 			responses := make([]string, tt.numRequests)
-			for i := 0; i < tt.numRequests; i++ {
+			for i := range tt.numRequests {
 				resp, err := client.GET("/test").Send()
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)

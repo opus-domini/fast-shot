@@ -28,7 +28,7 @@ func main() {
 	client := fastshot.NewClientLoadBalancer([]string{ts1.URL, ts2.URL, ts3.URL}).Build()
 
 	// Perform health checks on the servers
-	for i := 0; i < 9; i++ {
+	for range 9 {
 		healthcheck(client)
 	}
 }

@@ -139,7 +139,7 @@ func (b *RequestBuilder) executeWithRetry(req *http.Request) (*Response, error) 
 	var errAttempts []error
 	var response *Response
 
-	for attempt := uint(0); attempt < config.MaxAttempts(); attempt++ {
+	for attempt := range config.MaxAttempts() {
 		// Execute request
 		response, errExecution = b.execute(req)
 		// Check for errors
