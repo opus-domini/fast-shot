@@ -1,3 +1,3 @@
 module github.com/opus-domini/fast-shot
 
-go 1.25
+go 1.25.7
