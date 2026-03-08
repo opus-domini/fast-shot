@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/opus-domini/fast-shot/compare/v1.3.1...v1.3.2) (2026-03-08)
+
+
+### Bug Fixes
+
+* bump Go to 1.25.8 and use 1.26 for nightly govulncheck ([ed46caf](https://github.com/opus-domini/fast-shot/commit/ed46caff4cfe35ba8cd5a28990c89528465fbdfd))
+
 ## [1.3.1](https://github.com/opus-domini/fast-shot/compare/v1.3.0...v1.3.1) (2026-02-25)
 
 
