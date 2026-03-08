@@ -926,6 +926,69 @@ func TestRequest_Hooks(t *testing.T) {
 		}
 	})
 
+	t.Run("Request-level BeforeRequest hook error aborts request", func(t *testing.T) {
+		// Arrange
+		serverCalled := false
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			serverCalled = true
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		client := NewClient(server.URL).Build()
+		hookErr := errors.New("request hook rejected")
+
+		// Act
+		resp, err := client.GET("/test").
+			Hook().OnBeforeRequest(func(req *http.Request) error {
+			return hookErr
+		}).
+			Send()
+
+		// Assert
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), constant.ErrMsgBeforeRequestHook) {
+			t.Errorf("error %q does not contain %q", err.Error(), constant.ErrMsgBeforeRequestHook)
+		}
+		if !strings.Contains(err.Error(), hookErr.Error()) {
+			t.Errorf("error %q does not contain %q", err.Error(), hookErr.Error())
+		}
+		if resp != nil {
+			t.Errorf("resp got %v, want nil", resp)
+		}
+		if serverCalled {
+			t.Error("server was called, want not called")
+		}
+	})
+
+	t.Run("Request-level AfterResponse hook executes", func(t *testing.T) {
+		// Arrange
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusTeapot)
+		}))
+		defer server.Close()
+
+		var capturedStatus int
+		client := NewClient(server.URL).Build()
+
+		// Act
+		_, err := client.GET("/test").
+			Hook().OnAfterResponse(func(req *http.Request, resp *http.Response) {
+			capturedStatus = resp.StatusCode
+		}).
+			Send()
+
+		// Assert
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if capturedStatus != http.StatusTeapot {
+			t.Errorf("captured status got %d, want %d", capturedStatus, http.StatusTeapot)
+		}
+	})
+
 	t.Run("Request-level hook on single request only", func(t *testing.T) {
 		// Arrange
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
