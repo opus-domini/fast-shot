@@ -3,7 +3,6 @@
     <hr />
     <p>A Fluent Go REST Client Library</p>
     <p>
-        <a href="https://goreportcard.com/report/opus-domini/fast-shot"><img src="https://goreportcard.com/badge/opus-domini/fast-shot" alt="Go Report Badge"></a>
         <a href="https://godoc.org/github.com/opus-domini/fast-shot"><img src="https://godoc.org/github.com/opus-domini/fast-shot?status.svg" alt="Go Doc Badge"></a>    
         <a href="https://github.com/opus-domini/fast-shot/actions/workflows/ci.yml"><img src="https://github.com/opus-domini/fast-shot/actions/workflows/ci.yml/badge.svg" alt="CI Badge"></a>
         <a href="https://codecov.io/gh/opus-domini/fast-shot"><img src="https://codecov.io/gh/opus-domini/fast-shot/graph/badge.svg?token=C80QDL5W7T" alt="Codecov Badge"/></a>        
