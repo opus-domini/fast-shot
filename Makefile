@@ -1,8 +1,6 @@
 GOCMD        ?= go
 LINT          = golangci-lint
 VULNCHECK     = govulncheck
-LINT_GOCACHE ?= /tmp/go-cache
-LINT_CACHE   ?= /tmp/golangci-lint-cache
 
 .DEFAULT_GOAL := help
 
@@ -22,11 +20,11 @@ benchmark: check-go ## Run benchmarks
 
 .PHONY: fmt
 fmt: check-go check-lint ## Format code
-	GOCACHE=$(LINT_GOCACHE) GOLANGCI_LINT_CACHE=$(LINT_CACHE) $(LINT) fmt
+	$(LINT) fmt
 
 .PHONY: lint
 lint: check-go check-lint ## Lint code
-	GOCACHE=$(LINT_GOCACHE) GOLANGCI_LINT_CACHE=$(LINT_CACHE) $(LINT) run
+	$(LINT) run
 
 .PHONY: tidy
 tidy: check-go ## Tidy go.mod and go.sum
