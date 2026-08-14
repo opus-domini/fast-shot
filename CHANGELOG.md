@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.3](https://github.com/opus-domini/fast-shot/compare/v1.3.2...v1.3.3) (2026-08-14)
+
+
+### Build
+
+* use standard lint caches ([db80d23](https://github.com/opus-domini/fast-shot/commit/db80d23ab35d864a55ad1039c5bf188e4c29bfc3))
+
+
+### CI
+
+* pin Go 1.26.6 for vulnerability checks ([20f141a](https://github.com/opus-domini/fast-shot/commit/20f141ad299cc5bc5402704873352f425ca81536))
+* pin Go 1.26.6 for vulnerability checks ([eee2ed6](https://github.com/opus-domini/fast-shot/commit/eee2ed6097ece4b91fbec2c01a97f87cba2601b5))
+
 ## [1.3.2](https://github.com/opus-domini/fast-shot/compare/v1.3.1...v1.3.2) (2026-03-08)
 
 
