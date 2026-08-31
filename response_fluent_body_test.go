@@ -13,8 +13,8 @@ func TestResponseFluentBody(t *testing.T) {
 	tests := []struct {
 		name          string
 		setup         func(*mock.BodyWrapper)
-		method        func(*ResponseFluentBody) (interface{}, error)
-		expected      interface{}
+		method        func(*ResponseFluentBody) (any, error)
+		expected      any
 		expectedError error
 	}{
 		{
@@ -22,7 +22,7 @@ func TestResponseFluentBody(t *testing.T) {
 			setup: func(m *mock.BodyWrapper) {
 				// No setup needed for Raw method
 			},
-			method: func(rb *ResponseFluentBody) (interface{}, error) {
+			method: func(rb *ResponseFluentBody) (any, error) {
 				return rb.Raw(), nil
 			},
 			expected:      &mock.BodyWrapper{},
@@ -37,7 +37,7 @@ func TestResponseFluentBody(t *testing.T) {
 				}
 				m.CloseFunc = func() error { return nil }
 			},
-			method: func(rb *ResponseFluentBody) (interface{}, error) {
+			method: func(rb *ResponseFluentBody) (any, error) {
 				return rb.AsBytes()
 			},
 			expected:      []byte("hello"),
@@ -51,7 +51,7 @@ func TestResponseFluentBody(t *testing.T) {
 				}
 				m.CloseFunc = func() error { return nil }
 			},
-			method: func(rb *ResponseFluentBody) (interface{}, error) {
+			method: func(rb *ResponseFluentBody) (any, error) {
 				return rb.AsBytes()
 			},
 			expected:      []byte(nil),
@@ -63,7 +63,7 @@ func TestResponseFluentBody(t *testing.T) {
 				m.ReadAsStringFunc = func() (string, error) { return "hello", nil }
 				m.CloseFunc = func() error { return nil }
 			},
-			method: func(rb *ResponseFluentBody) (interface{}, error) {
+			method: func(rb *ResponseFluentBody) (any, error) {
 				return rb.AsString()
 			},
 			expected:      "hello",
@@ -75,7 +75,7 @@ func TestResponseFluentBody(t *testing.T) {
 				m.ReadAsStringFunc = func() (string, error) { return "", errors.New("string error") }
 				m.CloseFunc = func() error { return nil }
 			},
-			method: func(rb *ResponseFluentBody) (interface{}, error) {
+			method: func(rb *ResponseFluentBody) (any, error) {
 				return rb.AsString()
 			},
 			expected:      "",
@@ -84,14 +84,14 @@ func TestResponseFluentBody(t *testing.T) {
 		{
 			name: "AsJSON success",
 			setup: func(m *mock.BodyWrapper) {
-				m.ReadAsJSONFunc = func(obj interface{}) error {
+				m.ReadAsJSONFunc = func(obj any) error {
 					arg := obj.(*map[string]string)
 					*arg = map[string]string{"key": "value"}
 					return nil
 				}
 				m.CloseFunc = func() error { return nil }
 			},
-			method: func(rb *ResponseFluentBody) (interface{}, error) {
+			method: func(rb *ResponseFluentBody) (any, error) {
 				var result map[string]string
 				err := rb.AsJSON(&result)
 				return result, err
@@ -102,10 +102,10 @@ func TestResponseFluentBody(t *testing.T) {
 		{
 			name: "AsJSON error",
 			setup: func(m *mock.BodyWrapper) {
-				m.ReadAsJSONFunc = func(obj interface{}) error { return errors.New("json error") }
+				m.ReadAsJSONFunc = func(obj any) error { return errors.New("json error") }
 				m.CloseFunc = func() error { return nil }
 			},
-			method: func(rb *ResponseFluentBody) (interface{}, error) {
+			method: func(rb *ResponseFluentBody) (any, error) {
 				var result map[string]string
 				err := rb.AsJSON(&result)
 				return result, err
@@ -114,9 +114,37 @@ func TestResponseFluentBody(t *testing.T) {
 			expectedError: errors.New("json error"),
 		},
 		{
+			name: "AsJSONOf success",
+			setup: func(m *mock.BodyWrapper) {
+				m.ReadAsJSONFunc = func(obj any) error {
+					arg := obj.(*map[string]string)
+					*arg = map[string]string{"key": "value"}
+					return nil
+				}
+				m.CloseFunc = func() error { return nil }
+			},
+			method: func(rb *ResponseFluentBody) (any, error) {
+				return rb.AsJSONOf[map[string]string]()
+			},
+			expected:      map[string]string{"key": "value"},
+			expectedError: nil,
+		},
+		{
+			name: "AsJSONOf error",
+			setup: func(m *mock.BodyWrapper) {
+				m.ReadAsJSONFunc = func(obj any) error { return errors.New("json error") }
+				m.CloseFunc = func() error { return nil }
+			},
+			method: func(rb *ResponseFluentBody) (any, error) {
+				return rb.AsJSONOf[map[string]string]()
+			},
+			expected:      map[string]string(nil),
+			expectedError: errors.New("json error"),
+		},
+		{
 			name: "AsXML success",
 			setup: func(m *mock.BodyWrapper) {
-				m.ReadAsXMLFunc = func(obj interface{}) error {
+				m.ReadAsXMLFunc = func(obj any) error {
 					arg := obj.(*struct {
 						Key string `xml:"Key"`
 					})
@@ -129,7 +157,7 @@ func TestResponseFluentBody(t *testing.T) {
 				}
 				m.CloseFunc = func() error { return nil }
 			},
-			method: func(rb *ResponseFluentBody) (interface{}, error) {
+			method: func(rb *ResponseFluentBody) (any, error) {
 				result := struct {
 					Key string `xml:"Key"`
 				}{}
@@ -146,15 +174,59 @@ func TestResponseFluentBody(t *testing.T) {
 		{
 			name: "AsXML error",
 			setup: func(m *mock.BodyWrapper) {
-				m.ReadAsXMLFunc = func(obj interface{}) error { return errors.New("xml error") }
+				m.ReadAsXMLFunc = func(obj any) error { return errors.New("xml error") }
 				m.CloseFunc = func() error { return nil }
 			},
-			method: func(rb *ResponseFluentBody) (interface{}, error) {
+			method: func(rb *ResponseFluentBody) (any, error) {
 				result := struct {
 					Key string `xml:"Key"`
 				}{}
 				err := rb.AsXML(&result)
 				return result, err
+			},
+			expected: struct {
+				Key string `xml:"Key"`
+			}{},
+			expectedError: errors.New("xml error"),
+		},
+		{
+			name: "AsXMLOf success",
+			setup: func(m *mock.BodyWrapper) {
+				m.ReadAsXMLFunc = func(obj any) error {
+					arg := obj.(*struct {
+						Key string `xml:"Key"`
+					})
+					*arg = struct {
+						Key string `xml:"Key"`
+					}{
+						Key: "value",
+					}
+					return nil
+				}
+				m.CloseFunc = func() error { return nil }
+			},
+			method: func(rb *ResponseFluentBody) (any, error) {
+				return rb.AsXMLOf[struct {
+					Key string `xml:"Key"`
+				}]()
+			},
+			expected: struct {
+				Key string `xml:"Key"`
+			}{
+				Key: "value",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "AsXMLOf error",
+			setup: func(m *mock.BodyWrapper) {
+				m.ReadAsXMLFunc = func(obj any) error { return errors.New("xml error") }
+				m.CloseFunc = func() error { return nil }
+			},
+			method: func(rb *ResponseFluentBody) (any, error) {
+				return rb.AsXMLOf[struct {
+					Key string `xml:"Key"`
+				}]()
 			},
 			expected: struct {
 				Key string `xml:"Key"`

@@ -42,14 +42,46 @@ func (b *ResponseFluentBody) AsString() (string, error) {
 	return b.body.ReadAsString()
 }
 
-func (b *ResponseFluentBody) AsJSON(v interface{}) error {
+func (b *ResponseFluentBody) AsJSON(v any) error {
 	defer b.Close()
 
 	return b.body.ReadAsJSON(v)
 }
 
-func (b *ResponseFluentBody) AsXML(v interface{}) error {
+// AsJSONOf decodes the response body as JSON into a new value of type T,
+// closing the body afterwards.
+//
+// It is the generic form of AsJSON, returning the decoded value directly
+// instead of requiring a pre-allocated destination:
+//
+//	type User struct {
+//		Name string `json:"name"`
+//	}
+//	user, err := resp.Body().AsJSONOf[User]()
+func (b *ResponseFluentBody) AsJSONOf[T any]() (T, error) {
+	var value T
+	err := b.AsJSON(&value)
+	return value, err
+}
+
+func (b *ResponseFluentBody) AsXML(v any) error {
 	defer b.Close()
 
 	return b.body.ReadAsXML(v)
+}
+
+// AsXMLOf decodes the response body as XML into a new value of type T,
+// closing the body afterwards.
+//
+// It is the generic form of AsXML, returning the decoded value directly
+// instead of requiring a pre-allocated destination:
+//
+//	type User struct {
+//		Name string `xml:"name"`
+//	}
+//	user, err := resp.Body().AsXMLOf[User]()
+func (b *ResponseFluentBody) AsXMLOf[T any]() (T, error) {
+	var value T
+	err := b.AsXML(&value)
+	return value, err
 }
