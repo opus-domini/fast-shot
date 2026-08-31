@@ -32,7 +32,7 @@ func TestRequestContextBuilder(t *testing.T) {
 			// Arrange
 			rb := &RequestBuilder{
 				request: &Request{
-					config: newRequestConfigBase("", ""),
+					config: newRequestConfigBase("", "", DefaultJSONCodec()),
 				},
 			}
 

@@ -64,3 +64,9 @@ func (b *ClientConfigBuilder) SetProxy(proxyURL string) *ClientBuilder {
 
 	return b.parentBuilder
 }
+
+// SetJSONCodec sets the JSONCodec used to encode request bodies and decode response bodies.
+func (b *ClientConfigBuilder) SetJSONCodec(codec JSONCodec) *ClientBuilder {
+	b.parentBuilder.client.SetJSONCodec(codec)
+	return b.parentBuilder
+}

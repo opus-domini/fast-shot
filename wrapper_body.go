@@ -2,7 +2,6 @@ package fastshot
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
 	"io"
 	"mime/multipart"
@@ -18,13 +17,15 @@ var _ BodyWrapper = (*UnbufferedBody)(nil)
 
 type (
 	BufferedBody struct {
-		buffer *bytes.Buffer
-		mutex  sync.RWMutex
+		buffer    *bytes.Buffer
+		jsonCodec JSONCodec
+		mutex     sync.RWMutex
 	}
 
 	UnbufferedBody struct {
-		reader io.ReadCloser
-		mutex  sync.RWMutex
+		reader    io.ReadCloser
+		jsonCodec JSONCodec
+		mutex     sync.RWMutex
 	}
 )
 
@@ -39,26 +40,26 @@ func (w *BufferedBody) Close() error {
 	return nil
 }
 
-func (w *BufferedBody) ReadAsJSON(obj interface{}) error {
+func (w *BufferedBody) ReadAsJSON(obj any) error {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
-	return json.NewDecoder(bytes.NewReader(w.buffer.Bytes())).Decode(obj)
+	return w.jsonCodec.Decode(bytes.NewReader(w.buffer.Bytes()), obj)
 }
 
-func (w *BufferedBody) WriteAsJSON(obj interface{}) error {
+func (w *BufferedBody) WriteAsJSON(obj any) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 	w.buffer.Reset()
-	return json.NewEncoder(w.buffer).Encode(obj)
+	return w.jsonCodec.Encode(w.buffer, obj)
 }
 
-func (w *BufferedBody) ReadAsXML(obj interface{}) error {
+func (w *BufferedBody) ReadAsXML(obj any) error {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
 	return xml.NewDecoder(bytes.NewReader(w.buffer.Bytes())).Decode(obj)
 }
 
-func (w *BufferedBody) WriteAsXML(obj interface{}) error {
+func (w *BufferedBody) WriteAsXML(obj any) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 	w.buffer.Reset()
@@ -108,9 +109,10 @@ func (w *BufferedBody) Unwrap() io.Reader {
 	return bytes.NewReader(w.buffer.Bytes())
 }
 
-func newBufferedBody() *BufferedBody {
+func newBufferedBody(jsonCodec JSONCodec) *BufferedBody {
 	return &BufferedBody{
-		buffer: &bytes.Buffer{},
+		buffer:    &bytes.Buffer{},
+		jsonCodec: jsonCodec,
 	}
 }
 
@@ -126,17 +128,17 @@ func (w *UnbufferedBody) Close() error {
 	return w.reader.Close()
 }
 
-func (w *UnbufferedBody) ReadAsJSON(obj interface{}) error {
+func (w *UnbufferedBody) ReadAsJSON(obj any) error {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
-	return json.NewDecoder(w.reader).Decode(obj)
+	return w.jsonCodec.Decode(w.reader, obj)
 }
 
-func (w *UnbufferedBody) WriteAsJSON(obj interface{}) error {
+func (w *UnbufferedBody) WriteAsJSON(obj any) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 	var buf bytes.Buffer
-	err := json.NewEncoder(&buf).Encode(obj)
+	err := w.jsonCodec.Encode(&buf, obj)
 	if err != nil {
 		return err
 	}
@@ -144,13 +146,13 @@ func (w *UnbufferedBody) WriteAsJSON(obj interface{}) error {
 	return nil
 }
 
-func (w *UnbufferedBody) ReadAsXML(obj interface{}) error {
+func (w *UnbufferedBody) ReadAsXML(obj any) error {
 	w.mutex.RLock()
 	defer w.mutex.RUnlock()
 	return xml.NewDecoder(w.reader).Decode(obj)
 }
 
-func (w *UnbufferedBody) WriteAsXML(obj interface{}) error {
+func (w *UnbufferedBody) WriteAsXML(obj any) error {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 	var buf bytes.Buffer
@@ -231,8 +233,9 @@ func writeFormData(dst io.Writer, fields map[string]string) (string, error) {
 	return contentType, nil
 }
 
-func newUnbufferedBody(reader io.ReadCloser) *UnbufferedBody {
+func newUnbufferedBody(reader io.ReadCloser, jsonCodec JSONCodec) *UnbufferedBody {
 	return &UnbufferedBody{
-		reader: reader,
+		reader:    reader,
+		jsonCodec: jsonCodec,
 	}
 }

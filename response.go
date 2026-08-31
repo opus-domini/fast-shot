@@ -18,12 +18,12 @@ func (r *Response) Raw() *http.Response {
 	return r.rawResponse
 }
 
-func newResponse(response *http.Response) *Response {
+func newResponse(response *http.Response, jsonCodec JSONCodec) *Response {
 	return &Response{
 		rawResponse: response,
 		// Fluent API
 		body: &ResponseFluentBody{
-			newUnbufferedBody(response.Body),
+			newUnbufferedBody(response.Body, jsonCodec),
 		},
 		cookie: &ResponseFluentCookie{
 			response.Cookies(),

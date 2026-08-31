@@ -7,10 +7,10 @@ import (
 type BodyWrapper struct {
 	ReadFunc            func(p []byte) (int, error)
 	CloseFunc           func() error
-	ReadAsJSONFunc      func(obj interface{}) error
-	WriteAsJSONFunc     func(obj interface{}) error
-	ReadAsXMLFunc       func(obj interface{}) error
-	WriteAsXMLFunc      func(obj interface{}) error
+	ReadAsJSONFunc      func(obj any) error
+	WriteAsJSONFunc     func(obj any) error
+	ReadAsXMLFunc       func(obj any) error
+	WriteAsXMLFunc      func(obj any) error
 	ReadAsStringFunc    func() (string, error)
 	WriteAsStringFunc   func(body string) error
 	WriteAsFormDataFunc func(fields map[string]string) (string, error)
@@ -26,19 +26,19 @@ func (m *BodyWrapper) Close() error {
 	return m.CloseFunc()
 }
 
-func (m *BodyWrapper) ReadAsJSON(obj interface{}) error {
+func (m *BodyWrapper) ReadAsJSON(obj any) error {
 	return m.ReadAsJSONFunc(obj)
 }
 
-func (m *BodyWrapper) WriteAsJSON(obj interface{}) error {
+func (m *BodyWrapper) WriteAsJSON(obj any) error {
 	return m.WriteAsJSONFunc(obj)
 }
 
-func (m *BodyWrapper) ReadAsXML(obj interface{}) error {
+func (m *BodyWrapper) ReadAsXML(obj any) error {
 	return m.ReadAsXMLFunc(obj)
 }
 
-func (m *BodyWrapper) WriteAsXML(obj interface{}) error {
+func (m *BodyWrapper) WriteAsXML(obj any) error {
 	return m.WriteAsXMLFunc(obj)
 }
 

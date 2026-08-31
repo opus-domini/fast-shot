@@ -172,7 +172,7 @@ func (c *RetryConfig) SetJitterStrategy(strategy JitterStrategy) {
 }
 
 // NewRequestConfigBase creates a new request configuration.
-func newRequestConfigBase(method method.Type, path string) *RequestConfigBase {
+func newRequestConfigBase(method method.Type, path string, jsonCodec JSONCodec) *RequestConfigBase {
 	return &RequestConfigBase{
 		ctx:         newDefaultContext(),
 		httpHeader:  newDefaultHttpHeader(),
@@ -180,7 +180,7 @@ func newRequestConfigBase(method method.Type, path string) *RequestConfigBase {
 		method:      method,
 		path:        path,
 		queryParams: url.Values{},
-		body:        newBufferedBody(),
+		body:        newBufferedBody(jsonCodec),
 		validations: newDefaultValidations(nil),
 		retryConfig: &RetryConfig{
 			shouldRetry:    func(response *Response) bool { return response.Status().IsError() },

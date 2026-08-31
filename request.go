@@ -26,7 +26,7 @@ func newRequest(client ClientConfig, method method.Type, path string) *RequestBu
 	return &RequestBuilder{
 		request: &Request{
 			client: client,
-			config: newRequestConfigBase(method, path),
+			config: newRequestConfigBase(method, path, client.JSONCodec()),
 		},
 	}
 }
@@ -130,7 +130,7 @@ func (b *RequestBuilder) execute(request *http.Request) (*Response, error) {
 	// Run after-response hooks
 	b.runAfterResponseHooks(request, response)
 
-	return newResponse(response), nil
+	return newResponse(response, b.request.client.JSONCodec()), nil
 }
 
 func (b *RequestBuilder) executeWithRetry(req *http.Request) (*Response, error) {

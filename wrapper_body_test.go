@@ -3,6 +3,7 @@ package fastshot
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
 	"strings"
@@ -13,8 +14,8 @@ func TestWrapperBody_Buffered(t *testing.T) {
 	tests := []struct {
 		name          string
 		setup         func(*BufferedBody)
-		method        func(*BufferedBody) (interface{}, error)
-		expected      interface{}
+		method        func(*BufferedBody) (any, error)
+		expected      any
 		expectedError error
 	}{
 		{
@@ -22,7 +23,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				b.buffer.WriteString("hello world")
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				buf := make([]byte, 5)
 				n, err := b.Read(buf)
 				return string(buf[:n]), err
@@ -35,7 +36,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				b.buffer.WriteString("hello")
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				buf := make([]byte, 10)
 				n, err := b.Read(buf)
 				return string(buf[:n]), err
@@ -46,7 +47,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 		{
 			name:  "Read empty buffer",
 			setup: func(b *BufferedBody) {},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				buf := make([]byte, 5)
 				n, err := b.Read(buf)
 				return string(buf[:n]), err
@@ -59,7 +60,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				// No setup needed for Close()
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				return nil, b.Close()
 			},
 			expected:      nil,
@@ -70,7 +71,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				b.buffer.WriteString(`{"key": "value"}`)
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				var result map[string]string
 				err := b.ReadAsJSON(&result)
 				return result, err
@@ -83,7 +84,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				b.buffer.WriteString(`invalid json`)
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				var result map[string]string
 				err := b.ReadAsJSON(&result)
 				return nil, err
@@ -96,7 +97,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				// No setup needed
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				return nil, b.WriteAsJSON(map[string]string{"key": "value"})
 			},
 			expected:      nil,
@@ -107,7 +108,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				b.buffer.WriteString(`<example><Key>value</Key></example>`)
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				result := struct {
 					Key string `xml:"Key"`
 				}{}
@@ -126,7 +127,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				b.buffer.WriteString(`<>invalid xml`)
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				result := struct {
 					Key string `xml:"Key"`
 				}{}
@@ -141,7 +142,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				// No setup needed
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				result := struct {
 					Key string `xml:"Key"`
 				}{
@@ -157,7 +158,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				b.buffer.WriteString("hello world")
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				return b.ReadAsString()
 			},
 			expected:      "hello world",
@@ -168,7 +169,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				// No setup needed
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				return nil, b.WriteAsString("hello world")
 			},
 			expected:      nil,
@@ -180,7 +181,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 				_ = b.WriteAsString("first")
 				_ = b.WriteAsString("second")
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				buf := make([]byte, 6)
 				n, err := b.Read(buf)
 				return string(buf[:n]), err
@@ -193,7 +194,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				_ = b.WriteAsString("body content")
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				_, _ = b.ReadAsString()
 				str, err := b.ReadAsString()
 				return str, err
@@ -206,7 +207,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				// No setup needed
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				contentType, err := b.WriteAsFormData(map[string]string{"field": "value"})
 				if err != nil {
 					return nil, err
@@ -221,7 +222,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				// No setup needed
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				contentType, err := b.WriteAsFormData(map[string]string{})
 				if err != nil {
 					return nil, err
@@ -238,7 +239,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 					return "", errors.New("form data error")
 				}
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				defer func() { writeFormDataFn = writeFormData }()
 				return b.WriteAsFormData(map[string]string{"k": "v"})
 			},
@@ -250,7 +251,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				// No setup needed
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				return nil, b.Set(strings.NewReader("hello world"))
 			},
 			expected:      nil,
@@ -261,7 +262,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 			setup: func(b *BufferedBody) {
 				b.buffer.WriteString("hello world")
 			},
-			method: func(b *BufferedBody) (interface{}, error) {
+			method: func(b *BufferedBody) (any, error) {
 				buf := new(bytes.Buffer)
 				_, err := buf.ReadFrom(b.Unwrap())
 				return buf.String(), err
@@ -274,7 +275,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
-			body := newBufferedBody()
+			body := newBufferedBody(DefaultJSONCodec())
 			tt.setup(body)
 
 			// Act
@@ -299,14 +300,14 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 	tests := []struct {
 		name          string
 		reader        io.ReadCloser
-		method        func(*UnbufferedBody) (interface{}, error)
-		expected      interface{}
+		method        func(*UnbufferedBody) (any, error)
+		expected      any
 		expectedError error
 	}{
 		{
 			name:   "Read success",
 			reader: io.NopCloser(strings.NewReader("hello world")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				buf := make([]byte, 5)
 				n, err := b.Read(buf)
 				return string(buf[:n]), err
@@ -317,7 +318,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "Read more than buffer size",
 			reader: io.NopCloser(strings.NewReader("hello")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				buf := make([]byte, 10)
 				n, err := b.Read(buf)
 				return string(buf[:n]), err
@@ -328,7 +329,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "Close success",
 			reader: io.NopCloser(strings.NewReader("hello world")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return nil, b.Close()
 			},
 			expected:      nil,
@@ -337,7 +338,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "ReadAsJSON success",
 			reader: io.NopCloser(strings.NewReader(`{"key": "value"}`)),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				var result map[string]string
 				err := b.ReadAsJSON(&result)
 				return result, err
@@ -348,7 +349,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "ReadAsJSON error",
 			reader: io.NopCloser(strings.NewReader(`invalid json`)),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				var result map[string]string
 				err := b.ReadAsJSON(&result)
 				return nil, err
@@ -359,7 +360,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "WriteAsJSON success",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return nil, b.WriteAsJSON(map[string]string{"key": "value"})
 			},
 			expected:      nil,
@@ -368,7 +369,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "WriteAsJSON error",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return nil, b.WriteAsJSON(make(chan int))
 			},
 			expected:      nil,
@@ -377,7 +378,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "ReadAsXML success",
 			reader: io.NopCloser(strings.NewReader(`<example><Key>value</Key></example>`)),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				result := struct {
 					Key string `xml:"Key"`
 				}{}
@@ -394,7 +395,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "ReadAsXML error",
 			reader: io.NopCloser(strings.NewReader(`<>invalid xml`)),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				result := struct {
 					Key string `xml:"Key"`
 				}{}
@@ -407,7 +408,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "WriteAsXML success",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return nil, b.WriteAsXML(map[string]string{"key": "value"})
 			},
 			expected:      nil,
@@ -416,7 +417,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "WriteAsXML error",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return nil, b.WriteAsXML(make(chan int))
 			},
 			expected:      nil,
@@ -425,7 +426,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "ReadAsString success",
 			reader: io.NopCloser(strings.NewReader("hello world")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return b.ReadAsString()
 			},
 			expected:      "hello world",
@@ -434,7 +435,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "ReadAsString twice to test empty reader",
 			reader: io.NopCloser(strings.NewReader("hello world")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				_, _ = b.ReadAsString()
 				return b.ReadAsString()
 			},
@@ -444,7 +445,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "WriteAsString success",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return nil, b.WriteAsString("hello world")
 			},
 			expected:      nil,
@@ -453,7 +454,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "Set success",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return nil, b.Set(strings.NewReader("hello world"))
 			},
 			expected:      nil,
@@ -462,7 +463,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "Unwrap success",
 			reader: io.NopCloser(strings.NewReader("hello world")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				buf := new(bytes.Buffer)
 				_, err := buf.ReadFrom(b.Unwrap())
 				return buf.String(), err
@@ -473,7 +474,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "WriteAsJSON error",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return nil, b.WriteAsJSON(make(chan int))
 			},
 			expected:      nil,
@@ -482,7 +483,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "ReadAsString error", // Covering "if err != nil"
 			reader: io.NopCloser(&errorReader{}),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return b.ReadAsString()
 			},
 			expected:      "",
@@ -491,7 +492,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "WriteAsFormData success",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				contentType, err := b.WriteAsFormData(map[string]string{"field": "value"})
 				if err != nil {
 					return nil, err
@@ -504,7 +505,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "WriteAsFormData empty fields",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				contentType, err := b.WriteAsFormData(map[string]string{})
 				if err != nil {
 					return nil, err
@@ -517,7 +518,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "WriteAsFormData error",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				writeFormDataFn = func(_ io.Writer, _ map[string]string) (string, error) {
 					return "", errors.New("form data error")
 				}
@@ -530,7 +531,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "Set with io.ReadCloser", // Covering "if closer, ok..."
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return nil, b.Set(io.NopCloser(strings.NewReader("test")))
 			},
 			expected:      nil,
@@ -539,7 +540,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "Set with io.Reader", // Covering "else" block
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				return nil, b.Set(strings.NewReader("test"))
 			},
 			expected:      nil,
@@ -548,7 +549,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "WriteAsJSON assigns reader contents",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				// Use struct for deterministic JSON ordering
 				type payload struct {
 					Key string `json:"key"`
@@ -564,7 +565,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 		{
 			name:   "WriteAsXML assigns reader contents",
 			reader: io.NopCloser(strings.NewReader("")),
-			method: func(b *UnbufferedBody) (interface{}, error) {
+			method: func(b *UnbufferedBody) (any, error) {
 				type payload struct { // deterministic root element name "payload"
 					Key string `xml:"Key"`
 				}
@@ -581,7 +582,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
-			body := newUnbufferedBody(tt.reader)
+			body := newUnbufferedBody(tt.reader, DefaultJSONCodec())
 
 			// Act
 			result, err := tt.method(body)
@@ -599,6 +600,90 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWrapperBody_CustomJSONCodec(t *testing.T) {
+	newRecordingCodec := func(encoded *string, decoded *string, encodeErr error, decodeErr error) JSONCodec {
+		return JSONCodec{
+			Encode: func(w io.Writer, v any) error {
+				if encodeErr != nil {
+					return encodeErr
+				}
+				*encoded = fmt.Sprintf("encoded:%T", v)
+				_, err := w.Write([]byte(`{"custom":true}`))
+				return err
+			},
+			Decode: func(r io.Reader, v any) error {
+				if decodeErr != nil {
+					return decodeErr
+				}
+				*decoded = fmt.Sprintf("decoded:%T", v)
+				return nil
+			},
+		}
+	}
+
+	t.Run("BufferedBody uses codec", func(t *testing.T) {
+		var encoded, decoded string
+		codec := newRecordingCodec(&encoded, &decoded, nil, nil)
+		body := newBufferedBody(codec)
+
+		if err := body.WriteAsJSON(map[string]string{"key": "value"}); err != nil {
+			t.Fatalf("unexpected error writing: %v", err)
+		}
+		if encoded != "encoded:map[string]string" {
+			t.Errorf("encoded got %q, want %q", encoded, "encoded:map[string]string")
+		}
+
+		var result map[string]bool
+		if err := body.ReadAsJSON(&result); err != nil {
+			t.Fatalf("unexpected error reading: %v", err)
+		}
+		if decoded != "decoded:*map[string]bool" {
+			t.Errorf("decoded got %q, want %q", decoded, "decoded:*map[string]bool")
+		}
+	})
+
+	t.Run("BufferedBody propagates codec encode error", func(t *testing.T) {
+		body := newBufferedBody(newRecordingCodec(nil, nil, errors.New("encode error"), nil))
+
+		if err := body.WriteAsJSON(struct{}{}); err == nil || err.Error() != "encode error" {
+			t.Errorf("error got %v, want %q", err, "encode error")
+		}
+	})
+
+	t.Run("UnbufferedBody uses codec", func(t *testing.T) {
+		var encoded, decoded string
+		codec := newRecordingCodec(&encoded, &decoded, nil, nil)
+		body := newUnbufferedBody(io.NopCloser(strings.NewReader(`{"custom":true}`)), codec)
+
+		if err := body.WriteAsJSON(map[string]string{"key": "value"}); err != nil {
+			t.Fatalf("unexpected error writing: %v", err)
+		}
+		if encoded != "encoded:map[string]string" {
+			t.Errorf("encoded got %q, want %q", encoded, "encoded:map[string]string")
+		}
+
+		var result map[string]bool
+		if err := body.ReadAsJSON(&result); err != nil {
+			t.Fatalf("unexpected error reading: %v", err)
+		}
+		if decoded != "decoded:*map[string]bool" {
+			t.Errorf("decoded got %q, want %q", decoded, "decoded:*map[string]bool")
+		}
+	})
+
+	t.Run("UnbufferedBody propagates codec decode error", func(t *testing.T) {
+		body := newUnbufferedBody(
+			io.NopCloser(strings.NewReader(`{}`)),
+			newRecordingCodec(nil, nil, nil, errors.New("decode error")),
+		)
+
+		var result map[string]bool
+		if err := body.ReadAsJSON(&result); err == nil || err.Error() != "decode error" {
+			t.Errorf("error got %v, want %q", err, "decode error")
+		}
+	})
 }
 
 func TestWriteFormData(t *testing.T) {

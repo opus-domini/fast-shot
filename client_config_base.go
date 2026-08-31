@@ -16,6 +16,7 @@ type ClientConfigBase struct {
 	httpHeader    HeaderWrapper
 	httpCookies   CookiesWrapper
 	validations   ValidationsWrapper
+	jsonCodec     JSONCodec
 	beforeRequest []func(*http.Request) error
 	afterResponse []func(*http.Request, *http.Response)
 	ConfigBaseURL
@@ -44,6 +45,16 @@ func (c *ClientConfigBase) Cookies() CookiesWrapper {
 // Validations for ClientConfigBase returns the ValidationsWrapper.
 func (c *ClientConfigBase) Validations() ValidationsWrapper {
 	return c.validations
+}
+
+// JSONCodec for ClientConfigBase returns the JSONCodec used by request and response bodies.
+func (c *ClientConfigBase) JSONCodec() JSONCodec {
+	return c.jsonCodec
+}
+
+// SetJSONCodec for ClientConfigBase sets the JSONCodec used by request and response bodies.
+func (c *ClientConfigBase) SetJSONCodec(jsonCodec JSONCodec) {
+	c.jsonCodec = jsonCodec
 }
 
 // BeforeRequestHooks returns the before-request hooks.
@@ -130,6 +141,7 @@ func newClientConfigBase(baseURL string) *ClientConfigBase {
 		httpHeader:    newDefaultHttpHeader(),
 		httpCookies:   newDefaultHttpCookies(),
 		validations:   newDefaultValidations(validations),
+		jsonCodec:     DefaultJSONCodec(),
 		ConfigBaseURL: newDefaultBaseURL(parsedURL),
 	}
 }
@@ -161,6 +173,7 @@ func newBalancedClientConfigBase(baseURLs []string) *ClientConfigBase {
 		httpHeader:    newDefaultHttpHeader(),
 		httpCookies:   newDefaultHttpCookies(),
 		validations:   newDefaultValidations(validations),
+		jsonCodec:     DefaultJSONCodec(),
 		ConfigBaseURL: newBalancedBaseURL(parsedURLs),
 	}
 }

@@ -71,7 +71,7 @@ func TestRequestBodyBuilder(t *testing.T) {
 			name: "AsJSON success",
 			setup: func(rb *RequestBodyBuilder) {
 				rb.requestConfig.body = &mock.BodyWrapper{
-					WriteAsJSONFunc: func(obj interface{}) error { return nil },
+					WriteAsJSONFunc: func(obj any) error { return nil },
 				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
@@ -83,7 +83,7 @@ func TestRequestBodyBuilder(t *testing.T) {
 			name: "AsJSON failure",
 			setup: func(rb *RequestBodyBuilder) {
 				rb.requestConfig.body = &mock.BodyWrapper{
-					WriteAsJSONFunc: func(obj interface{}) error { return mockedErr },
+					WriteAsJSONFunc: func(obj any) error { return mockedErr },
 				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
@@ -95,7 +95,7 @@ func TestRequestBodyBuilder(t *testing.T) {
 			name: "AsXML success",
 			setup: func(rb *RequestBodyBuilder) {
 				rb.requestConfig.body = &mock.BodyWrapper{
-					WriteAsXMLFunc: func(obj interface{}) error { return nil },
+					WriteAsXMLFunc: func(obj any) error { return nil },
 				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
@@ -108,7 +108,7 @@ func TestRequestBodyBuilder(t *testing.T) {
 			name: "AsXML failure",
 			setup: func(rb *RequestBodyBuilder) {
 				rb.requestConfig.body = &mock.BodyWrapper{
-					WriteAsXMLFunc: func(obj interface{}) error { return mockedErr },
+					WriteAsXMLFunc: func(obj any) error { return mockedErr },
 				}
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
@@ -234,7 +234,7 @@ func TestAsFormData_ContentType(t *testing.T) {
 				parentBuilder: &RequestBuilder{},
 				requestConfig: &RequestConfigBase{
 					validations: newDefaultValidations(nil),
-					body:        newBufferedBody(),
+					body:        newBufferedBody(DefaultJSONCodec()),
 					httpHeader:  newDefaultHttpHeader(),
 				},
 			}

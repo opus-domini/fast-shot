@@ -55,6 +55,8 @@ type ClientConfig interface {
 	Cookies() CookiesWrapper
 	Validations() ValidationsWrapper
 	ConfigBaseURL
+	JSONCodec() JSONCodec
+	SetJSONCodec(JSONCodec)
 	BeforeRequestHooks() []func(*http.Request) error
 	AfterResponseHooks() []func(*http.Request, *http.Response)
 	AddBeforeRequestHook(func(*http.Request) error)
@@ -297,6 +299,7 @@ type BuilderAuth[T any] interface {
 //		Config().SetTimeout(30 * time.Second).
 //		Config().SetFollowRedirects(false).
 //		Config().SetProxy("http://proxy.example.com:8080").
+//		Config().SetJSONCodec(jsonv2.New()).
 //		Build()
 //
 // The BuilderHttpClientConfig interface enables users to adapt the HTTP client to various
@@ -307,6 +310,7 @@ type BuilderHttpClientConfig[T any] interface {
 	SetTimeout(duration time.Duration) *T
 	SetFollowRedirects(follow bool) *T
 	SetProxy(proxyURL string) *T
+	SetJSONCodec(codec JSONCodec) *T
 }
 
 // BuilderRequestContext is the interface that wraps the basic method for setting the request context.
@@ -362,8 +366,8 @@ type BuilderRequestContext[T any] interface {
 type BuilderRequestBody[T any] interface {
 	AsReader(body io.Reader) *T
 	AsString(body string) *T
-	AsJSON(obj interface{}) *T
-	AsXML(obj interface{}) *T
+	AsJSON(obj any) *T
+	AsXML(obj any) *T
 	AsFormData(fields map[string]string) *T
 }
 
@@ -554,10 +558,10 @@ type ContextWrapper interface {
 // and response bodies, supporting various content types and processing requirements.
 type BodyWrapper interface {
 	io.ReadCloser
-	ReadAsJSON(obj interface{}) error
-	WriteAsJSON(obj interface{}) error
-	ReadAsXML(obj interface{}) error
-	WriteAsXML(obj interface{}) error
+	ReadAsJSON(obj any) error
+	WriteAsJSON(obj any) error
+	ReadAsXML(obj any) error
+	WriteAsXML(obj any) error
 	ReadAsString() (string, error)
 	WriteAsString(body string) error
 	WriteAsFormData(fields map[string]string) (contentType string, err error)

@@ -2,6 +2,7 @@ package fastshot
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -47,6 +48,18 @@ func TestClientConfigBuilder(t *testing.T) {
 			},
 			expectedConfig: func(ccb *ClientConfigBase) bool {
 				return ccb.HttpClient().Timeout() == 5*time.Second
+			},
+		},
+		{
+			name: "Set JSON codec",
+			method: func(cb *ClientBuilder) *ClientBuilder {
+				return cb.Config().SetJSONCodec(JSONCodec{
+					Encode: func(w io.Writer, v any) error { return nil },
+					Decode: func(r io.Reader, v any) error { return nil },
+				})
+			},
+			expectedConfig: func(ccb *ClientConfigBase) bool {
+				return ccb.JSONCodec().Encode != nil && ccb.JSONCodec().Decode != nil
 			},
 		},
 	}
