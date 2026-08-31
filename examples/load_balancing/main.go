@@ -48,7 +48,7 @@ func healthcheck(client fastshot.ClientHttpMethods) {
 		return
 	}
 
-	var healthCheckResponse map[string]interface{}
+	var healthCheckResponse map[string]any
 
 	// Parse the response body as JSON
 	// Note: The response body is automatically closed when using AsBytes, AsString, or AsJSON methods

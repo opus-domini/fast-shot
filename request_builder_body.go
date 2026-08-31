@@ -44,7 +44,7 @@ func (b *RequestBodyBuilder) AsString(body string) *RequestBuilder {
 }
 
 // AsJSON sets the body as JSON.
-func (b *RequestBodyBuilder) AsJSON(obj interface{}) *RequestBuilder {
+func (b *RequestBodyBuilder) AsJSON(obj any) *RequestBuilder {
 	err := b.requestConfig.Body().WriteAsJSON(obj)
 	if err != nil {
 		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgMarshalJSON), err))
@@ -53,7 +53,7 @@ func (b *RequestBodyBuilder) AsJSON(obj interface{}) *RequestBuilder {
 }
 
 // AsXML sets the body as XML.
-func (b *RequestBodyBuilder) AsXML(obj interface{}) *RequestBuilder {
+func (b *RequestBodyBuilder) AsXML(obj any) *RequestBuilder {
 	err := b.requestConfig.Body().WriteAsXML(obj)
 	if err != nil {
 		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgMarshalXML), err))

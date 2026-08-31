@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
@@ -129,8 +130,8 @@ func Create[T model.Model](repository repository.Repository) func(w http.Respons
 // The last middleware in the list is the first to be executed, and it calls the next middleware in the chain.
 // This continues until the final handler is reached.
 func handleWithMiddlewares(middlewares []Middleware, mux http.Handler) http.Handler {
-	for i := len(middlewares) - 1; i >= 0; i-- {
-		mux = middlewares[i](mux)
+	for _, middleware := range slices.Backward(middlewares) {
+		mux = middleware(mux)
 	}
 	return mux
 }

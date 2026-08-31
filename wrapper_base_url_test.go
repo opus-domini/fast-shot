@@ -2,6 +2,7 @@ package fastshot
 
 import (
 	"net/url"
+	"slices"
 	"sync"
 	"testing"
 )
@@ -57,24 +58,16 @@ func TestBalancedBaseURL_Concurrent(t *testing.T) {
 	var wg sync.WaitGroup
 	results := make(chan *url.URL, 100)
 	for range 100 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			results <- base.BaseURL()
-		}()
+		})
 	}
 	wg.Wait()
 	close(results)
 
 	// Assert - all returned URLs must be one of the valid base URLs
 	for u := range results {
-		found := false
-		for _, valid := range urls {
-			if u == valid {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(urls, u)
 		if !found {
 			t.Errorf("got %v, want one of %v", u, urls)
 		}

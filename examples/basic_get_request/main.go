@@ -48,7 +48,7 @@ func getUser(client fastshot.ClientHttpMethods, id string) {
 	handleResponse(resp, &model.User{})
 }
 
-func handleResponse(resp *fastshot.Response, data interface{}) {
+func handleResponse(resp *fastshot.Response, data any) {
 	slog.Info("Response:", "status", resp.Status().Text())
 
 	if resp.Status().IsError() {

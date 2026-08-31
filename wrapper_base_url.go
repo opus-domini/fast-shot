@@ -14,7 +14,7 @@ type (
 	// BalancedBaseURL implements ConfigBaseURL interface and provides load balancing.
 	BalancedBaseURL struct {
 		baseURLs       []*url.URL
-		currentBaseURL uint32
+		currentBaseURL atomic.Uint32
 	}
 )
 
@@ -25,7 +25,7 @@ func (c *DefaultBaseURL) BaseURL() *url.URL {
 
 // BaseURL for BalancedBaseURL returns the next base URL in the list.
 func (c *BalancedBaseURL) BaseURL() *url.URL {
-	index := atomic.AddUint32(&c.currentBaseURL, 1) - 1
+	index := c.currentBaseURL.Add(1) - 1
 	return c.baseURLs[index%uint32(len(c.baseURLs))]
 }
 
