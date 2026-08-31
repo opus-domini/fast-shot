@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/opus-domini/fast-shot/constant"
@@ -461,17 +462,16 @@ func TestRequest_WithLoadBalancer(t *testing.T) {
 func TestRequest_Retry(t *testing.T) {
 	tests := []struct {
 		name             string
-		setupClient      func(string) ClientHttpMethods
 		request          func(ClientHttpMethods) *RequestBuilder
 		serverResponses  []int
 		expectedAttempts int
 		expectedStatus   int
 		expectedBody     string
+		expectedElapsed  time.Duration
 		expectError      bool
 	}{
 		{
-			name:        "Success on third attempt (GET)",
-			setupClient: DefaultClient,
+			name: "Success on third attempt (GET)",
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetExponentialBackoff(10*time.Millisecond, 5, 2.0)
@@ -484,10 +484,11 @@ func TestRequest_Retry(t *testing.T) {
 			expectedAttempts: 3,
 			expectedStatus:   http.StatusOK,
 			expectedBody:     "Success",
+			// Delays: 10ms + 20ms before the successful third attempt.
+			expectedElapsed: 30 * time.Millisecond,
 		},
 		{
-			name:        "Failure after max attempts (GET)",
-			setupClient: DefaultClient,
+			name: "Failure after max attempts (GET)",
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetConstantBackoff(10*time.Millisecond, 3)
@@ -499,11 +500,12 @@ func TestRequest_Retry(t *testing.T) {
 				http.StatusInternalServerError,
 			},
 			expectedAttempts: 3,
-			expectError:      true,
+			// Delays: 10ms after each of the 3 attempts.
+			expectedElapsed: 30 * time.Millisecond,
+			expectError:     true,
 		},
 		{
-			name:        "When max attempts is 0, no retries are made (GET)",
-			setupClient: DefaultClient,
+			name: "When max attempts is 0, no retries are made (GET)",
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetConstantBackoff(10*time.Millisecond, 0)
@@ -515,8 +517,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
-			name:        "Success on second attempt (POST with body)",
-			setupClient: DefaultClient,
+			name: "Success on second attempt (POST with body)",
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.POST("/test").
 					Body().AsJSON(map[string]string{"key": "value"}).
@@ -531,8 +532,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectedBody:     "Success",
 		},
 		{
-			name:        "Custom retry condition (retry on 404)",
-			setupClient: DefaultClient,
+			name: "Custom retry condition (retry on 404)",
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetConstantBackoff(10*time.Millisecond, 3).
@@ -549,10 +549,11 @@ func TestRequest_Retry(t *testing.T) {
 			expectedAttempts: 3,
 			expectedStatus:   http.StatusOK,
 			expectedBody:     "Success",
+			// Delays: 10ms + 10ms before the successful third attempt.
+			expectedElapsed: 20 * time.Millisecond,
 		},
 		{
-			name:        "Max delay reached using exponential backoff",
-			setupClient: DefaultClient,
+			name: "Max delay reached using exponential backoff",
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetExponentialBackoff(10*time.Millisecond, 5, 2.0).
@@ -567,10 +568,11 @@ func TestRequest_Retry(t *testing.T) {
 			expectedAttempts: 4,
 			expectedStatus:   http.StatusOK,
 			expectedBody:     "Success",
+			// Delays: 10ms, then capped at 15ms (from 20ms and 40ms).
+			expectedElapsed: 40 * time.Millisecond,
 		},
 		{
-			name:        "Max delay reached using constant backoff",
-			setupClient: DefaultClient,
+			name: "Max delay reached using constant backoff",
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetConstantBackoff(10*time.Millisecond, 5).
@@ -585,10 +587,11 @@ func TestRequest_Retry(t *testing.T) {
 			expectedAttempts: 4,
 			expectedStatus:   http.StatusOK,
 			expectedBody:     "Success",
+			// Delays: 10ms after each failed attempt (below the 15ms cap).
+			expectedElapsed: 30 * time.Millisecond,
 		},
 		{
-			name:        "Success on first attempt with no retry",
-			setupClient: DefaultClient,
+			name: "Success on first attempt with no retry",
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test")
 			},
@@ -600,8 +603,7 @@ func TestRequest_Retry(t *testing.T) {
 			expectedBody:     "Success",
 		},
 		{
-			name:        "Success after 3 retries with exponential backoff and jitter",
-			setupClient: DefaultClient,
+			name: "Success after 3 retries with exponential backoff and jitter",
 			request: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").
 					Retry().SetExponentialBackoffWithJitter(10*time.Millisecond, 5, 2.0)
@@ -620,74 +622,89 @@ func TestRequest_Retry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Arrange
-			attemptCount := 0
-			requestBody := ""
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				defer func() { attemptCount++ }()
-				if attemptCount >= len(tt.serverResponses) {
-					w.WriteHeader(http.StatusInternalServerError)
-					return
+			// The test runs in a synctest bubble with an in-memory HTTP server:
+			// retry delays use a fake clock, making elapsed time deterministic.
+			synctest.Test(t, func(t *testing.T) {
+				// Arrange
+				attemptCount := 0
+				requestBody := ""
+				server := httptest.NewTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					defer func() { attemptCount++ }()
+					if attemptCount >= len(tt.serverResponses) {
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					statusCode := tt.serverResponses[attemptCount]
+					w.WriteHeader(statusCode)
+
+					if r.Method == "POST" {
+						body, _ := io.ReadAll(r.Body)
+						requestBody = string(body)
+					}
+
+					if statusCode == http.StatusOK {
+						_, _ = w.Write([]byte("Success"))
+					}
+				}))
+
+				// Any address reaches the in-memory server through its transport.
+				serverClient := server.Client()
+				client := NewClient("http://example.com").
+					Config().SetCustomTransport(serverClient.Transport).
+					Build()
+				defer serverClient.CloseIdleConnections()
+
+				start := time.Now()
+
+				// Act
+				resp, err := tt.request(client).Send()
+
+				// Assert
+				if tt.expectError {
+					if err == nil {
+						t.Error("expected error, got nil")
+					}
+					if resp != nil {
+						t.Errorf("resp got %v, want nil", resp)
+					}
+				} else {
+					if err != nil {
+						t.Fatalf("unexpected error: %v", err)
+					}
+					if resp == nil {
+						t.Fatal("resp got nil, want non-nil")
+					}
+					if got := resp.Status().Code(); got != tt.expectedStatus {
+						t.Errorf("status got %d, want %d", got, tt.expectedStatus)
+					}
+					body, _ := resp.Body().AsString()
+					if body != tt.expectedBody {
+						t.Errorf("body got %q, want %q", body, tt.expectedBody)
+					}
+				}
+				if attemptCount != tt.expectedAttempts {
+					t.Errorf("attempts got %d, want %d", attemptCount, tt.expectedAttempts)
+				}
+				if tt.expectedElapsed != 0 {
+					if got := time.Since(start); got != tt.expectedElapsed {
+						t.Errorf("elapsed got %v, want %v", got, tt.expectedElapsed)
+					}
 				}
 
-				statusCode := tt.serverResponses[attemptCount]
-				w.WriteHeader(statusCode)
-
-				if r.Method == "POST" {
-					body, _ := io.ReadAll(r.Body)
-					requestBody = string(body)
+				if tt.request(client).request.config.Method() == method.POST {
+					if requestBody == "" {
+						t.Error("request body is empty, want non-empty")
+					}
+					var bodyMap map[string]string
+					if err := json.Unmarshal([]byte(requestBody), &bodyMap); err != nil {
+						t.Fatalf("unexpected error unmarshalling body: %v", err)
+					}
+					if bodyMap["key"] != "value" {
+						t.Errorf("body[key] got %q, want %q", bodyMap["key"], "value")
+					}
 				}
-
-				if statusCode == http.StatusOK {
-					_, _ = w.Write([]byte("Success"))
-				}
-			}))
-			defer server.Close()
-
-			client := tt.setupClient(server.URL)
-
-			// Act
-			resp, err := tt.request(client).Send()
-
-			// Assert
-			if tt.expectError {
-				if err == nil {
-					t.Error("expected error, got nil")
-				}
-				if resp != nil {
-					t.Errorf("resp got %v, want nil", resp)
-				}
-			} else {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-				if resp == nil {
-					t.Fatal("resp got nil, want non-nil")
-				}
-				if got := resp.Status().Code(); got != tt.expectedStatus {
-					t.Errorf("status got %d, want %d", got, tt.expectedStatus)
-				}
-				body, _ := resp.Body().AsString()
-				if body != tt.expectedBody {
-					t.Errorf("body got %q, want %q", body, tt.expectedBody)
-				}
-			}
-			if attemptCount != tt.expectedAttempts {
-				t.Errorf("attempts got %d, want %d", attemptCount, tt.expectedAttempts)
-			}
-
-			if tt.request(client).request.config.Method() == method.POST {
-				if requestBody == "" {
-					t.Error("request body is empty, want non-empty")
-				}
-				var bodyMap map[string]string
-				if err := json.Unmarshal([]byte(requestBody), &bodyMap); err != nil {
-					t.Fatalf("unexpected error unmarshalling body: %v", err)
-				}
-				if bodyMap["key"] != "value" {
-					t.Errorf("body[key] got %q, want %q", bodyMap["key"], "value")
-				}
-			}
+			})
 		})
 	}
 }
