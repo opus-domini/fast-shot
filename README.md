@@ -161,6 +161,35 @@ Key behaviors:
 - A before-request hook returning an error aborts the request
 - After-response hooks are observational and do not return errors
 
+### Generic Response Decoding (Go 1.27)
+
+Skip the pre-allocated destination and decode straight into a typed value:
+
+```go
+type User struct {
+    Name string `json:"name"`
+}
+
+user, err := response.Body().AsJSONOf[User]()
+// also available: response.Body().AsXMLOf[User]()
+```
+
+### Pluggable JSON Codec (encoding/json/v2)
+
+By default, bodies are encoded/decoded with the standard `encoding/json`.
+Opt into `encoding/json/v2` (Go 1.27+) for stricter, more interoperable defaults:
+
+```go
+import "github.com/opus-domini/fast-shot/jsonv2"
+
+client := fastshot.NewClient("https://api.example.com").
+    Config().SetJSONCodec(jsonv2.New()).
+    Build()
+```
+
+The v2 codec rejects invalid UTF-8, duplicate object keys, and trailing data.
+Bring your own codec by implementing `fastshot.JSONCodec` (Encode/Decode funcs).
+
 ### Out-of-the-Box Support for Client Load Balancing
 
 Effortlessly manage multiple endpoints:
