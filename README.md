@@ -180,10 +180,8 @@ By default, bodies are encoded/decoded with the standard `encoding/json`.
 Opt into `encoding/json/v2` (Go 1.27+) for stricter, more interoperable defaults:
 
 ```go
-import "github.com/opus-domini/fast-shot/jsonv2"
-
 client := fastshot.NewClient("https://api.example.com").
-    Config().SetJSONCodec(jsonv2.New()).
+    Config().SetJSONCodec(fastshot.NewJSONv2Codec()).
     Build()
 ```
 

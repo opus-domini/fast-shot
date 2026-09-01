@@ -299,7 +299,7 @@ type BuilderAuth[T any] interface {
 //		Config().SetTimeout(30 * time.Second).
 //		Config().SetFollowRedirects(false).
 //		Config().SetProxy("http://proxy.example.com:8080").
-//		Config().SetJSONCodec(jsonv2.New()).
+//		Config().SetJSONCodec(NewJSONv2Codec()).
 //		Build()
 //
 // The BuilderHttpClientConfig interface enables users to adapt the HTTP client to various

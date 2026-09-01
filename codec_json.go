@@ -1,7 +1,8 @@
 package fastshot
 
 import (
-	"encoding/json"
+	json "encoding/json"
+	jsonv2 "encoding/json/v2"
 	"io"
 )
 
@@ -33,6 +34,24 @@ func DefaultJSONCodec() JSONCodec {
 		},
 		Decode: func(r io.Reader, v any) error {
 			return json.NewDecoder(r).Decode(v)
+		},
+	}
+}
+
+// NewJSONv2Codec returns a JSONCodec backed by the standard library encoding/json/v2.
+//
+// Compared to DefaultJSONCodec, it applies stricter, more interoperable
+// defaults: it rejects invalid UTF-8 in JSON strings, rejects duplicate names
+// within JSON objects, and rejects trailing data after a top-level JSON value.
+// Marshaled output also carries no trailing newline. See the encoding/json/v2
+// documentation for the complete set of differences and available options.
+func NewJSONv2Codec() JSONCodec {
+	return JSONCodec{
+		Encode: func(w io.Writer, v any) error {
+			return jsonv2.MarshalWrite(w, v)
+		},
+		Decode: func(r io.Reader, v any) error {
+			return jsonv2.UnmarshalRead(r, v)
 		},
 	}
 }
