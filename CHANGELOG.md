@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.4.0](https://github.com/opus-domini/fast-shot/compare/v1.3.3...v1.4.0) (2026-09-01)
+
+
+### Features
+
+* add generic response body decoding methods ([f75b04a](https://github.com/opus-domini/fast-shot/commit/f75b04af89771b5927cd813d5a356257bea25fad))
+* add pluggable JSON codec with encoding/json/v2 opt-in ([78c292e](https://github.com/opus-domini/fast-shot/commit/78c292ec31d6359f4ecab438d508ee6ec2dd1eaf))
+
+
+### Refactors
+
+* inline JSON v2 codec into root package ([ec58186](https://github.com/opus-domini/fast-shot/commit/ec58186c96319e1fbb6bfbf0501f85649d32c1a1))
+
+
+### Documentation
+
+* document generic response decoding and pluggable JSON codec ([6de98c7](https://github.com/opus-domini/fast-shot/commit/6de98c7c2ae829362acd770dd6c936ce2a6d9a0a))
+* remove obsolete Stargazers section ([7a37457](https://github.com/opus-domini/fast-shot/commit/7a374577c5464d6d5cb4ba7e939809b3d3d4697d))
+
 ## [1.3.3](https://github.com/opus-domini/fast-shot/compare/v1.3.2...v1.3.3) (2026-08-14)
 
 
