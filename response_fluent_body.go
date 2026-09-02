@@ -1,7 +1,6 @@
 package fastshot
 
 import (
-	"bytes"
 	"io"
 )
 
@@ -28,12 +27,11 @@ func (b *ResponseFluentBody) CloseErr() error {
 func (b *ResponseFluentBody) AsBytes() ([]byte, error) {
 	defer b.Close()
 
-	buf := new(bytes.Buffer)
-	_, err := buf.ReadFrom(b.body)
+	data, err := io.ReadAll(b.body)
 	if err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
+	return data, nil
 }
 
 func (b *ResponseFluentBody) AsString() (string, error) {

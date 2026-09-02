@@ -176,16 +176,18 @@ user, err := response.Body().AsJSONOf[User]()
 
 ### Pluggable JSON Codec (encoding/json/v2)
 
-By default, bodies are encoded/decoded with the standard `encoding/json`.
-Opt into `encoding/json/v2` (Go 1.27+) for stricter, more interoperable defaults:
+Bodies are encoded/decoded with the standard `encoding/json/v2` (Go 1.27+):
+strict, interoperable defaults — invalid UTF-8, duplicate object keys, and
+trailing data are rejected.
+
+Need the lenient `encoding/json` (v1) semantics? Opt in:
 
 ```go
 client := fastshot.NewClient("https://api.example.com").
-    Config().SetJSONCodec(fastshot.NewJSONv2Codec()).
+    Config().SetJSONCodec(fastshot.NewJSONv1Codec()).
     Build()
 ```
 
-The v2 codec rejects invalid UTF-8, duplicate object keys, and trailing data.
 Bring your own codec by implementing `fastshot.JSONCodec` (Encode/Decode funcs).
 
 ### Out-of-the-Box Support for Client Load Balancing
