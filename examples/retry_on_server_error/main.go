@@ -41,13 +41,11 @@ func main() {
 		return
 	}
 
-	// Parse the response body.
-	var resource *model.Resource
-
-	// Don't need to close the response body here.
-	// It's done automatically when using AsBytes, AsString or AsJSON methods.
-	if parseErr := resp.Body().AsJSON(&resource); parseErr != nil {
-		slog.Error("Error parsing response.", "error", parseErr)
+	// Decode straight into a typed value (Go 1.27 generic method).
+	// The response body is closed automatically by AsJSONOf.
+	resource, err := resp.Body().AsJSONOf[model.Resource]()
+	if err != nil {
+		slog.Error("Error parsing response.", "error", err)
 		return
 	}
 

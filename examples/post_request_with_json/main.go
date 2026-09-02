@@ -51,13 +51,11 @@ func main() {
 	// Congratulations! The user was created.
 	slog.Info("User created!", "status", resp.Status().Text())
 
-	// Parse the response body.
-	var createdUser *model.User
-
-	// Don't need to close the response body here.
-	// It's done automatically when using AsBytes, AsString or AsJSON methods.
-	if parseErr := resp.Body().AsJSON(&createdUser); parseErr != nil {
-		slog.Error("Error parsing response.", "error", parseErr)
+	// Decode straight into a typed value (Go 1.27 generic method).
+	// The response body is closed automatically by AsJSONOf.
+	createdUser, err := resp.Body().AsJSONOf[model.User]()
+	if err != nil {
+		slog.Error("Error parsing response.", "error", err)
 		return
 	}
 
