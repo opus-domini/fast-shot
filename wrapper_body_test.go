@@ -90,7 +90,7 @@ func TestWrapperBody_Buffered(t *testing.T) {
 				return nil, err
 			},
 			expected:      nil,
-			expectedError: errors.New("invalid character 'i' looking for beginning of value"),
+			expectedError: errors.New("jsontext: invalid character 'i' at start of value"),
 		},
 		{
 			name: "WriteAsJSON success",
@@ -355,7 +355,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 				return nil, err
 			},
 			expected:      nil,
-			expectedError: errors.New("invalid character 'i' looking for beginning of value"),
+			expectedError: errors.New("jsontext: invalid character 'i' at start of value"),
 		},
 		{
 			name:   "WriteAsJSON success",
@@ -373,7 +373,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 				return nil, b.WriteAsJSON(make(chan int))
 			},
 			expected:      nil,
-			expectedError: errors.New("json: unsupported type: chan int"),
+			expectedError: errors.New("json: cannot marshal from Go chan int"),
 		},
 		{
 			name:   "ReadAsXML success",
@@ -478,7 +478,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 				return nil, b.WriteAsJSON(make(chan int))
 			},
 			expected:      nil,
-			expectedError: errors.New("json: unsupported type: chan int"),
+			expectedError: errors.New("json: cannot marshal from Go chan int"),
 		},
 		{
 			name:   "ReadAsString error", // Covering "if err != nil"
@@ -559,7 +559,7 @@ func TestWrapperBody_Unbuffered(t *testing.T) {
 				}
 				return b.ReadAsString()
 			},
-			expected:      "{\"key\":\"value\"}\n",
+			expected:      "{\"key\":\"value\"}",
 			expectedError: nil,
 		},
 		{

@@ -3,7 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"log/slog"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
 	"slices"
 	"strconv"
@@ -143,5 +143,5 @@ func writeErrorResponse(w http.ResponseWriter, errorMessage ErrorMessage) {
 
 func shouldSimulateServerError() bool {
 	// Simulate occasional server errors for retry examples
-	return rand.Intn(100) < 80
+	return rand.IntN(100) < 80
 }

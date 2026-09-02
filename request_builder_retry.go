@@ -2,10 +2,7 @@ package fastshot
 
 import "time"
 
-// BuilderRequestRetry is the interface that wraps the basic methods for setting Request maxAttempts.
-var _ BuilderRequestRetry[RequestBuilder] = (*RequestRetryBuilder)(nil)
-
-// RequestRetryBuilder serves as the main entry point for configuring Request maxAttempts.
+// RequestRetryBuilder serves as the main entry point for configuring Request retries.
 type RequestRetryBuilder struct {
 	parentBuilder *RequestBuilder
 	requestConfig *RequestConfigBase
