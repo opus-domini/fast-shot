@@ -36,6 +36,7 @@ func getUsers(client fastshot.ClientHttpMethods) {
 	}
 
 	if resp.Status().IsError() {
+		defer resp.Body().Close()
 		slog.Error("Failed to get data.", "status", resp.Status().Text())
 		return
 	}
@@ -61,6 +62,7 @@ func getUser(client fastshot.ClientHttpMethods, id string) {
 	}
 
 	if resp.Status().IsError() {
+		defer resp.Body().Close()
 		slog.Error("Failed to get data.", "status", resp.Status().Text())
 		return
 	}

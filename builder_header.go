@@ -16,7 +16,7 @@ import (
 //		Build()
 //
 //	client.GET("/users").
-//		Header().Add(header.ContentType, mime.JSON).
+//		Header().AddContentType(mime.JSON).
 //		Send()
 type HeaderBuilder[P any] struct {
 	parent P

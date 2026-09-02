@@ -22,7 +22,6 @@ func TestNoGoroutineLeaks(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
-	defer server.Close()
 
 	client := DefaultClient(server.URL)
 
@@ -38,6 +37,8 @@ func TestNoGoroutineLeaks(t *testing.T) {
 		_, _ = resp.Body().AsString()
 	}
 
+	// Close the server explicitly so idle keep-alive connections are torn
+	// down and their goroutines exit before the leak profile is taken.
 	server.Close()
 
 	// The leak profile is computed from reachability, so give the GC a chance
