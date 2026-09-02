@@ -1,12 +1,10 @@
 package fastshot
 
 import (
-	"errors"
+	"fmt"
 	"net/url"
 	"reflect"
 	"testing"
-
-	"github.com/opus-domini/fast-shot/constant"
 )
 
 func TestRequestQueryBuilder(t *testing.T) {
@@ -76,7 +74,7 @@ func TestRequestQueryBuilder(t *testing.T) {
 				return rb.Query().SetRawString("invalid=%%")
 			},
 			expectedQuery: url.Values{},
-			expectedError: errors.Join(errors.New(constant.ErrMsgParseQueryString), url.EscapeError("%%")),
+			expectedError: fmt.Errorf("%w: %w", ErrParseQueryString, url.EscapeError("%%")),
 		},
 		{
 			name: "Set empty raw query string",
@@ -108,14 +106,14 @@ func TestRequestQueryBuilder(t *testing.T) {
 			}
 
 			if tt.expectedError != nil {
-				if got := len(rb.request.config.Validations().Unwrap()); got != 1 {
+				if got := len(rb.request.config.Validations()); got != 1 {
 					t.Errorf("validations count got %d, want 1", got)
 				}
-				if got := rb.request.config.Validations().Get(0); got.Error() != tt.expectedError.Error() {
+				if got := rb.request.config.Validations()[0]; got.Error() != tt.expectedError.Error() {
 					t.Errorf("validation got %q, want %q", got.Error(), tt.expectedError.Error())
 				}
 			} else {
-				if got := rb.request.config.Validations().Unwrap(); len(got) != 0 {
+				if got := rb.request.config.Validations(); len(got) != 0 {
 					t.Errorf("validations got %v, want empty", got)
 				}
 			}

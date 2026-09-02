@@ -1,23 +1,19 @@
 package fastshot
 
 import (
-	"errors"
+	"fmt"
 	"io"
 
-	"github.com/opus-domini/fast-shot/constant"
 	"github.com/opus-domini/fast-shot/constant/header"
 )
 
-// BuilderRequestBody is the interface that wraps the basic methods for setting custom HTTP Body's.
-var _ BuilderRequestBody[RequestBuilder] = (*RequestBodyBuilder)(nil)
-
-// RequestBodyBuilder serves as the main entry point for configuring BuilderRequestBody.
+// RequestBodyBuilder serves as the main entry point for configuring the request body.
 type RequestBodyBuilder struct {
 	parentBuilder *RequestBuilder
 	requestConfig *RequestConfigBase
 }
 
-// Body returns a new RequestBodyBuilder for setting custom HTTP Body's.
+// Body returns a new RequestBodyBuilder for setting the request body.
 func (b *RequestBuilder) Body() *RequestBodyBuilder {
 	return &RequestBodyBuilder{
 		parentBuilder: b,
@@ -29,7 +25,7 @@ func (b *RequestBuilder) Body() *RequestBodyBuilder {
 func (b *RequestBodyBuilder) AsReader(body io.Reader) *RequestBuilder {
 	err := b.requestConfig.Body().Set(body)
 	if err != nil {
-		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgSetBody), err))
+		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrSetBody, err))
 	}
 	return b.parentBuilder
 }
@@ -38,7 +34,7 @@ func (b *RequestBodyBuilder) AsReader(body io.Reader) *RequestBuilder {
 func (b *RequestBodyBuilder) AsString(body string) *RequestBuilder {
 	err := b.requestConfig.Body().WriteAsString(body)
 	if err != nil {
-		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgSetBody), err))
+		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrSetBody, err))
 	}
 	return b.parentBuilder
 }
@@ -47,7 +43,7 @@ func (b *RequestBodyBuilder) AsString(body string) *RequestBuilder {
 func (b *RequestBodyBuilder) AsJSON(obj any) *RequestBuilder {
 	err := b.requestConfig.Body().WriteAsJSON(obj)
 	if err != nil {
-		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgMarshalJSON), err))
+		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrMarshalJSON, err))
 	}
 	return b.parentBuilder
 }
@@ -56,7 +52,7 @@ func (b *RequestBodyBuilder) AsJSON(obj any) *RequestBuilder {
 func (b *RequestBodyBuilder) AsXML(obj any) *RequestBuilder {
 	err := b.requestConfig.Body().WriteAsXML(obj)
 	if err != nil {
-		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgMarshalXML), err))
+		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrMarshalXML, err))
 	}
 	return b.parentBuilder
 }
@@ -65,9 +61,9 @@ func (b *RequestBodyBuilder) AsXML(obj any) *RequestBuilder {
 func (b *RequestBodyBuilder) AsFormData(fields map[string]string) *RequestBuilder {
 	contentType, err := b.requestConfig.Body().WriteAsFormData(fields)
 	if err != nil {
-		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgSetBody), err))
+		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrSetBody, err))
 	} else {
-		b.requestConfig.httpHeader.Set(header.ContentType, contentType)
+		b.requestConfig.httpHeader.Set(header.ContentType.String(), contentType)
 	}
 	return b.parentBuilder
 }

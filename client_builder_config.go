@@ -1,16 +1,11 @@
 package fastshot
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
-
-	"github.com/opus-domini/fast-shot/constant"
 )
-
-// BuilderHttpClientConfig is the interface that wraps the basic methods for setting HTTP ClientConfig configuration.
-var _ BuilderHttpClientConfig[ClientBuilder] = (*ClientConfigBuilder)(nil)
 
 // ClientConfigBuilder allows for setting other client configurations.
 type ClientConfigBuilder struct {
@@ -50,7 +45,7 @@ func (b *ClientConfigBuilder) SetFollowRedirects(follow bool) *ClientBuilder {
 func (b *ClientConfigBuilder) SetProxy(proxyURL string) *ClientBuilder {
 	parsedURL, err := url.Parse(proxyURL)
 	if err != nil {
-		b.parentBuilder.client.Validations().Add(errors.Join(errors.New(constant.ErrMsgParseProxyURL), err))
+		b.parentBuilder.client.addValidation(fmt.Errorf("%w: %w", ErrParseProxyURL, err))
 		return b.parentBuilder
 	}
 

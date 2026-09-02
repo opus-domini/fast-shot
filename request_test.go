@@ -15,7 +15,6 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github.com/opus-domini/fast-shot/constant"
 	"github.com/opus-domini/fast-shot/constant/header"
 	"github.com/opus-domini/fast-shot/constant/method"
 	"github.com/opus-domini/fast-shot/mock"
@@ -313,7 +312,7 @@ func TestRequest_Send(t *testing.T) {
 			configureRequest: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test")
 			},
-			expectedError: constant.ErrMsgClientValidation,
+			expectedError: ErrClientValidation.Error(),
 		},
 		{
 			name: "JSON Marshalling Error",
@@ -323,7 +322,7 @@ func TestRequest_Send(t *testing.T) {
 			configureRequest: func(client ClientHttpMethods) *RequestBuilder {
 				return client.GET("/test").Body().AsJSON(func() {})
 			},
-			expectedError: constant.ErrMsgRequestValidation,
+			expectedError: ErrRequestValidation.Error(),
 		},
 		{
 			name: "Request Creation Error",
@@ -337,7 +336,7 @@ func TestRequest_Send(t *testing.T) {
 					"/test",
 				)
 			},
-			expectedError: constant.ErrMsgCreateRequest,
+			expectedError: ErrCreateRequest.Error(),
 		},
 	}
 
@@ -500,8 +499,8 @@ func TestRequest_Retry(t *testing.T) {
 				http.StatusInternalServerError,
 			},
 			expectedAttempts: 3,
-			// Delays: 10ms after each of the 3 attempts.
-			expectedElapsed: 30 * time.Millisecond,
+			// Delays: 10ms after the first two attempts only (no sleep after the final one).
+			expectedElapsed: 20 * time.Millisecond,
 			expectError:     true,
 		},
 		{
@@ -761,8 +760,8 @@ func TestRequest_Hooks(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		if !strings.Contains(err.Error(), constant.ErrMsgBeforeRequestHook) {
-			t.Errorf("error %q does not contain %q", err.Error(), constant.ErrMsgBeforeRequestHook)
+		if !strings.Contains(err.Error(), ErrBeforeRequestHook.Error()) {
+			t.Errorf("error %q does not contain %q", err.Error(), ErrBeforeRequestHook.Error())
 		}
 		if !strings.Contains(err.Error(), hookErr.Error()) {
 			t.Errorf("error %q does not contain %q", err.Error(), hookErr.Error())
@@ -966,8 +965,8 @@ func TestRequest_Hooks(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		if !strings.Contains(err.Error(), constant.ErrMsgBeforeRequestHook) {
-			t.Errorf("error %q does not contain %q", err.Error(), constant.ErrMsgBeforeRequestHook)
+		if !strings.Contains(err.Error(), ErrBeforeRequestHook.Error()) {
+			t.Errorf("error %q does not contain %q", err.Error(), ErrBeforeRequestHook.Error())
 		}
 		if !strings.Contains(err.Error(), hookErr.Error()) {
 			t.Errorf("error %q does not contain %q", err.Error(), hookErr.Error())

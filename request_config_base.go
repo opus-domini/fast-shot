@@ -1,6 +1,7 @@
 package fastshot
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"time"
@@ -11,14 +12,14 @@ import (
 type (
 	// RequestConfigBase encapsulates all configurations for a request.
 	RequestConfigBase struct {
-		ctx           ContextWrapper
-		httpHeader    HeaderWrapper
-		httpCookies   CookiesWrapper
+		ctx           context.Context
+		httpHeader    http.Header
+		httpCookies   []*http.Cookie
 		method        method.Type
 		path          string
 		queryParams   url.Values
 		body          BodyWrapper
-		validations   ValidationsWrapper
+		validations   []error
 		retryConfig   *RetryConfig
 		beforeRequest []func(*http.Request) error
 		afterResponse []func(*http.Request, *http.Response)
@@ -46,18 +47,22 @@ const (
 )
 
 // Context returns the context for the request.
-func (c *RequestConfigBase) Context() ContextWrapper {
+func (c *RequestConfigBase) Context() context.Context {
 	return c.ctx
 }
 
 // Header returns the header for the request.
-func (c *RequestConfigBase) Header() HeaderWrapper {
+func (c *RequestConfigBase) Header() http.Header {
 	return c.httpHeader
 }
 
 // Cookies returns the cookies for the request.
-func (c *RequestConfigBase) Cookies() CookiesWrapper {
+func (c *RequestConfigBase) Cookies() []*http.Cookie {
 	return c.httpCookies
+}
+
+func (c *RequestConfigBase) addCookie(cookie *http.Cookie) {
+	c.httpCookies = append(c.httpCookies, cookie)
 }
 
 // Method returns the method for the request.
@@ -80,9 +85,13 @@ func (c *RequestConfigBase) Body() BodyWrapper {
 	return c.body
 }
 
-// Validations returns the validations for the request.
-func (c *RequestConfigBase) Validations() ValidationsWrapper {
+// Validations returns the accumulated request validation errors.
+func (c *RequestConfigBase) Validations() []error {
 	return c.validations
+}
+
+func (c *RequestConfigBase) addValidation(err error) {
+	c.validations = append(c.validations, err)
 }
 
 // RetryConfig returns the retry configuration for the request.
@@ -158,7 +167,7 @@ func (c *RetryConfig) MaxDelay() *time.Duration {
 
 // SetMaxDelay sets the retry maximum delay for the request.
 func (c *RetryConfig) SetMaxDelay(duration time.Duration) {
-	c.maxDelay = &duration
+	c.maxDelay = new(duration)
 }
 
 // JitterStrategy returns the retry jitter strategy for the request.
@@ -174,14 +183,13 @@ func (c *RetryConfig) SetJitterStrategy(strategy JitterStrategy) {
 // NewRequestConfigBase creates a new request configuration.
 func newRequestConfigBase(method method.Type, path string, jsonCodec JSONCodec) *RequestConfigBase {
 	return &RequestConfigBase{
-		ctx:         newDefaultContext(),
-		httpHeader:  newDefaultHttpHeader(),
-		httpCookies: newDefaultHttpCookies(),
+		ctx:         context.Background(),
+		httpHeader:  http.Header{},
+		httpCookies: []*http.Cookie{},
 		method:      method,
 		path:        path,
 		queryParams: url.Values{},
 		body:        newBufferedBody(jsonCodec),
-		validations: newDefaultValidations(nil),
 		retryConfig: &RetryConfig{
 			shouldRetry:    func(response *Response) bool { return response.Status().IsError() },
 			interval:       1 * time.Second,

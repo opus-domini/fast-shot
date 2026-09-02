@@ -44,11 +44,11 @@ func TestRequestContextBuilder(t *testing.T) {
 				t.Errorf("got different builder, want same")
 			}
 			if tt.ctx == nil {
-				if rb.request.config.Context().Unwrap() == nil {
+				if rb.request.config.Context() == nil {
 					t.Error("context got nil, want non-nil")
 				}
 			} else {
-				if got := rb.request.config.Context().Unwrap(); !reflect.DeepEqual(got, tt.ctx) {
+				if got := rb.request.config.Context(); !reflect.DeepEqual(got, tt.ctx) {
 					t.Errorf("context got %v, want %v", got, tt.ctx)
 				}
 			}

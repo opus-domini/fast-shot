@@ -1,17 +1,12 @@
 package fastshot
 
 import (
-	"errors"
+	"fmt"
 	"net/url"
 	"strings"
-
-	"github.com/opus-domini/fast-shot/constant"
 )
 
-// BuilderRequestQuery is the interface that wraps the basic methods for setting query parameters.
-var _ BuilderRequestQuery[RequestBuilder] = (*RequestQueryBuilder)(nil)
-
-// RequestQueryBuilder serves as the main entry point for configuring BuilderRequestQuery.
+// RequestQueryBuilder serves as the main entry point for configuring query parameters.
 type RequestQueryBuilder struct {
 	parentBuilder *RequestBuilder
 	requestConfig *RequestConfigBase
@@ -58,7 +53,7 @@ func (b *RequestQueryBuilder) SetRawString(query string) *RequestBuilder {
 	// Parse query string
 	queryParams, err := url.ParseQuery(strings.TrimSpace(query))
 	if err != nil {
-		b.requestConfig.Validations().Add(errors.Join(errors.New(constant.ErrMsgParseQueryString), err))
+		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrParseQueryString, err))
 		return b.parentBuilder
 	}
 	// Set query params

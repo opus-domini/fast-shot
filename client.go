@@ -2,7 +2,7 @@ package fastshot
 
 // ClientBuilder serves as the main entry point for configuring HTTP clients.
 type ClientBuilder struct {
-	client Client
+	client *ClientConfigBase
 }
 
 // NewClient initializes a new ClientBuilder with a given baseURL.

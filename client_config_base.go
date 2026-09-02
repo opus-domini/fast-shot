@@ -1,21 +1,19 @@
 package fastshot
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 
-	"github.com/opus-domini/fast-shot/constant"
 	"github.com/opus-domini/fast-shot/constant/method"
 )
 
 // ClientConfigBase serves as the main entry point for configuring HTTP clients.
 type ClientConfigBase struct {
 	httpClient    HttpClientComponent
-	httpHeader    HeaderWrapper
-	httpCookies   CookiesWrapper
-	validations   ValidationsWrapper
+	httpHeader    http.Header
+	httpCookies   []*http.Cookie
+	validations   []error
 	jsonCodec     JSONCodec
 	beforeRequest []func(*http.Request) error
 	afterResponse []func(*http.Request, *http.Response)
@@ -32,19 +30,27 @@ func (c *ClientConfigBase) SetHttpClient(httpClient HttpClientComponent) {
 	c.httpClient = httpClient
 }
 
-// Header for ClientConfigBase returns the HeaderWrapper.
-func (c *ClientConfigBase) Header() HeaderWrapper {
+// Header for ClientConfigBase returns the client headers.
+func (c *ClientConfigBase) Header() http.Header {
 	return c.httpHeader
 }
 
-// Cookies for ClientConfigBase returns the CookiesWrapper.
-func (c *ClientConfigBase) Cookies() CookiesWrapper {
+// Cookies for ClientConfigBase returns the client cookies.
+func (c *ClientConfigBase) Cookies() []*http.Cookie {
 	return c.httpCookies
 }
 
-// Validations for ClientConfigBase returns the ValidationsWrapper.
-func (c *ClientConfigBase) Validations() ValidationsWrapper {
+func (c *ClientConfigBase) addCookie(cookie *http.Cookie) {
+	c.httpCookies = append(c.httpCookies, cookie)
+}
+
+// Validations returns the accumulated client validation errors.
+func (c *ClientConfigBase) Validations() []error {
 	return c.validations
+}
+
+func (c *ClientConfigBase) addValidation(err error) {
+	c.validations = append(c.validations, err)
 }
 
 // JSONCodec for ClientConfigBase returns the JSONCodec used by request and response bodies.
@@ -128,19 +134,19 @@ func newClientConfigBase(baseURL string) *ClientConfigBase {
 	var validations []error
 
 	if baseURL == "" {
-		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
+		validations = append(validations, ErrEmptyBaseURL)
 	}
 
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
-		validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
+		validations = append(validations, fmt.Errorf("%w: %w", ErrParseURL, err))
 	}
 
 	return &ClientConfigBase{
 		httpClient:    newDefaultHttpClient(),
-		httpHeader:    newDefaultHttpHeader(),
-		httpCookies:   newDefaultHttpCookies(),
-		validations:   newDefaultValidations(validations),
+		httpHeader:    http.Header{},
+		httpCookies:   []*http.Cookie{},
+		validations:   validations,
 		jsonCodec:     DefaultJSONCodec(),
 		ConfigBaseURL: newDefaultBaseURL(parsedURL),
 	}
@@ -153,26 +159,26 @@ func newBalancedClientConfigBase(baseURLs []string) *ClientConfigBase {
 	var parsedURLs []*url.URL
 	for index, baseURL := range baseURLs {
 		if baseURL == "" {
-			validations = append(validations, fmt.Errorf("base URL %d: %s", index, constant.ErrMsgEmptyBaseURL))
+			validations = append(validations, fmt.Errorf("base URL %d: %w", index, ErrEmptyBaseURL))
 			continue
 		}
 
 		parsedURL, err := url.Parse(baseURL)
 		if err != nil {
-			validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
+			validations = append(validations, fmt.Errorf("%w: %w", ErrParseURL, err))
 		}
 		parsedURLs = append(parsedURLs, parsedURL)
 	}
 
 	if len(parsedURLs) == 0 {
-		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
+		validations = append(validations, ErrEmptyBaseURL)
 	}
 
 	return &ClientConfigBase{
 		httpClient:    newDefaultHttpClient(),
-		httpHeader:    newDefaultHttpHeader(),
-		httpCookies:   newDefaultHttpCookies(),
-		validations:   newDefaultValidations(validations),
+		httpHeader:    http.Header{},
+		httpCookies:   []*http.Cookie{},
+		validations:   validations,
 		jsonCodec:     DefaultJSONCodec(),
 		ConfigBaseURL: newBalancedBaseURL(parsedURLs),
 	}
