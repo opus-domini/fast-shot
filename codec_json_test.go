@@ -100,7 +100,7 @@ func TestJSONCodec_ClientIntegration(t *testing.T) {
 		t.Fatalf("unexpected error sending: %v", err)
 	}
 
-	user, err := resp.Body().AsJSONOf[codecTestUser]()
+	user, err := resp.Body().AsJSON[codecTestUser]()
 	if err != nil {
 		t.Fatalf("unexpected error decoding response: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestJSONCodec_V1ClientIntegration(t *testing.T) {
 		t.Fatalf("unexpected error sending: %v", err)
 	}
 
-	user, err := resp.Body().AsJSONOf[codecTestUser]()
+	user, err := resp.Body().AsJSON[codecTestUser]()
 	if err != nil {
 		t.Fatalf("unexpected error decoding response: %v", err)
 	}

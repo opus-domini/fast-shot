@@ -92,8 +92,7 @@ func main() {
     }
 
     // Decode straight into a typed value (Go 1.27 generic method).
-    var result map[string]any
-    result, err = response.Body().AsJSONOf[map[string]any]()
+    result, err := response.Body().AsJSON[map[string]any]()
 
     // Congrats! Do something awesome with the result (¬‿¬)
     fmt.Println(result)
@@ -172,8 +171,8 @@ type User struct {
     Name string `json:"name"`
 }
 
-user, err := response.Body().AsJSONOf[User]()
-// also available: response.Body().AsXMLOf[User]()
+user, err := response.Body().AsJSON[User]()
+// also available: response.Body().AsXML[User]()
 ```
 
 ### Pluggable JSON Codec (encoding/json/v2)

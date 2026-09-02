@@ -49,8 +49,8 @@ func healthcheck(client fastshot.ClientHttpMethods) {
 	}
 
 	// Decode straight into a typed value (Go 1.27 generic method).
-	// The response body is closed automatically by AsJSONOf.
-	healthCheckResponse, err := resp.Body().AsJSONOf[map[string]any]()
+	// The response body is closed automatically by AsJSON.
+	healthCheckResponse, err := resp.Body().AsJSON[map[string]any]()
 	if err != nil {
 		slog.Error("Error parsing response.", "error", err)
 		return

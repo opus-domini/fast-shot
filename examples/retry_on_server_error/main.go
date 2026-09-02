@@ -42,8 +42,8 @@ func main() {
 	}
 
 	// Decode straight into a typed value (Go 1.27 generic method).
-	// The response body is closed automatically by AsJSONOf.
-	resource, err := resp.Body().AsJSONOf[model.Resource]()
+	// The response body is closed automatically by AsJSON.
+	resource, err := resp.Body().AsJSON[model.Resource]()
 	if err != nil {
 		slog.Error("Error parsing response.", "error", err)
 		return

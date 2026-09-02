@@ -41,8 +41,8 @@ func getUsers(client fastshot.ClientHttpMethods) {
 	}
 
 	// Decode straight into a typed value (Go 1.27 generic method).
-	// The response body is closed automatically by AsJSONOf.
-	users, err := resp.Body().AsJSONOf[[]model.User]()
+	// The response body is closed automatically by AsJSON.
+	users, err := resp.Body().AsJSON[[]model.User]()
 	if err != nil {
 		slog.Error("Error parsing response.", "error", err)
 		return
@@ -66,8 +66,8 @@ func getUser(client fastshot.ClientHttpMethods, id string) {
 	}
 
 	// Decode straight into a typed value (Go 1.27 generic method).
-	// The response body is closed automatically by AsJSONOf.
-	user, err := resp.Body().AsJSONOf[model.User]()
+	// The response body is closed automatically by AsJSON.
+	user, err := resp.Body().AsJSON[model.User]()
 	if err != nil {
 		slog.Error("Error parsing response.", "error", err)
 		return

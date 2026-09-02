@@ -59,7 +59,7 @@ func BenchmarkSendGET(b *testing.B) {
 	}
 }
 
-func BenchmarkResponseAsJSONOf(b *testing.B) {
+func BenchmarkResponseAsJSON(b *testing.B) {
 	server := httptest.NewTestServer(b, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = DefaultJSONCodec().Encode(w, codecTestUser{Name: "Ana"})
@@ -78,7 +78,7 @@ func BenchmarkResponseAsJSONOf(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		decoded, err := user.Body().AsJSONOf[codecTestUser]()
+		decoded, err := user.Body().AsJSON[codecTestUser]()
 		if err != nil {
 			b.Fatal(err)
 		}

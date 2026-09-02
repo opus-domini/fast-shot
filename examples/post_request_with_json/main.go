@@ -52,8 +52,8 @@ func main() {
 	slog.Info("User created!", "status", resp.Status().Text())
 
 	// Decode straight into a typed value (Go 1.27 generic method).
-	// The response body is closed automatically by AsJSONOf.
-	createdUser, err := resp.Body().AsJSONOf[model.User]()
+	// The response body is closed automatically by AsJSON.
+	createdUser, err := resp.Body().AsJSON[model.User]()
 	if err != nil {
 		slog.Error("Error parsing response.", "error", err)
 		return
