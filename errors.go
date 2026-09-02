@@ -36,7 +36,7 @@ var (
 //
 // Inspect it with errors.AsType (Go 1.26+) or errors.As:
 //
-//	if retryErr, err := errors.AsType[*fastshot.RetryError](err); err == nil {
+//	if retryErr, ok := errors.AsType[*fastshot.RetryError](err); ok {
 //		log.Printf("gave up after %d attempts", retryErr.Attempts)
 //	}
 type RetryError struct {

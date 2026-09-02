@@ -8,3 +8,4 @@ ignore:
   - docs/**
   - examples/**
   - mock/**
+  - "**/*_test.go"
