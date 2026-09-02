@@ -34,7 +34,7 @@ func TestNewClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			clientBuilder := NewClient(tt.baseURL)
-			if got := len(clientBuilder.client.Validations()) > 0; got != tt.expectError {
+			if got := !clientBuilder.client.Validations().IsEmpty(); got != tt.expectError {
 				t.Errorf("NewClient() error = %v, expectError %v", got, tt.expectError)
 			}
 		})
@@ -72,8 +72,8 @@ func TestNewClientLoadBalancer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			clientBuilder := NewClientLoadBalancer(tt.baseURLs)
-			if (len(clientBuilder.client.Validations()) > 0) != tt.expectError {
-				t.Errorf("NewClientLoadBalancer() error = %v, expectError %v", len(clientBuilder.client.Validations()) > 0, tt.expectError)
+			if !clientBuilder.client.Validations().IsEmpty() != tt.expectError {
+				t.Errorf("NewClientLoadBalancer() error = %v, expectError %v", !clientBuilder.client.Validations().IsEmpty(), tt.expectError)
 			}
 		})
 	}

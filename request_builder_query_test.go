@@ -106,15 +106,15 @@ func TestRequestQueryBuilder(t *testing.T) {
 			}
 
 			if tt.expectedError != nil {
-				if got := len(rb.request.config.Validations()); got != 1 {
+				if got := rb.request.config.Validations().Count(); got != 1 {
 					t.Errorf("validations count got %d, want 1", got)
 				}
-				if got := rb.request.config.Validations()[0]; got.Error() != tt.expectedError.Error() {
+				if got := rb.request.config.Validations().Get(0); got.Error() != tt.expectedError.Error() {
 					t.Errorf("validation got %q, want %q", got.Error(), tt.expectedError.Error())
 				}
 			} else {
-				if got := rb.request.config.Validations(); len(got) != 0 {
-					t.Errorf("validations got %v, want empty", got)
+				if !rb.request.config.Validations().IsEmpty() {
+					t.Error("validations want empty")
 				}
 			}
 		})

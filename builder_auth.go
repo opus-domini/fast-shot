@@ -2,7 +2,6 @@ package fastshot
 
 import (
 	"encoding/base64"
-	"net/http"
 
 	"github.com/opus-domini/fast-shot/constant/header"
 )
@@ -22,14 +21,14 @@ import (
 //		Send()
 type AuthBuilder[P any] struct {
 	parent P
-	header http.Header
+	header HeaderWrapper
 }
 
 // Auth returns an AuthBuilder for setting authentication on the request.
 func (b *RequestBuilder) Auth() *AuthBuilder[*RequestBuilder] {
 	return &AuthBuilder[*RequestBuilder]{
 		parent: b,
-		header: b.request.config.httpHeader,
+		header: b.request.config.Header(),
 	}
 }
 
@@ -43,7 +42,7 @@ func (b *ClientBuilder) Auth() *AuthBuilder[*ClientBuilder] {
 
 // Set sets the Authorization header for custom authentication.
 func (b *AuthBuilder[P]) Set(value string) P {
-	b.header.Set(header.Authorization.String(), value)
+	b.header.Set(header.Authorization, value)
 	return b.parent
 }
 

@@ -1,8 +1,6 @@
 package fastshot
 
 import (
-	"net/http"
-
 	"github.com/opus-domini/fast-shot/constant/header"
 	"github.com/opus-domini/fast-shot/constant/mime"
 )
@@ -22,14 +20,14 @@ import (
 //		Send()
 type HeaderBuilder[P any] struct {
 	parent P
-	header http.Header
+	header HeaderWrapper
 }
 
 // Header returns a HeaderBuilder for setting custom HTTP headers on the request.
 func (b *RequestBuilder) Header() *HeaderBuilder[*RequestBuilder] {
 	return &HeaderBuilder[*RequestBuilder]{
 		parent: b,
-		header: b.request.config.httpHeader,
+		header: b.request.config.Header(),
 	}
 }
 
@@ -43,28 +41,28 @@ func (b *ClientBuilder) Header() *HeaderBuilder[*ClientBuilder] {
 
 // Add adds a custom header. If the header already exists, it will be appended.
 func (b *HeaderBuilder[P]) Add(key header.Type, value string) P {
-	b.header.Add(key.String(), value)
+	b.header.Add(key, value)
 	return b.parent
 }
 
 // AddAll adds custom headers. If a header already exists, it will be appended.
 func (b *HeaderBuilder[P]) AddAll(headers map[header.Type]string) P {
 	for key, value := range headers {
-		b.header.Add(key.String(), value)
+		b.header.Add(key, value)
 	}
 	return b.parent
 }
 
 // Set sets a custom header. If the header already exists, it will be overwritten.
 func (b *HeaderBuilder[P]) Set(key header.Type, value string) P {
-	b.header.Set(key.String(), value)
+	b.header.Set(key, value)
 	return b.parent
 }
 
 // SetAll sets custom headers. If a header already exists, it will be overwritten.
 func (b *HeaderBuilder[P]) SetAll(headers map[header.Type]string) P {
 	for key, value := range headers {
-		b.header.Set(key.String(), value)
+		b.header.Set(key, value)
 	}
 	return b.parent
 }

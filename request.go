@@ -53,7 +53,7 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 
 	// Create Http Request with context
 	request, err := http.NewRequestWithContext(
-		b.request.config.Context(),
+		b.request.config.Context().Unwrap(),
 		b.request.config.Method().String(),
 		fullURL.String(),
 		b.request.config.Body().Unwrap(),
@@ -63,24 +63,24 @@ func (b *RequestBuilder) createHTTPRequest() (*http.Request, error) {
 	}
 
 	// Add client httpCookies
-	for _, cookie := range b.request.client.Cookies() {
+	for _, cookie := range b.request.client.Cookies().Unwrap() {
 		request.AddCookie(cookie)
 	}
 
 	// Add request httpCookies
-	for _, cookie := range b.request.config.Cookies() {
+	for _, cookie := range b.request.config.Cookies().Unwrap() {
 		request.AddCookie(cookie)
 	}
 
 	// Add Client Headers
-	for key, values := range b.request.client.Header() {
+	for key, values := range *b.request.client.Header().Unwrap() {
 		for _, value := range values {
 			request.Header.Add(key, value)
 		}
 	}
 
 	// Add Request Headers
-	for key, values := range b.request.config.Header() {
+	for key, values := range *b.request.config.Header().Unwrap() {
 		for _, value := range values {
 			request.Header.Add(key, value)
 		}
@@ -219,12 +219,12 @@ func (b *RequestBuilder) calculateRetryDelay(attempt uint) time.Duration {
 
 func (b *RequestBuilder) Send() (*Response, error) {
 	// Check for client validation errors
-	if err := errors.Join(b.request.client.Validations()...); err != nil {
+	if err := errors.Join(b.request.client.Validations().Unwrap()...); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrClientValidation, err)
 	}
 
 	// Check for request validation errors
-	if err := errors.Join(b.request.config.Validations()...); err != nil {
+	if err := errors.Join(b.request.config.Validations().Unwrap()...); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrRequestValidation, err)
 	}
 

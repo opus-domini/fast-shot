@@ -25,7 +25,7 @@ func (b *RequestBuilder) Body() *RequestBodyBuilder {
 func (b *RequestBodyBuilder) AsReader(body io.Reader) *RequestBuilder {
 	err := b.requestConfig.Body().Set(body)
 	if err != nil {
-		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrSetBody, err))
+		b.requestConfig.Validations().Add(fmt.Errorf("%w: %w", ErrSetBody, err))
 	}
 	return b.parentBuilder
 }
@@ -34,7 +34,7 @@ func (b *RequestBodyBuilder) AsReader(body io.Reader) *RequestBuilder {
 func (b *RequestBodyBuilder) AsString(body string) *RequestBuilder {
 	err := b.requestConfig.Body().WriteAsString(body)
 	if err != nil {
-		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrSetBody, err))
+		b.requestConfig.Validations().Add(fmt.Errorf("%w: %w", ErrSetBody, err))
 	}
 	return b.parentBuilder
 }
@@ -43,7 +43,7 @@ func (b *RequestBodyBuilder) AsString(body string) *RequestBuilder {
 func (b *RequestBodyBuilder) AsJSON(obj any) *RequestBuilder {
 	err := b.requestConfig.Body().WriteAsJSON(obj)
 	if err != nil {
-		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrMarshalJSON, err))
+		b.requestConfig.Validations().Add(fmt.Errorf("%w: %w", ErrMarshalJSON, err))
 	}
 	return b.parentBuilder
 }
@@ -52,7 +52,7 @@ func (b *RequestBodyBuilder) AsJSON(obj any) *RequestBuilder {
 func (b *RequestBodyBuilder) AsXML(obj any) *RequestBuilder {
 	err := b.requestConfig.Body().WriteAsXML(obj)
 	if err != nil {
-		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrMarshalXML, err))
+		b.requestConfig.Validations().Add(fmt.Errorf("%w: %w", ErrMarshalXML, err))
 	}
 	return b.parentBuilder
 }
@@ -61,9 +61,9 @@ func (b *RequestBodyBuilder) AsXML(obj any) *RequestBuilder {
 func (b *RequestBodyBuilder) AsFormData(fields map[string]string) *RequestBuilder {
 	contentType, err := b.requestConfig.Body().WriteAsFormData(fields)
 	if err != nil {
-		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrSetBody, err))
+		b.requestConfig.Validations().Add(fmt.Errorf("%w: %w", ErrSetBody, err))
 	} else {
-		b.requestConfig.httpHeader.Set(header.ContentType.String(), contentType)
+		b.requestConfig.httpHeader.Set(header.ContentType, contentType)
 	}
 	return b.parentBuilder
 }

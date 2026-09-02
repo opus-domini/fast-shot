@@ -53,7 +53,7 @@ func (b *RequestQueryBuilder) SetRawString(query string) *RequestBuilder {
 	// Parse query string
 	queryParams, err := url.ParseQuery(strings.TrimSpace(query))
 	if err != nil {
-		b.requestConfig.addValidation(fmt.Errorf("%w: %w", ErrParseQueryString, err))
+		b.requestConfig.Validations().Add(fmt.Errorf("%w: %w", ErrParseQueryString, err))
 		return b.parentBuilder
 	}
 	// Set query params

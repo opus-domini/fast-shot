@@ -1,7 +1,6 @@
 package fastshot
 
 import (
-	"context"
 	"net/http"
 	"net/url"
 	"time"
@@ -12,14 +11,14 @@ import (
 type (
 	// RequestConfigBase encapsulates all configurations for a request.
 	RequestConfigBase struct {
-		ctx           context.Context
-		httpHeader    http.Header
-		httpCookies   []*http.Cookie
+		ctx           ContextWrapper
+		httpHeader    HeaderWrapper
+		httpCookies   CookiesWrapper
 		method        method.Type
 		path          string
 		queryParams   url.Values
 		body          BodyWrapper
-		validations   []error
+		validations   ValidationsWrapper
 		retryConfig   *RetryConfig
 		beforeRequest []func(*http.Request) error
 		afterResponse []func(*http.Request, *http.Response)
@@ -47,22 +46,18 @@ const (
 )
 
 // Context returns the context for the request.
-func (c *RequestConfigBase) Context() context.Context {
+func (c *RequestConfigBase) Context() ContextWrapper {
 	return c.ctx
 }
 
 // Header returns the header for the request.
-func (c *RequestConfigBase) Header() http.Header {
+func (c *RequestConfigBase) Header() HeaderWrapper {
 	return c.httpHeader
 }
 
 // Cookies returns the cookies for the request.
-func (c *RequestConfigBase) Cookies() []*http.Cookie {
+func (c *RequestConfigBase) Cookies() CookiesWrapper {
 	return c.httpCookies
-}
-
-func (c *RequestConfigBase) addCookie(cookie *http.Cookie) {
-	c.httpCookies = append(c.httpCookies, cookie)
 }
 
 // Method returns the method for the request.
@@ -85,13 +80,9 @@ func (c *RequestConfigBase) Body() BodyWrapper {
 	return c.body
 }
 
-// Validations returns the accumulated request validation errors.
-func (c *RequestConfigBase) Validations() []error {
+// Validations returns the ValidationsWrapper for the request.
+func (c *RequestConfigBase) Validations() ValidationsWrapper {
 	return c.validations
-}
-
-func (c *RequestConfigBase) addValidation(err error) {
-	c.validations = append(c.validations, err)
 }
 
 // RetryConfig returns the retry configuration for the request.
@@ -183,13 +174,14 @@ func (c *RetryConfig) SetJitterStrategy(strategy JitterStrategy) {
 // NewRequestConfigBase creates a new request configuration.
 func newRequestConfigBase(method method.Type, path string, jsonCodec JSONCodec) *RequestConfigBase {
 	return &RequestConfigBase{
-		ctx:         context.Background(),
-		httpHeader:  http.Header{},
-		httpCookies: []*http.Cookie{},
+		ctx:         newDefaultContext(),
+		httpHeader:  newDefaultHttpHeader(),
+		httpCookies: newDefaultHttpCookies(),
 		method:      method,
 		path:        path,
 		queryParams: url.Values{},
 		body:        newBufferedBody(jsonCodec),
+		validations: newDefaultValidations(nil),
 		retryConfig: &RetryConfig{
 			shouldRetry:    func(response *Response) bool { return response.Status().IsError() },
 			interval:       1 * time.Second,

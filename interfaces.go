@@ -1,13 +1,13 @@
 package fastshot
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/opus-domini/fast-shot/constant/header"
-	"github.com/opus-domini/fast-shot/constant/mime"
 )
 
 // Client is the interface that wraps the basic methods for configuring and executing HTTP requests.
@@ -39,9 +39,9 @@ type Client interface {
 //		Build()
 type ClientConfig interface {
 	ConfigHttpClient
-	Header() http.Header
-	Cookies() []*http.Cookie
-	Validations() []error
+	Header() HeaderWrapper
+	Cookies() CookiesWrapper
+	Validations() ValidationsWrapper
 	ConfigBaseURL
 	JSONCodec() JSONCodec
 	SetJSONCodec(JSONCodec)
@@ -53,14 +53,22 @@ type ClientConfig interface {
 
 // ConfigHttpClient is the interface that wraps the basic methods for configuring the underlying HTTP client.
 //
+// It is essential for providing fine-grained control over the HTTP client used for
+// making requests. It allows users to set a custom HTTP client or retrieve the current one,
+// enabling advanced use cases such as custom transport layers or connection pooling.
+//
 // Example usage:
 //
 //	customClient := &http.Client{
 //		Timeout: 30 * time.Second,
+//		Transport: &http.Transport{
+//			MaxIdleConns: 100,
+//			IdleConnTimeout: 90 * time.Second,
+//		},
 //	}
 //
 //	client := fastshot.NewClient("https://api.example.com").
-//		Config().SetCustomHttpClient(fastshot.NewHttpClientComponent(customClient)).
+//		Config().SetCustomHttpClient(myHttpClientComponent).
 //		Build()
 type ConfigHttpClient interface {
 	SetHttpClient(httpClient HttpClientComponent)
@@ -78,11 +86,6 @@ type HttpClientComponent interface {
 	Timeout() time.Duration
 	SetTimeout(time.Duration)
 	SetFollowRedirects(follow bool)
-}
-
-// NewHttpClientComponent adapts an *http.Client to the HttpClientComponent interface.
-func NewHttpClientComponent(client *http.Client) HttpClientComponent {
-	return &DefaultHttpClient{client: client}
 }
 
 // ConfigBaseURL is the interface that wraps the basic method for retrieving the base URL.
@@ -143,16 +146,118 @@ type BodyWrapper interface {
 	Unwrap() io.Reader
 }
 
-// Compile-time checks for the interfaces kept in this refactor.
+// HeaderWrapper is the interface that wraps the basic methods for managing HTTP headers.
+//
+// This wrapper provides an abstraction layer over the standard http.Header type,
+// allowing for type-safe header manipulation and potential future enhancements without
+// changing the public API.
+//
+// It enables the library to implement custom header handling logic, such as
+// case-insensitive header matching or header-specific validations, while maintaining
+// a consistent interface for both internal use and potential extension points.
+//
+// Example (for library developers):
+//
+//	type CustomHeaderWrapper struct {
+//		header http.Header
+//	}
+//
+//	func (w *CustomHeaderWrapper) Set(key header.Type, value string) {
+//		w.header.Set(string(key), value)
+//		// Custom logic, e.g., logging or validation
+//	}
+type HeaderWrapper interface {
+	Unwrap() *http.Header
+	Get(key header.Type) string
+	Add(key header.Type, value string)
+	Set(key header.Type, value string)
+}
+
+// CookiesWrapper is the interface that wraps the basic methods for managing HTTP cookies.
+//
+// This wrapper provides a unified interface for cookie management, abstracting
+// away the details of cookie storage and retrieval.
+//
+// It allows the library to implement different cookie storage strategies
+// (e.g., in-memory, persistent storage) without affecting the public API. It also
+// facilitates easier testing and mocking of cookie-related functionality.
+//
+// Example (for library developers):
+//
+//	type PersistentCookieWrapper struct {
+//		storage CookieStorage
+//	}
+//
+//	func (w *PersistentCookieWrapper) Add(cookie *http.Cookie) {
+//		w.storage.Save(cookie)
+//		// Additional logic, e.g., expiration handling
+//	}
+type CookiesWrapper interface {
+	Unwrap() []*http.Cookie
+	Get(index int) *http.Cookie
+	Count() int
+	Add(cookie *http.Cookie)
+}
+
+// ValidationsWrapper is the interface that wraps the basic methods for managing HTTP request validations.
+//
+// This wrapper centralizes the handling of validation errors, providing a
+// consistent way to accumulate and access errors throughout the request building process.
+//
+// It allows for more complex validation scenarios, such as conditional validations
+// or aggregating errors from multiple sources, while keeping the public API clean and simple.
+//
+// Example:
+//
+//	type EnhancedValidationsWrapper struct {
+//		errors []error
+//		warnings []string
+//	}
+//
+//	func (w *EnhancedValidationsWrapper) AddWarning(warning string) {
+//		w.warnings = append(w.warnings, warning)
+//	}
+type ValidationsWrapper interface {
+	Unwrap() []error
+	Get(index int) error
+	IsEmpty() bool
+	Count() int
+	Add(err error)
+}
+
+// ContextWrapper is the interface that wraps the basic methods for managing HTTP request context.
+//
+// This wrapper provides a layer of abstraction over the standard context.Context,
+// allowing for potential enhancements to context handling without affecting the public API.
+//
+// It enables the library to implement custom context-related features, such as
+// automatic context propagation or context-based tracing, while maintaining a simple interface.
+//
+// Example:
+//
+//	type TracingContextWrapper struct {
+//		ctx context.Context
+//		tracer Tracer
+//	}
+//
+//	func (w *TracingContextWrapper) Unwrap() context.Context {
+//		return w.tracer.ContextWithSpan(w.ctx)
+//	}
+type ContextWrapper interface {
+	Unwrap() context.Context
+	Set(ctx context.Context)
+}
+
+// Compile-time checks.
 var (
 	_ Client              = (*ClientConfigBase)(nil)
 	_ ConfigBaseURL       = (*DefaultBaseURL)(nil)
 	_ ConfigBaseURL       = (*BalancedBaseURL)(nil)
 	_ HttpClientComponent = (*DefaultHttpClient)(nil)
+	_ HeaderWrapper       = (*DefaultHttpHeader)(nil)
+	_ CookiesWrapper      = (*DefaultHttpCookies)(nil)
+	_ ValidationsWrapper  = (*DefaultValidations)(nil)
+	_ ContextWrapper      = (*DefaultContext)(nil)
 	_ BodyWrapper         = (*BufferedBody)(nil)
 	_ BodyWrapper         = (*UnbufferedBody)(nil)
-
-	// header.Type and mime.Type keep their meaning in the fluent builders.
-	_ header.Type = header.Accept
-	_ mime.Type   = mime.JSON
 )

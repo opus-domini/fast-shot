@@ -52,7 +52,7 @@ func TestAuthBuilder_Request(t *testing.T) {
 			if result != rb {
 				t.Errorf("got different builder, want same")
 			}
-			if got := rb.request.config.Header().Get(header.Authorization.String()); got != tt.expectedHeader {
+			if got := rb.request.config.Header().Get(header.Authorization); got != tt.expectedHeader {
 				t.Errorf("Authorization got %q, want %q", got, tt.expectedHeader)
 			}
 		})
@@ -102,7 +102,7 @@ func TestAuthBuilder_Client(t *testing.T) {
 			if result != cb {
 				t.Errorf("got different builder, want same")
 			}
-			if got := cb.client.Header().Get(header.Authorization.String()); got != tt.expectedHeader {
+			if got := cb.client.Header().Get(header.Authorization); got != tt.expectedHeader {
 				t.Errorf("Authorization got %q, want %q", got, tt.expectedHeader)
 			}
 		})

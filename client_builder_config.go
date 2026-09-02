@@ -45,7 +45,7 @@ func (b *ClientConfigBuilder) SetFollowRedirects(follow bool) *ClientBuilder {
 func (b *ClientConfigBuilder) SetProxy(proxyURL string) *ClientBuilder {
 	parsedURL, err := url.Parse(proxyURL)
 	if err != nil {
-		b.parentBuilder.client.addValidation(fmt.Errorf("%w: %w", ErrParseProxyURL, err))
+		b.parentBuilder.client.Validations().Add(fmt.Errorf("%w: %w", ErrParseProxyURL, err))
 		return b.parentBuilder
 	}
 

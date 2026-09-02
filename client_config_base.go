@@ -11,9 +11,9 @@ import (
 // ClientConfigBase serves as the main entry point for configuring HTTP clients.
 type ClientConfigBase struct {
 	httpClient    HttpClientComponent
-	httpHeader    http.Header
-	httpCookies   []*http.Cookie
-	validations   []error
+	httpHeader    HeaderWrapper
+	httpCookies   CookiesWrapper
+	validations   ValidationsWrapper
 	jsonCodec     JSONCodec
 	beforeRequest []func(*http.Request) error
 	afterResponse []func(*http.Request, *http.Response)
@@ -30,27 +30,19 @@ func (c *ClientConfigBase) SetHttpClient(httpClient HttpClientComponent) {
 	c.httpClient = httpClient
 }
 
-// Header for ClientConfigBase returns the client headers.
-func (c *ClientConfigBase) Header() http.Header {
+// Header for ClientConfigBase returns the HeaderWrapper.
+func (c *ClientConfigBase) Header() HeaderWrapper {
 	return c.httpHeader
 }
 
-// Cookies for ClientConfigBase returns the client cookies.
-func (c *ClientConfigBase) Cookies() []*http.Cookie {
+// Cookies for ClientConfigBase returns the CookiesWrapper.
+func (c *ClientConfigBase) Cookies() CookiesWrapper {
 	return c.httpCookies
 }
 
-func (c *ClientConfigBase) addCookie(cookie *http.Cookie) {
-	c.httpCookies = append(c.httpCookies, cookie)
-}
-
-// Validations returns the accumulated client validation errors.
-func (c *ClientConfigBase) Validations() []error {
+// Validations returns the ValidationsWrapper.
+func (c *ClientConfigBase) Validations() ValidationsWrapper {
 	return c.validations
-}
-
-func (c *ClientConfigBase) addValidation(err error) {
-	c.validations = append(c.validations, err)
 }
 
 // JSONCodec for ClientConfigBase returns the JSONCodec used by request and response bodies.
@@ -144,9 +136,9 @@ func newClientConfigBase(baseURL string) *ClientConfigBase {
 
 	return &ClientConfigBase{
 		httpClient:    newDefaultHttpClient(),
-		httpHeader:    http.Header{},
-		httpCookies:   []*http.Cookie{},
-		validations:   validations,
+		httpHeader:    newDefaultHttpHeader(),
+		httpCookies:   newDefaultHttpCookies(),
+		validations:   newDefaultValidations(validations),
 		jsonCodec:     DefaultJSONCodec(),
 		ConfigBaseURL: newDefaultBaseURL(parsedURL),
 	}
@@ -176,9 +168,9 @@ func newBalancedClientConfigBase(baseURLs []string) *ClientConfigBase {
 
 	return &ClientConfigBase{
 		httpClient:    newDefaultHttpClient(),
-		httpHeader:    http.Header{},
-		httpCookies:   []*http.Cookie{},
-		validations:   validations,
+		httpHeader:    newDefaultHttpHeader(),
+		httpCookies:   newDefaultHttpCookies(),
+		validations:   newDefaultValidations(validations),
 		jsonCodec:     DefaultJSONCodec(),
 		ConfigBaseURL: newBalancedBaseURL(parsedURLs),
 	}

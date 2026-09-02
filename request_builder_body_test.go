@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"strings"
 	"testing"
 
@@ -126,7 +125,7 @@ func TestRequestBodyBuilder(t *testing.T) {
 						return "multipart/form-data; boundary=test", nil
 					},
 				}
-				rb.requestConfig.httpHeader = http.Header{}
+				rb.requestConfig.httpHeader = newDefaultHttpHeader()
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
 				return rb.AsFormData(map[string]string{
@@ -144,7 +143,7 @@ func TestRequestBodyBuilder(t *testing.T) {
 						return "multipart/form-data; boundary=test", nil
 					},
 				}
-				rb.requestConfig.httpHeader = http.Header{}
+				rb.requestConfig.httpHeader = newDefaultHttpHeader()
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
 				return rb.AsFormData(map[string]string{})
@@ -159,7 +158,7 @@ func TestRequestBodyBuilder(t *testing.T) {
 						return "", mockedErr
 					},
 				}
-				rb.requestConfig.httpHeader = http.Header{}
+				rb.requestConfig.httpHeader = newDefaultHttpHeader()
 			},
 			method: func(rb *RequestBodyBuilder) *RequestBuilder {
 				return rb.AsFormData(map[string]string{
@@ -175,7 +174,9 @@ func TestRequestBodyBuilder(t *testing.T) {
 			// Arrange
 			rb := &RequestBodyBuilder{
 				parentBuilder: &RequestBuilder{},
-				requestConfig: &RequestConfigBase{},
+				requestConfig: &RequestConfigBase{
+					validations: newDefaultValidations(nil),
+				},
 			}
 			tt.setup(rb)
 
@@ -187,16 +188,16 @@ func TestRequestBodyBuilder(t *testing.T) {
 				t.Errorf("got different builder, want same")
 			}
 			if tt.expectedError != nil {
-				if len(rb.requestConfig.validations) == 0 {
+				if rb.requestConfig.validations.IsEmpty() {
 					t.Fatal("expected error, got none")
 				}
-				err := rb.requestConfig.validations[0]
+				err := rb.requestConfig.validations.Get(0)
 				if err.Error() != tt.expectedError.Error() {
 					t.Errorf("error got %q, want %q", err.Error(), tt.expectedError.Error())
 				}
 			} else {
-				if got := rb.requestConfig.validations; len(got) != 0 {
-					t.Errorf("validations got %v, want empty", got)
+				if !rb.requestConfig.validations.IsEmpty() {
+					t.Error("validations want empty")
 				}
 			}
 		})
@@ -233,8 +234,9 @@ func TestAsFormData_ContentType(t *testing.T) {
 			rb := &RequestBodyBuilder{
 				parentBuilder: &RequestBuilder{},
 				requestConfig: &RequestConfigBase{
-					body:       newBufferedBody(DefaultJSONCodec()),
-					httpHeader: http.Header{},
+					body:        newBufferedBody(DefaultJSONCodec()),
+					httpHeader:  newDefaultHttpHeader(),
+					validations: newDefaultValidations(nil),
 				},
 			}
 
@@ -243,7 +245,7 @@ func TestAsFormData_ContentType(t *testing.T) {
 
 			// Assert
 			if tt.expectHeader {
-				contentType := rb.requestConfig.httpHeader.Get(header.ContentType.String())
+				contentType := rb.requestConfig.httpHeader.Get(header.ContentType)
 				if contentType == "" {
 					t.Error("Content-Type is empty, want non-empty")
 				}
@@ -251,8 +253,8 @@ func TestAsFormData_ContentType(t *testing.T) {
 					t.Errorf("Content-Type %q does not contain %q", contentType, tt.headerContains)
 				}
 			}
-			if got := rb.requestConfig.validations; len(got) != 0 {
-				t.Errorf("validations got %v, want empty", got)
+			if !rb.requestConfig.validations.IsEmpty() {
+				t.Error("validations want empty")
 			}
 		})
 	}
@@ -264,7 +266,8 @@ func TestAsFormData_NoContentTypeOnError(t *testing.T) {
 	rb := &RequestBodyBuilder{
 		parentBuilder: &RequestBuilder{},
 		requestConfig: &RequestConfigBase{
-			httpHeader: http.Header{},
+			httpHeader:  newDefaultHttpHeader(),
+			validations: newDefaultValidations(nil),
 		},
 	}
 	rb.requestConfig.body = &mock.BodyWrapper{
@@ -279,11 +282,11 @@ func TestAsFormData_NoContentTypeOnError(t *testing.T) {
 	})
 
 	// Assert
-	contentType := rb.requestConfig.httpHeader.Get(header.ContentType.String())
+	contentType := rb.requestConfig.httpHeader.Get(header.ContentType)
 	if contentType != "" {
 		t.Errorf("Content-Type should not be set when WriteAsFormData fails, got %q", contentType)
 	}
-	if len(rb.requestConfig.validations) == 0 {
+	if rb.requestConfig.validations.IsEmpty() {
 		t.Error("expected error, got none")
 	}
 }

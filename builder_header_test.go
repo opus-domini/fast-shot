@@ -1,17 +1,16 @@
 package fastshot
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/opus-domini/fast-shot/constant/header"
 	"github.com/opus-domini/fast-shot/constant/mime"
 )
 
-func assertHeader(t *testing.T, headers http.Header, expected map[header.Type]string) {
+func assertHeader(t *testing.T, headers HeaderWrapper, expected map[header.Type]string) {
 	t.Helper()
 	for key, value := range expected {
-		if got := headers.Get(key.String()); got != value {
+		if got := headers.Get(key); got != value {
 			t.Errorf("header %s got %q, want %q", key, got, value)
 		}
 	}

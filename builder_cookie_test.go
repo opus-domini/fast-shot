@@ -51,10 +51,10 @@ func TestCookieBuilder_Request(t *testing.T) {
 			if result != rb {
 				t.Errorf("got different builder, want same")
 			}
-			if got := len(rb.request.config.Cookies()); got != 1 {
+			if got := rb.request.config.Cookies().Count(); got != 1 {
 				t.Errorf("cookie count got %d, want 1", got)
 			}
-			if got := rb.request.config.Cookies()[0]; !reflect.DeepEqual(got, tt.cookie) {
+			if got := rb.request.config.Cookies().Get(0); !reflect.DeepEqual(got, tt.cookie) {
 				t.Errorf("cookie got %v, want %v", got, tt.cookie)
 			}
 		})
@@ -74,10 +74,10 @@ func TestCookieBuilder_Client(t *testing.T) {
 				Value: "abc123",
 			},
 			assertFunc: func(t *testing.T, cb *ClientBuilder) {
-				if got := len(cb.client.Cookies()); got != 1 {
+				if got := cb.client.Cookies().Count(); got != 1 {
 					t.Errorf("cookie count got %d, want 1", got)
 				}
-				cookie := cb.client.Cookies()[0]
+				cookie := cb.client.Cookies().Get(0)
 				if cookie.Name != "session" {
 					t.Errorf("Name got %q, want %q", cookie.Name, "session")
 				}
@@ -100,10 +100,10 @@ func TestCookieBuilder_Client(t *testing.T) {
 				SameSite: http.SameSiteStrictMode,
 			},
 			assertFunc: func(t *testing.T, cb *ClientBuilder) {
-				if got := len(cb.client.Cookies()); got != 1 {
+				if got := cb.client.Cookies().Count(); got != 1 {
 					t.Errorf("cookie count got %d, want 1", got)
 				}
-				cookie := cb.client.Cookies()[0]
+				cookie := cb.client.Cookies().Get(0)
 				if cookie.Name != "complex" {
 					t.Errorf("Name got %q, want %q", cookie.Name, "complex")
 				}
@@ -141,13 +141,13 @@ func TestCookieBuilder_Client(t *testing.T) {
 			},
 			assertFunc: func(t *testing.T, cb *ClientBuilder) {
 				cb.Cookie().Add(&http.Cookie{Name: "second", Value: "value2"})
-				if got := len(cb.client.Cookies()); got != 2 {
+				if got := cb.client.Cookies().Count(); got != 2 {
 					t.Errorf("cookie count got %d, want 2", got)
 				}
-				if got := cb.client.Cookies()[0].Name; got != "first" {
+				if got := cb.client.Cookies().Get(0).Name; got != "first" {
 					t.Errorf("first cookie Name got %q, want %q", got, "first")
 				}
-				if got := cb.client.Cookies()[1].Name; got != "second" {
+				if got := cb.client.Cookies().Get(1).Name; got != "second" {
 					t.Errorf("second cookie Name got %q, want %q", got, "second")
 				}
 			},

@@ -21,7 +21,7 @@ func (b *RequestBuilder) Context() *RequestContextBuilder {
 // Set sets the Context.
 func (b *RequestContextBuilder) Set(ctx context.Context) *RequestBuilder {
 	if ctx != nil {
-		b.requestConfig.ctx = ctx
+		b.requestConfig.Context().Set(ctx)
 	}
 	return b.parentBuilder
 }

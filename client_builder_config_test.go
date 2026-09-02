@@ -71,7 +71,7 @@ func TestClientConfigBuilder(t *testing.T) {
 				client: newClientConfigBase("https://api.example.com"),
 			}
 			if tt.setupClient != nil {
-				tt.setupClient(cb.client)
+				tt.setupClient(cb.client.(*ClientConfigBase))
 			}
 
 			// Act
@@ -81,22 +81,22 @@ func TestClientConfigBuilder(t *testing.T) {
 			if result != cb {
 				t.Errorf("got different builder, want same")
 			}
-			if !tt.expectedConfig(cb.client) {
+			if !tt.expectedConfig(cb.client.(*ClientConfigBase)) {
 				t.Errorf("expectedConfig returned false")
 			}
 
 			if tt.expectedErrors != nil {
-				if got := len(cb.client.Validations()); got != len(tt.expectedErrors) {
+				if got := cb.client.Validations().Count(); got != len(tt.expectedErrors) {
 					t.Errorf("validations count got %d, want %d", got, len(tt.expectedErrors))
 				}
 				for i, expectedErr := range tt.expectedErrors {
-					if !errors.Is(cb.client.Validations()[i], expectedErr) {
-						t.Errorf("validation[%d] got %v, want %v", i, cb.client.Validations()[i], expectedErr)
+					if !errors.Is(cb.client.Validations().Get(i), expectedErr) {
+						t.Errorf("validation[%d] got %v, want %v", i, cb.client.Validations().Get(i), expectedErr)
 					}
 				}
 			} else {
-				if got := cb.client.Validations(); len(got) != 0 {
-					t.Errorf("validations got %v, want empty", got)
+				if !cb.client.Validations().IsEmpty() {
+					t.Error("validations want empty")
 				}
 			}
 		})
