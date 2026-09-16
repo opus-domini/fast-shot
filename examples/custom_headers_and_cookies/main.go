@@ -34,14 +34,20 @@ func main() {
 	// Check if there was an error sending the request.
 	if err != nil {
 		slog.Error("Error sending the request.", "error", err)
+		return
 	}
 
-	var data []model.Resource
+	if resp.Status().IsError() {
+		defer resp.Body().Close()
+		slog.Error("Failed to get data.", "status", resp.Status().Text())
+		return
+	}
 
-	// Parse the response body as JSON
-	// Note: The response body is automatically closed when using AsBytes, AsString, or AsJSON methods
-	if parseErr := resp.Body().AsJSON(&data); parseErr != nil {
-		slog.Error("Error parsing response.", "error", parseErr)
+	// Decode straight into a typed value (Go 1.27 generic method).
+	// The response body is closed automatically by AsJSON.
+	data, err := resp.Body().AsJSON[[]model.Resource]()
+	if err != nil {
+		slog.Error("Error parsing response.", "error", err)
 		return
 	}
 

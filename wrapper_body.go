@@ -6,7 +6,6 @@ import (
 	"io"
 	"mime/multipart"
 	"strings"
-	"sync"
 )
 
 // Compile-time check that BufferedBody implements BodyWrapper.
@@ -16,22 +15,22 @@ var _ BodyWrapper = (*BufferedBody)(nil)
 var _ BodyWrapper = (*UnbufferedBody)(nil)
 
 type (
+	// BufferedBody is a BodyWrapper backed by an in-memory buffer.
+	// It is not safe for concurrent use, matching io.ReadCloser semantics.
 	BufferedBody struct {
 		buffer    *bytes.Buffer
 		jsonCodec JSONCodec
-		mutex     sync.RWMutex
 	}
 
+	// UnbufferedBody is a BodyWrapper backed by a stream.
+	// It is not safe for concurrent use, matching io.ReadCloser semantics.
 	UnbufferedBody struct {
 		reader    io.ReadCloser
 		jsonCodec JSONCodec
-		mutex     sync.RWMutex
 	}
 )
 
 func (w *BufferedBody) Read(p []byte) (n int, err error) {
-	w.mutex.RLock()
-	defer w.mutex.RUnlock()
 	return w.buffer.Read(p)
 }
 
@@ -41,48 +40,34 @@ func (w *BufferedBody) Close() error {
 }
 
 func (w *BufferedBody) ReadAsJSON(obj any) error {
-	w.mutex.RLock()
-	defer w.mutex.RUnlock()
 	return w.jsonCodec.Decode(bytes.NewReader(w.buffer.Bytes()), obj)
 }
 
 func (w *BufferedBody) WriteAsJSON(obj any) error {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	w.buffer.Reset()
 	return w.jsonCodec.Encode(w.buffer, obj)
 }
 
 func (w *BufferedBody) ReadAsXML(obj any) error {
-	w.mutex.RLock()
-	defer w.mutex.RUnlock()
 	return xml.NewDecoder(bytes.NewReader(w.buffer.Bytes())).Decode(obj)
 }
 
 func (w *BufferedBody) WriteAsXML(obj any) error {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	w.buffer.Reset()
 	return xml.NewEncoder(w.buffer).Encode(obj)
 }
 
 func (w *BufferedBody) ReadAsString() (string, error) {
-	w.mutex.RLock()
-	defer w.mutex.RUnlock()
 	return w.buffer.String(), nil
 }
 
 func (w *BufferedBody) WriteAsString(s string) error {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	w.buffer.Reset()
 	_, err := w.buffer.WriteString(s)
 	return err
 }
 
 func (w *BufferedBody) WriteAsFormData(fields map[string]string) (string, error) {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	w.buffer.Reset()
 
 	var body bytes.Buffer
@@ -96,16 +81,12 @@ func (w *BufferedBody) WriteAsFormData(fields map[string]string) (string, error)
 }
 
 func (w *BufferedBody) Set(body io.Reader) error {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	w.buffer.Reset()
 	_, err := io.Copy(w.buffer, body)
 	return err
 }
 
 func (w *BufferedBody) Unwrap() io.Reader {
-	w.mutex.RLock()
-	defer w.mutex.RUnlock()
 	return bytes.NewReader(w.buffer.Bytes())
 }
 
@@ -117,26 +98,18 @@ func newBufferedBody(jsonCodec JSONCodec) *BufferedBody {
 }
 
 func (w *UnbufferedBody) Read(p []byte) (n int, err error) {
-	w.mutex.RLock()
-	defer w.mutex.RUnlock()
 	return w.reader.Read(p)
 }
 
 func (w *UnbufferedBody) Close() error {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	return w.reader.Close()
 }
 
 func (w *UnbufferedBody) ReadAsJSON(obj any) error {
-	w.mutex.RLock()
-	defer w.mutex.RUnlock()
 	return w.jsonCodec.Decode(w.reader, obj)
 }
 
 func (w *UnbufferedBody) WriteAsJSON(obj any) error {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	var buf bytes.Buffer
 	err := w.jsonCodec.Encode(&buf, obj)
 	if err != nil {
@@ -147,14 +120,10 @@ func (w *UnbufferedBody) WriteAsJSON(obj any) error {
 }
 
 func (w *UnbufferedBody) ReadAsXML(obj any) error {
-	w.mutex.RLock()
-	defer w.mutex.RUnlock()
 	return xml.NewDecoder(w.reader).Decode(obj)
 }
 
 func (w *UnbufferedBody) WriteAsXML(obj any) error {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	var buf bytes.Buffer
 	err := xml.NewEncoder(&buf).Encode(obj)
 	if err != nil {
@@ -165,8 +134,6 @@ func (w *UnbufferedBody) WriteAsXML(obj any) error {
 }
 
 func (w *UnbufferedBody) ReadAsString() (string, error) {
-	w.mutex.RLock()
-	defer w.mutex.RUnlock()
 	stringBytes, err := io.ReadAll(w.reader)
 	if err != nil {
 		return "", err
@@ -175,16 +142,11 @@ func (w *UnbufferedBody) ReadAsString() (string, error) {
 }
 
 func (w *UnbufferedBody) WriteAsString(s string) error {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	w.reader = io.NopCloser(strings.NewReader(s))
 	return nil
 }
 
 func (w *UnbufferedBody) WriteAsFormData(fields map[string]string) (string, error) {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
-
 	var body bytes.Buffer
 	contentType, err := writeFormDataFn(&body, fields)
 	if err != nil {
@@ -196,8 +158,6 @@ func (w *UnbufferedBody) WriteAsFormData(fields map[string]string) (string, erro
 }
 
 func (w *UnbufferedBody) Set(body io.Reader) error {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
 	if closer, ok := body.(io.ReadCloser); ok {
 		w.reader = closer
 	} else {
@@ -207,8 +167,6 @@ func (w *UnbufferedBody) Set(body io.Reader) error {
 }
 
 func (w *UnbufferedBody) Unwrap() io.Reader {
-	w.mutex.RLock()
-	defer w.mutex.RUnlock()
 	return w.reader
 }
 

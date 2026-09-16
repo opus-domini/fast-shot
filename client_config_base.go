@@ -1,12 +1,10 @@
 package fastshot
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 
-	"github.com/opus-domini/fast-shot/constant"
 	"github.com/opus-domini/fast-shot/constant/method"
 )
 
@@ -42,7 +40,7 @@ func (c *ClientConfigBase) Cookies() CookiesWrapper {
 	return c.httpCookies
 }
 
-// Validations for ClientConfigBase returns the ValidationsWrapper.
+// Validations returns the ValidationsWrapper.
 func (c *ClientConfigBase) Validations() ValidationsWrapper {
 	return c.validations
 }
@@ -128,12 +126,12 @@ func newClientConfigBase(baseURL string) *ClientConfigBase {
 	var validations []error
 
 	if baseURL == "" {
-		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
+		validations = append(validations, ErrEmptyBaseURL)
 	}
 
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
-		validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
+		validations = append(validations, fmt.Errorf("%w: %w", ErrParseURL, err))
 	}
 
 	return &ClientConfigBase{
@@ -153,19 +151,19 @@ func newBalancedClientConfigBase(baseURLs []string) *ClientConfigBase {
 	var parsedURLs []*url.URL
 	for index, baseURL := range baseURLs {
 		if baseURL == "" {
-			validations = append(validations, fmt.Errorf("base URL %d: %s", index, constant.ErrMsgEmptyBaseURL))
+			validations = append(validations, fmt.Errorf("base URL %d: %w", index, ErrEmptyBaseURL))
 			continue
 		}
 
 		parsedURL, err := url.Parse(baseURL)
 		if err != nil {
-			validations = append(validations, errors.Join(errors.New(constant.ErrMsgParseURL), err))
+			validations = append(validations, fmt.Errorf("%w: %w", ErrParseURL, err))
 		}
 		parsedURLs = append(parsedURLs, parsedURL)
 	}
 
 	if len(parsedURLs) == 0 {
-		validations = append(validations, errors.New(constant.ErrMsgEmptyBaseURL))
+		validations = append(validations, ErrEmptyBaseURL)
 	}
 
 	return &ClientConfigBase{

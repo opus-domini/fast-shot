@@ -1,6 +1,7 @@
 package fastshot
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -9,7 +10,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/opus-domini/fast-shot/constant"
 	"github.com/opus-domini/fast-shot/constant/method"
 )
 
@@ -117,7 +117,7 @@ func (b *RequestBuilder) runAfterResponseHooks(req *http.Request, resp *http.Res
 func (b *RequestBuilder) execute(request *http.Request) (*Response, error) {
 	// Run before-request hooks
 	if err := b.runBeforeRequestHooks(request); err != nil {
-		return nil, errors.Join(errors.New(constant.ErrMsgBeforeRequestHook), err)
+		return nil, fmt.Errorf("%w: %w", ErrBeforeRequestHook, err)
 	}
 
 	// Execute request
@@ -133,35 +133,73 @@ func (b *RequestBuilder) execute(request *http.Request) (*Response, error) {
 	return newResponse(response, b.request.client.JSONCodec()), nil
 }
 
+// requestForAttempt returns the request to send on the given attempt.
+// Retries get a fresh clone with a reset body (when replayable) so consumed
+// request bodies are not silently sent empty on subsequent attempts.
+func (b *RequestBuilder) requestForAttempt(req *http.Request, attempt uint) (*http.Request, error) {
+	if attempt == 0 || req.GetBody == nil {
+		return req, nil
+	}
+	body, err := req.GetBody()
+	if err != nil {
+		return nil, err
+	}
+	attemptReq := req.Clone(req.Context())
+	attemptReq.Body = body
+	return attemptReq, nil
+}
+
+// sleepBackoff waits for the retry delay, aborting early if the request
+// context is canceled.
+func (b *RequestBuilder) sleepBackoff(ctx context.Context, delay time.Duration) error {
+	if delay <= 0 {
+		return nil
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 func (b *RequestBuilder) executeWithRetry(req *http.Request) (*Response, error) {
 	config := b.request.config.RetryConfig()
-	var errExecution error
+	ctx := req.Context()
 	var errAttempts []error
-	var response *Response
 
 	for attempt := range config.MaxAttempts() {
+		attemptReq, err := b.requestForAttempt(req, attempt)
+		if err != nil {
+			return nil, newRetryError(config.MaxAttempts(), append(errAttempts, err))
+		}
+
 		// Execute request
-		response, errExecution = b.execute(req)
+		response, errExecution := b.execute(attemptReq)
 		// Check for errors
 		if errExecution == nil {
 			if !config.ShouldRetry()(response) {
 				return response, nil
 			}
 			errExecution = errors.New(response.Status().Text())
+			// Release the connection of the discarded attempt. Since Go 1.27
+			// the body is auto-drained on close, keeping the connection reusable.
+			_ = response.Raw().Body.Close()
 		}
 		// Append error
 		errAttempts = append(errAttempts, fmt.Errorf("attempt %d: %w", attempt+1, errExecution))
-		// Delay before retry
-		delay := b.calculateRetryDelay(attempt)
-		time.Sleep(delay)
+		// Delay before retry, except after the final attempt
+		if attempt == config.MaxAttempts()-1 {
+			break
+		}
+		if err := b.sleepBackoff(ctx, b.calculateRetryDelay(attempt)); err != nil {
+			return nil, newRetryError(config.MaxAttempts(), append(errAttempts, err))
+		}
 	}
 
-	return nil,
-		fmt.Errorf(
-			"request failed after %d attempts: %w",
-			config.MaxAttempts(),
-			errors.Join(errAttempts...),
-		)
+	return nil, newRetryError(config.MaxAttempts(), errAttempts)
 }
 
 func (b *RequestBuilder) calculateRetryDelay(attempt uint) time.Duration {
@@ -182,18 +220,18 @@ func (b *RequestBuilder) calculateRetryDelay(attempt uint) time.Duration {
 func (b *RequestBuilder) Send() (*Response, error) {
 	// Check for client validation errors
 	if err := errors.Join(b.request.client.Validations().Unwrap()...); err != nil {
-		return nil, errors.Join(errors.New(constant.ErrMsgClientValidation), err)
+		return nil, fmt.Errorf("%w: %w", ErrClientValidation, err)
 	}
 
 	// Check for request validation errors
 	if err := errors.Join(b.request.config.Validations().Unwrap()...); err != nil {
-		return nil, errors.Join(errors.New(constant.ErrMsgRequestValidation), err)
+		return nil, fmt.Errorf("%w: %w", ErrRequestValidation, err)
 	}
 
 	// Create request
 	req, err := b.createHTTPRequest()
 	if err != nil {
-		return nil, errors.Join(errors.New(constant.ErrMsgCreateRequest), err)
+		return nil, fmt.Errorf("%w: %w", ErrCreateRequest, err)
 	}
 
 	// Check if maxAttempts are enabled

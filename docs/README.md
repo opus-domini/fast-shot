@@ -3,9 +3,8 @@
     <hr />
     <p>A Fluent Go REST Client Library</p>
     <p>
-        <a href="https://goreportcard.com/report/opus-domini/fast-shot"><img src="https://goreportcard.com/badge/opus-domini/fast-shot" alt="Go Report Badge"></a>
-        <a href="https://godoc.org/github.com/opus-domini/fast-shot"><img src="https://godoc.org/github.com/opus-domini/fast-shot?status.svg" alt="Go Doc Badge"></a>    
-        <a href="https://github.com/opus-domini/fast-shot/actions/workflows/coverage.yml"><img src="https://github.com/opus-domini/fast-shot/actions/workflows/coverage.yml/badge.svg" alt="Converage Actions Badge"></a>
+        <a href="https://pkg.go.dev/github.com/opus-domini/fast-shot"><img src="https://pkg.go.dev/badge/github.com/opus-domini/fast-shot.svg" alt="Go Reference"></a>    
+        <a href="https://github.com/opus-domini/fast-shot/actions/workflows/ci.yml"><img src="https://github.com/opus-domini/fast-shot/actions/workflows/ci.yml/badge.svg" alt="CI Badge"></a>
         <a href="https://codecov.io/gh/opus-domini/fast-shot"><img src="https://codecov.io/gh/opus-domini/fast-shot/graph/badge.svg?token=C80QDL5W7T" alt="Codecov Badge"/></a>        
         <a href="https://github.com/opus-domini/fast-shot/blob/main/LICENSE"><img src="https://img.shields.io/github/license/opus-domini/fast-shot.svg" alt="License Badge"></a>
         <a href="https://github.com/avelino/awesome-go"><img src="https://awesome.re/mentioned-badge.svg" alt="Mentioned in Awesome Go"></a>
@@ -40,6 +39,7 @@ Fast Shot is a robust, feature-rich, and highly configurable HTTP client for Go.
 * Pre-request and post-response hooks for observability and custom logic
 * Client-side load balancing for improved reliability
 * JSON request and response support
+* XML request and response support
 * Timeout and redirect control
 * Proxy support
 * Extensible and customizable for specific needs
@@ -47,7 +47,7 @@ Fast Shot is a robust, feature-rich, and highly configurable HTTP client for Go.
 
 ## Installation 🔧
 
-To install Fast Shot, run the following command:
+Fast Shot requires Go 1.27 or later. To install it, run:
 
 ```bash 
 go get github.com/opus-domini/fast-shot
@@ -71,7 +71,7 @@ func main() {
         Auth().BearerToken("your_token_here").
         Build()
 
-    payload := map[string]interface{}{
+    payload := map[string]any{
         "key1": "value1",
         "key2": "value2",
     }
@@ -90,11 +90,12 @@ func main() {
     if response.Status().IsError() {
         panic(response.Body().AsString()) // ¯\_(ツ)_/¯
     }
-	
-    var result map[string]interface{}
-    _ := response.Body().AsJSON(&result)
+
+    // Decode straight into a typed value (Go 1.27 generic method).
+    result, err := response.Body().AsJSON[map[string]any]()
 
     // Congrats! Do something awesome with the result (¬‿¬)
+    fmt.Println(result)
 }
 ```
 
@@ -135,7 +136,7 @@ Inject custom logic before sending requests and after receiving responses. Usefu
 ```go
 client := fastshot.NewClient("https://api.example.com").
     Hook().OnBeforeRequest(func(req *http.Request) error {
-        req.Header.Set("X-Request-ID", generateID())
+        req.Header.Set("X-Request-ID", uuid.New().String()) // stdlib uuid, Go 1.27+
         return nil
     }).
     Hook().OnAfterResponse(func(req *http.Request, resp *http.Response) {
@@ -160,6 +161,35 @@ Key behaviors:
 - Hooks run on every attempt, including retries
 - A before-request hook returning an error aborts the request
 - After-response hooks are observational and do not return errors
+
+### Generic Response Decoding (Go 1.27)
+
+Skip the pre-allocated destination and decode straight into a typed value:
+
+```go
+type User struct {
+    Name string `json:"name"`
+}
+
+user, err := response.Body().AsJSON[User]()
+// also available: response.Body().AsXML[User]()
+```
+
+### Pluggable JSON Codec (encoding/json/v2)
+
+Bodies are encoded/decoded with the standard `encoding/json/v2` (Go 1.27+):
+strict, interoperable defaults — invalid UTF-8, duplicate object keys, and
+trailing data are rejected.
+
+Need the lenient `encoding/json` (v1) semantics? Opt in:
+
+```go
+client := fastshot.NewClient("https://api.example.com").
+    Config().SetJSONCodec(fastshot.NewJSONv1Codec()).
+    Build()
+```
+
+Bring your own codec by implementing `fastshot.JSONCodec` (Encode/Decode funcs).
 
 ### Out-of-the-Box Support for Client Load Balancing
 
@@ -203,7 +233,7 @@ builder.Header().
 
 // Add Multiple Custom Headers
 builder.Header().
-    AddAll(map[string]string{
+    AddAll(map[header.Type]string{
         "key1": "value1",
         "key2": "value2",
         "key3": "value3",
@@ -272,7 +302,3 @@ We welcome contributions to Fast Shot! Here's how you can contribute:
 Please make sure to update tests as appropriate and adhere to the existing coding style.
 
 For more detailed information, check out our [CONTRIBUTING.md](https://github.com/opus-domini/fast-shot/blob/main/CONTRIBUTING.md) file.
-
-## Stargazers over time ⭐
-
-[![Stargazers over time](https://starchart.cc/opus-domini/fast-shot.svg?variant=adaptive)](https://starchart.cc/opus-domini/fast-shot)

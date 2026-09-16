@@ -10,7 +10,7 @@ import (
 //
 // It is used by BodyWrapper implementations for the WriteAsJSON and ReadAsJSON
 // methods, allowing the JSON implementation to be swapped without changing the
-// public API. The default codec uses the standard library encoding/json.
+// public API. The default codec uses the standard library encoding/json/v2.
 //
 // Example usage with a custom codec:
 //
@@ -26,32 +26,35 @@ type JSONCodec struct {
 	Decode func(r io.Reader, v any) error
 }
 
-// DefaultJSONCodec returns a JSONCodec backed by the standard library encoding/json.
-func DefaultJSONCodec() JSONCodec {
-	return JSONCodec{
-		Encode: func(w io.Writer, v any) error {
-			return json.NewEncoder(w).Encode(v)
-		},
-		Decode: func(r io.Reader, v any) error {
-			return json.NewDecoder(r).Decode(v)
-		},
-	}
-}
-
-// NewJSONv2Codec returns a JSONCodec backed by the standard library encoding/json/v2.
+// DefaultJSONCodec returns a JSONCodec backed by the standard library encoding/json/v2.
 //
-// Compared to DefaultJSONCodec, it applies stricter, more interoperable
-// defaults: it rejects invalid UTF-8 in JSON strings, rejects duplicate names
-// within JSON objects, and rejects trailing data after a top-level JSON value.
-// Marshaled output also carries no trailing newline. See the encoding/json/v2
-// documentation for the complete set of differences and available options.
-func NewJSONv2Codec() JSONCodec {
+// Compared to NewJSONv1Codec, it applies stricter, more interoperable defaults:
+// it rejects invalid UTF-8 in JSON strings, rejects duplicate names within JSON
+// objects, and rejects trailing data after a top-level JSON value. Marshaled
+// output carries no trailing newline. See the encoding/json/v2 documentation for
+// the complete set of differences and available options.
+func DefaultJSONCodec() JSONCodec {
 	return JSONCodec{
 		Encode: func(w io.Writer, v any) error {
 			return jsonv2.MarshalWrite(w, v)
 		},
 		Decode: func(r io.Reader, v any) error {
 			return jsonv2.UnmarshalRead(r, v)
+		},
+	}
+}
+
+// NewJSONv1Codec returns a JSONCodec with the lenient encoding/json (v1 API)
+// semantics: duplicate object keys and invalid UTF-8 are tolerated, trailing
+// data after a top-level value is ignored, and encoded output ends with a
+// trailing newline.
+func NewJSONv1Codec() JSONCodec {
+	return JSONCodec{
+		Encode: func(w io.Writer, v any) error {
+			return json.NewEncoder(w).Encode(v)
+		},
+		Decode: func(r io.Reader, v any) error {
+			return json.NewDecoder(r).Decode(v)
 		},
 	}
 }

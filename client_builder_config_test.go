@@ -86,7 +86,7 @@ func TestClientConfigBuilder(t *testing.T) {
 			}
 
 			if tt.expectedErrors != nil {
-				if got := len(cb.client.Validations().Unwrap()); got != len(tt.expectedErrors) {
+				if got := cb.client.Validations().Count(); got != len(tt.expectedErrors) {
 					t.Errorf("validations count got %d, want %d", got, len(tt.expectedErrors))
 				}
 				for i, expectedErr := range tt.expectedErrors {
@@ -95,8 +95,8 @@ func TestClientConfigBuilder(t *testing.T) {
 					}
 				}
 			} else {
-				if got := cb.client.Validations().Unwrap(); len(got) != 0 {
-					t.Errorf("validations got %v, want empty", got)
+				if !cb.client.Validations().IsEmpty() {
+					t.Error("validations want empty")
 				}
 			}
 		})

@@ -34,7 +34,22 @@ func getUsers(client fastshot.ClientHttpMethods) {
 		slog.Error("Error getting response.", "error", err)
 		return
 	}
-	handleResponse(resp, &[]model.User{})
+
+	if resp.Status().IsError() {
+		defer resp.Body().Close()
+		slog.Error("Failed to get data.", "status", resp.Status().Text())
+		return
+	}
+
+	// Decode straight into a typed value (Go 1.27 generic method).
+	// The response body is closed automatically by AsJSON.
+	users, err := resp.Body().AsJSON[[]model.User]()
+	if err != nil {
+		slog.Error("Error parsing response.", "error", err)
+		return
+	}
+
+	slog.Info("Data received!", "data", users)
 }
 
 func getUser(client fastshot.ClientHttpMethods, id string) {
@@ -45,23 +60,20 @@ func getUser(client fastshot.ClientHttpMethods, id string) {
 		slog.Error("Error getting response.", "error", err)
 		return
 	}
-	handleResponse(resp, &model.User{})
-}
-
-func handleResponse(resp *fastshot.Response, data any) {
-	slog.Info("Response:", "status", resp.Status().Text())
 
 	if resp.Status().IsError() {
-		slog.Error("Failed to get data.")
+		defer resp.Body().Close()
+		slog.Error("Failed to get data.", "status", resp.Status().Text())
 		return
 	}
 
-	// Don't need to close the response body here.
-	// It's done automatically when using AsBytes, AsString or AsJSON methods.
-	if parseErr := resp.Body().AsJSON(data); parseErr != nil {
-		slog.Error("Error parsing response.", "error", parseErr)
+	// Decode straight into a typed value (Go 1.27 generic method).
+	// The response body is closed automatically by AsJSON.
+	user, err := resp.Body().AsJSON[model.User]()
+	if err != nil {
+		slog.Error("Error parsing response.", "error", err)
 		return
 	}
 
-	slog.Info("Data received!", "data", data)
+	slog.Info("Data received!", "data", user)
 }

@@ -80,7 +80,7 @@ func (c *RequestConfigBase) Body() BodyWrapper {
 	return c.body
 }
 
-// Validations returns the validations for the request.
+// Validations returns the ValidationsWrapper for the request.
 func (c *RequestConfigBase) Validations() ValidationsWrapper {
 	return c.validations
 }
@@ -158,7 +158,7 @@ func (c *RetryConfig) MaxDelay() *time.Duration {
 
 // SetMaxDelay sets the retry maximum delay for the request.
 func (c *RetryConfig) SetMaxDelay(duration time.Duration) {
-	c.maxDelay = &duration
+	c.maxDelay = new(duration)
 }
 
 // JitterStrategy returns the retry jitter strategy for the request.
