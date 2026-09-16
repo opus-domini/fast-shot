@@ -117,6 +117,7 @@ func TestClientMethods(t *testing.T) {
 			t.Run(client.name+" "+tt.methodType.String(), func(t *testing.T) {
 				req := tt.methodFunc("/")
 				resp, _ := req.Send()
+				defer resp.Body().Close()
 				if resp.Status().IsError() {
 					t.Errorf("Expected 200, got %d", resp.Status().Code())
 				}

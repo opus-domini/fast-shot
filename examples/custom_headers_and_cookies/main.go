@@ -34,6 +34,13 @@ func main() {
 	// Check if there was an error sending the request.
 	if err != nil {
 		slog.Error("Error sending the request.", "error", err)
+		return
+	}
+
+	if resp.Status().IsError() {
+		defer resp.Body().Close()
+		slog.Error("Failed to get data.", "status", resp.Status().Text())
+		return
 	}
 
 	// Decode straight into a typed value (Go 1.27 generic method).

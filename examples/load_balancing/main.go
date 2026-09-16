@@ -40,10 +40,12 @@ func healthcheck(client fastshot.ClientHttpMethods) {
 	// Check if there was an error sending the request.
 	if err != nil {
 		slog.Error("Error sending the request.", "error", err)
+		return
 	}
 
 	// Check if the response is an error.
 	if resp.Status().Is5xxServerError() {
+		defer resp.Body().Close()
 		slog.Error("Health Check failed.", "status", resp.Status().Text())
 		return
 	}
