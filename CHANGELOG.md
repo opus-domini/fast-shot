@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.0.0](https://github.com/opus-domini/fast-shot/compare/v1.4.0...v2.0.0) (2026-09-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename AsJSONOf/AsXMLOf to AsJSON/AsXML
+* default to encoding/json/v2 and slim down body wrappers
+* redesign fluent API with generic builders and concrete types
+
+### Features
+
+* default to encoding/json/v2 and slim down body wrappers ([a9dfec3](https://github.com/opus-domini/fast-shot/commit/a9dfec36d7f70a35551df31e82911687f0f20a20))
+
+
+### Bug Fixes
+
+* **examples:** close response bodies and return on request error ([00622f6](https://github.com/opus-domini/fast-shot/commit/00622f662de59e9134dcf0fd6282618dde25c0ba))
+* **test:** handle json/v2 randomized modal verb in wrapper body tests ([5044a3e](https://github.com/opus-domini/fast-shot/commit/5044a3e584de25c0f0ca3501e6f38d39e7338b23))
+
+
+### Refactors
+
+* redesign fluent API with generic builders and concrete types ([bb96613](https://github.com/opus-domini/fast-shot/commit/bb96613eeea2e288e70492d0de604efac31fc75d))
+* rename AsJSONOf/AsXMLOf to AsJSON/AsXML ([9fbee6c](https://github.com/opus-domini/fast-shot/commit/9fbee6c7512fe5ffc83a2ff8952bc32ca2001fef))
+* restore wrapper interfaces for headers, cookies, validations and context ([60457f7](https://github.com/opus-domini/fast-shot/commit/60457f708d59f9317de7a668c6a095d6bee41852))
+
+
+### Documentation
+
+* apply Copilot review suggestions ([01f6c6a](https://github.com/opus-domini/fast-shot/commit/01f6c6aa34937d85d69a4628f7da7ef07f7694ac))
+* fix legacy badge and invalid snippets in README and docs mirror ([e7026f3](https://github.com/opus-domini/fast-shot/commit/e7026f3f31003390fe576d5e95e7f7325303114d))
+* showcase generic response decoding in examples ([e6bc7b6](https://github.com/opus-domini/fast-shot/commit/e6bc7b647fbf687b705422172b083c5a86575785))
+
 ## [1.4.0](https://github.com/opus-domini/fast-shot/compare/v1.3.3...v1.4.0) (2026-09-01)
 
 
