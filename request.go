@@ -117,6 +117,9 @@ func (b *RequestBuilder) runAfterResponseHooks(req *http.Request, resp *http.Res
 func (b *RequestBuilder) execute(request *http.Request) (*Response, error) {
 	// Run before-request hooks
 	if err := b.runBeforeRequestHooks(request); err != nil {
+		if request.Body != nil {
+			_ = request.Body.Close()
+		}
 		return nil, fmt.Errorf("%w: %w", ErrBeforeRequestHook, err)
 	}
 
