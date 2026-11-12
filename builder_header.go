@@ -23,6 +23,12 @@ type HeaderBuilder[P any] struct {
 	header HeaderWrapper
 }
 
+// ClientHeaderBuilder and RequestHeaderBuilder are type aliases kept for v1 compatibility.
+type (
+	ClientHeaderBuilder  = HeaderBuilder[*ClientBuilder]
+	RequestHeaderBuilder = HeaderBuilder[*RequestBuilder]
+)
+
 // Header returns a HeaderBuilder for setting custom HTTP headers on the request.
 func (b *RequestBuilder) Header() *HeaderBuilder[*RequestBuilder] {
 	return &HeaderBuilder[*RequestBuilder]{

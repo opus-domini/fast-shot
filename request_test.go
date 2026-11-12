@@ -366,7 +366,7 @@ func TestRequest_Send(t *testing.T) {
 				if resp == nil {
 					t.Fatal("resp got nil, want non-nil")
 				}
-				result, err := resp.Body().AsJSON[map[string]string]()
+				result, err := resp.Body().AsJSONOf[map[string]string]()
 				if err != nil {
 					t.Fatalf("unexpected error reading body: %v", err)
 				}

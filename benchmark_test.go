@@ -78,7 +78,7 @@ func BenchmarkResponseAsJSON(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		decoded, err := user.Body().AsJSON[codecTestUser]()
+		decoded, err := user.Body().AsJSONOf[codecTestUser]()
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -93,8 +93,8 @@ func BenchmarkJSONCodec(b *testing.B) {
 		name  string
 		codec JSONCodec
 	}{
-		{"DefaultJSONCodec_v2", DefaultJSONCodec()},
-		{"NewJSONv1Codec", NewJSONv1Codec()},
+		{"DefaultJSONCodec_v1", DefaultJSONCodec()},
+		{"NewJSONv2Codec", NewJSONv2Codec()},
 	}
 
 	for _, bm := range benchmarks {

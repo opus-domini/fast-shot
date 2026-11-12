@@ -26,6 +26,12 @@ type HookBuilder[P any] struct {
 	addAfter  func(func(*http.Request, *http.Response))
 }
 
+// ClientHookBuilder and RequestHookBuilder are type aliases kept for v1 compatibility.
+type (
+	ClientHookBuilder  = HookBuilder[*ClientBuilder]
+	RequestHookBuilder = HookBuilder[*RequestBuilder]
+)
+
 // Hook returns a HookBuilder for setting request hooks on the request.
 func (b *RequestBuilder) Hook() *HookBuilder[*RequestBuilder] {
 	return &HookBuilder[*RequestBuilder]{

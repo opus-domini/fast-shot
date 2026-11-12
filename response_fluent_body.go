@@ -40,36 +40,46 @@ func (b *ResponseFluentBody) AsString() (string, error) {
 	return b.body.ReadAsString()
 }
 
-// AsJSON decodes the response body as JSON into a value of type T,
+func (b *ResponseFluentBody) AsJSON(v any) error {
+	defer b.Close()
+
+	return b.body.ReadAsJSON(v)
+}
+
+// AsJSONOf decodes the response body as JSON into a new value of type T,
 // closing the body afterwards.
 //
-// The type parameter removes the need for a pre-allocated destination:
+// It is the generic form of AsJSON, returning the decoded value directly
+// instead of requiring a pre-allocated destination:
 //
 //	type User struct {
 //		Name string `json:"name"`
 //	}
-//	user, err := resp.Body().AsJSON[User]()
-func (b *ResponseFluentBody) AsJSON[T any]() (T, error) {
+//	user, err := resp.Body().AsJSONOf[User]()
+func (b *ResponseFluentBody) AsJSONOf[T any]() (T, error) {
 	var value T
-	defer b.Close()
-
-	err := b.body.ReadAsJSON(&value)
+	err := b.AsJSON(&value)
 	return value, err
 }
 
-// AsXML decodes the response body as XML into a value of type T,
+func (b *ResponseFluentBody) AsXML(v any) error {
+	defer b.Close()
+
+	return b.body.ReadAsXML(v)
+}
+
+// AsXMLOf decodes the response body as XML into a new value of type T,
 // closing the body afterwards.
 //
-// The type parameter removes the need for a pre-allocated destination:
+// It is the generic form of AsXML, returning the decoded value directly
+// instead of requiring a pre-allocated destination:
 //
 //	type User struct {
 //		Name string `xml:"name"`
 //	}
-//	user, err := resp.Body().AsXML[User]()
-func (b *ResponseFluentBody) AsXML[T any]() (T, error) {
+//	user, err := resp.Body().AsXMLOf[User]()
+func (b *ResponseFluentBody) AsXMLOf[T any]() (T, error) {
 	var value T
-	defer b.Close()
-
-	err := b.body.ReadAsXML(&value)
+	err := b.AsXML(&value)
 	return value, err
 }

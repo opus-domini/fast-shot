@@ -22,6 +22,12 @@ type CookieBuilder[P any] struct {
 	cookies CookiesWrapper
 }
 
+// ClientCookieBuilder and RequestCookieBuilder are type aliases kept for v1 compatibility.
+type (
+	ClientCookieBuilder  = CookieBuilder[*ClientBuilder]
+	RequestCookieBuilder = CookieBuilder[*RequestBuilder]
+)
+
 // Cookie returns a CookieBuilder for setting custom HTTP cookies on the request.
 func (b *RequestBuilder) Cookie() *CookieBuilder[*RequestBuilder] {
 	return &CookieBuilder[*RequestBuilder]{

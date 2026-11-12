@@ -92,7 +92,7 @@ func main() {
     }
 
     // Decode straight into a typed value (Go 1.27 generic method).
-    result, err := response.Body().AsJSON[map[string]any]()
+    result, err := response.Body().AsJSONOf[map[string]any]()
 
     // Congrats! Do something awesome with the result (¬‿¬)
     fmt.Println(result)
@@ -171,24 +171,22 @@ type User struct {
     Name string `json:"name"`
 }
 
-user, err := response.Body().AsJSON[User]()
-// also available: response.Body().AsXML[User]()
+user, err := response.Body().AsJSONOf[User]()
+// also available: response.Body().AsXMLOf[User]()
 ```
 
 ### Pluggable JSON Codec (encoding/json/v2)
 
-Bodies are encoded/decoded with the standard `encoding/json/v2` (Go 1.27+):
-strict, interoperable defaults — invalid UTF-8, duplicate object keys, and
-trailing data are rejected.
-
-Need the lenient `encoding/json` (v1) semantics? Opt in:
+By default, bodies are encoded/decoded with the standard `encoding/json`.
+Opt into `encoding/json/v2` (Go 1.27+) for stricter, more interoperable defaults:
 
 ```go
 client := fastshot.NewClient("https://api.example.com").
-    Config().SetJSONCodec(fastshot.NewJSONv1Codec()).
+    Config().SetJSONCodec(fastshot.NewJSONv2Codec()).
     Build()
 ```
 
+The v2 codec rejects invalid UTF-8, duplicate object keys, and trailing data.
 Bring your own codec by implementing `fastshot.JSONCodec` (Encode/Decode funcs).
 
 ### Out-of-the-Box Support for Client Load Balancing

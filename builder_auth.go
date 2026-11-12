@@ -24,6 +24,12 @@ type AuthBuilder[P any] struct {
 	header HeaderWrapper
 }
 
+// ClientAuthBuilder and RequestAuthBuilder are type aliases kept for v1 compatibility.
+type (
+	ClientAuthBuilder  = AuthBuilder[*ClientBuilder]
+	RequestAuthBuilder = AuthBuilder[*RequestBuilder]
+)
+
 // Auth returns an AuthBuilder for setting authentication on the request.
 func (b *RequestBuilder) Auth() *AuthBuilder[*RequestBuilder] {
 	return &AuthBuilder[*RequestBuilder]{

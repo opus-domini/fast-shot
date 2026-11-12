@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/opus-domini/fast-shot/constant/header"
+	"github.com/opus-domini/fast-shot/constant/mime"
 )
 
 // Client is the interface that wraps the basic methods for configuring and executing HTTP requests.
@@ -119,6 +120,78 @@ type ClientHttpMethods interface {
 	CONNECT(path string) *RequestBuilder
 	OPTIONS(path string) *RequestBuilder
 	TRACE(path string) *RequestBuilder
+}
+
+// BuilderHeader is the interface that wraps the basic methods for setting custom HTTP headers.
+type BuilderHeader[T any] interface {
+	Add(key header.Type, value string) *T
+	AddAll(headers map[header.Type]string) *T
+	Set(key header.Type, value string) *T
+	SetAll(headers map[header.Type]string) *T
+	AddAccept(value mime.Type) *T
+	AddContentType(value mime.Type) *T
+	AddUserAgent(value string) *T
+}
+
+// BuilderCookie is the interface that wraps the basic method for adding HTTP cookies.
+type BuilderCookie[T any] interface {
+	Add(cookie *http.Cookie) *T
+}
+
+// BuilderHook is the interface that wraps the basic methods for setting request hooks.
+type BuilderHook[T any] interface {
+	OnBeforeRequest(hook func(*http.Request) error) *T
+	OnAfterResponse(hook func(*http.Request, *http.Response)) *T
+}
+
+// BuilderAuth is the interface that wraps the basic methods for setting HTTP authentication.
+type BuilderAuth[T any] interface {
+	Set(value string) *T
+	BearerToken(token string) *T
+	BasicAuth(username, password string) *T
+}
+
+// BuilderHttpClientConfig is the interface that wraps the basic methods for configuring the HTTP client.
+type BuilderHttpClientConfig[T any] interface {
+	SetCustomHttpClient(httpClient HttpClientComponent) *T
+	SetCustomTransport(transport http.RoundTripper) *T
+	SetTimeout(duration time.Duration) *T
+	SetFollowRedirects(follow bool) *T
+	SetProxy(proxyURL string) *T
+	SetJSONCodec(codec JSONCodec) *T
+}
+
+// BuilderRequestContext is the interface that wraps the basic method for setting the request context.
+type BuilderRequestContext[T any] interface {
+	Set(ctx context.Context) *T
+}
+
+// BuilderRequestBody is the interface that wraps the basic methods for setting the request body.
+type BuilderRequestBody[T any] interface {
+	AsReader(body io.Reader) *T
+	AsString(body string) *T
+	AsJSON(obj any) *T
+	AsXML(obj any) *T
+	AsFormData(fields map[string]string) *T
+}
+
+// BuilderRequestQuery is the interface that wraps the basic methods for setting query parameters.
+type BuilderRequestQuery[T any] interface {
+	AddParam(param, value string) *T
+	AddParams(params map[string]string) *T
+	SetParam(param, value string) *T
+	SetParams(params map[string]string) *T
+	SetRawString(query string) *T
+}
+
+// BuilderRequestRetry is the interface that wraps the basic methods for configuring request retries.
+type BuilderRequestRetry[T any] interface {
+	SetConstantBackoff(interval time.Duration, maxAttempts uint) *T
+	SetConstantBackoffWithJitter(interval time.Duration, maxAttempts uint) *T
+	SetExponentialBackoff(interval time.Duration, maxAttempts uint, backoffRate float64) *T
+	SetExponentialBackoffWithJitter(interval time.Duration, maxAttempts uint, backoffRate float64) *T
+	WithRetryCondition(shouldRetry func(response *Response) bool) *T
+	WithMaxDelay(duration time.Duration) *T
 }
 
 // BodyWrapper is the interface that wraps the basic methods for handling request and response bodies.
@@ -250,14 +323,27 @@ type ContextWrapper interface {
 
 // Compile-time checks.
 var (
-	_ Client              = (*ClientConfigBase)(nil)
-	_ ConfigBaseURL       = (*DefaultBaseURL)(nil)
-	_ ConfigBaseURL       = (*BalancedBaseURL)(nil)
-	_ HttpClientComponent = (*DefaultHttpClient)(nil)
-	_ HeaderWrapper       = (*DefaultHttpHeader)(nil)
-	_ CookiesWrapper      = (*DefaultHttpCookies)(nil)
-	_ ValidationsWrapper  = (*DefaultValidations)(nil)
-	_ ContextWrapper      = (*DefaultContext)(nil)
-	_ BodyWrapper         = (*BufferedBody)(nil)
-	_ BodyWrapper         = (*UnbufferedBody)(nil)
+	_ Client                                 = (*ClientConfigBase)(nil)
+	_ ConfigBaseURL                          = (*DefaultBaseURL)(nil)
+	_ ConfigBaseURL                          = (*BalancedBaseURL)(nil)
+	_ HttpClientComponent                    = (*DefaultHttpClient)(nil)
+	_ HeaderWrapper                          = (*DefaultHttpHeader)(nil)
+	_ CookiesWrapper                         = (*DefaultHttpCookies)(nil)
+	_ ValidationsWrapper                     = (*DefaultValidations)(nil)
+	_ ContextWrapper                         = (*DefaultContext)(nil)
+	_ BodyWrapper                            = (*BufferedBody)(nil)
+	_ BodyWrapper                            = (*UnbufferedBody)(nil)
+	_ BuilderHeader[ClientBuilder]           = (*ClientHeaderBuilder)(nil)
+	_ BuilderHeader[RequestBuilder]          = (*RequestHeaderBuilder)(nil)
+	_ BuilderCookie[ClientBuilder]           = (*ClientCookieBuilder)(nil)
+	_ BuilderCookie[RequestBuilder]          = (*RequestCookieBuilder)(nil)
+	_ BuilderAuth[ClientBuilder]             = (*ClientAuthBuilder)(nil)
+	_ BuilderAuth[RequestBuilder]            = (*RequestAuthBuilder)(nil)
+	_ BuilderHook[ClientBuilder]             = (*ClientHookBuilder)(nil)
+	_ BuilderHook[RequestBuilder]            = (*RequestHookBuilder)(nil)
+	_ BuilderHttpClientConfig[ClientBuilder] = (*ClientConfigBuilder)(nil)
+	_ BuilderRequestContext[RequestBuilder]  = (*RequestContextBuilder)(nil)
+	_ BuilderRequestBody[RequestBuilder]     = (*RequestBodyBuilder)(nil)
+	_ BuilderRequestQuery[RequestBuilder]    = (*RequestQueryBuilder)(nil)
+	_ BuilderRequestRetry[RequestBuilder]    = (*RequestRetryBuilder)(nil)
 )
