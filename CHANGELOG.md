@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.5.0](https://github.com/opus-domini/fast-shot/compare/v1.4.0...v1.5.0) (2026-11-12)
+
+
+### Features
+
+* restore v1 compatibility for generic builders, codecs, errors and hardened retries ([c5cc1c7](https://github.com/opus-domini/fast-shot/commit/c5cc1c798f54e41f0fa420c1924eb5901a6e8e36))
+
+
+### Bug Fixes
+
+* close request bodies when before request hooks fail ([a71185e](https://github.com/opus-domini/fast-shot/commit/a71185e66dc832f4a2b58e31a96c8b83df462e4a))
+
+
+### CI
+
+* bump golangci-lint to v2.15.0 for Go 1.27.4 compatibility ([bfa0fbb](https://github.com/opus-domini/fast-shot/commit/bfa0fbb3495c59887f115ba40afa060e34d688be))
+* use Go 1.27.x in workflows for latest security patches ([921a8a9](https://github.com/opus-domini/fast-shot/commit/921a8a9b8d6e0b1b344ac9c1fb191e17382a9a51))
+
 ## [1.4.0](https://github.com/opus-domini/fast-shot/compare/v1.3.3...v1.4.0) (2026-09-01)
 
 
