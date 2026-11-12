@@ -20,6 +20,102 @@ import (
 	"github.com/opus-domini/fast-shot/mock"
 )
 
+type hookRequestBody struct {
+	io.Reader
+	closeCalls int
+	closeErr   error
+}
+
+func (b *hookRequestBody) Close() error {
+	b.closeCalls++
+	return b.closeErr
+}
+
+func TestRequest_HookErrorClosesBody(t *testing.T) {
+	closeErr := errors.New("body close failed")
+	tests := []struct {
+		name        string
+		clientHook  bool
+		maxAttempts uint
+		closeErr    error
+		nilBody     bool
+	}{
+		{name: "client hook", clientHook: true, maxAttempts: 1},
+		{name: "request hook", maxAttempts: 1},
+		{name: "retried client hook", clientHook: true, maxAttempts: 3},
+		{name: "retried request hook", maxAttempts: 3},
+		{name: "close error preserves hook error", maxAttempts: 1, closeErr: closeErr},
+		{name: "nil body", maxAttempts: 1, nilBody: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			hookErr := errors.New("hook rejected request")
+			var bodies []*hookRequestBody
+			var doCalls, afterCalls int
+			clientBuilder := NewClient("http://example.com").
+				Config().SetCustomHttpClient(&mock.HttpClientComponent{
+				DoFunc: func(req *http.Request) (*http.Response, error) {
+					doCalls++
+					return nil, errors.New("unexpected HTTP request")
+				},
+			}).
+				Hook().OnBeforeRequest(func(req *http.Request) error {
+				if tt.nilBody {
+					req.Body = nil
+					return nil
+				}
+				body := &hookRequestBody{Reader: strings.NewReader("payload"), closeErr: tt.closeErr}
+				bodies = append(bodies, body)
+				req.Body = body
+				return nil
+			}).
+				Hook().OnAfterResponse(func(req *http.Request, resp *http.Response) {
+				afterCalls++
+			})
+			reject := func(req *http.Request) error { return hookErr }
+			if tt.clientHook {
+				clientBuilder.Hook().OnBeforeRequest(reject)
+			}
+			request := clientBuilder.Build().POST("/test").
+				Body().AsString("original").
+				Retry().SetConstantBackoff(0, tt.maxAttempts)
+			if !tt.clientHook {
+				request.Hook().OnBeforeRequest(reject)
+			}
+
+			// Act
+			resp, err := request.Send()
+
+			// Assert
+			if resp != nil {
+				t.Errorf("response got %v, want nil", resp)
+			}
+			if !errors.Is(err, ErrBeforeRequestHook) || !errors.Is(err, hookErr) {
+				t.Errorf("error got %v, want both hook errors", err)
+			}
+			if errors.Is(err, closeErr) {
+				t.Errorf("close error replaced hook error: %v", err)
+			}
+			if doCalls != 0 || afterCalls != 0 {
+				t.Errorf("HTTP calls got %d, response hooks got %d, want zero", doCalls, afterCalls)
+			}
+			if tt.nilBody {
+				return
+			}
+			if len(bodies) != int(tt.maxAttempts) {
+				t.Fatalf("body count got %d, want %d", len(bodies), tt.maxAttempts)
+			}
+			for i, body := range bodies {
+				if body.closeCalls != 1 {
+					t.Errorf("attempt %d body close calls got %d, want 1", i+1, body.closeCalls)
+				}
+			}
+		})
+	}
+}
+
 func TestRequest_createFullURL(t *testing.T) {
 	tests := []struct {
 		name           string
